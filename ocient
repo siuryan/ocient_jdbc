@@ -5,7 +5,7 @@
 # Path to this script
 SCRIPTPATH=$(dirname "$0")
 
-jdbc_jar="ocient-jdbc4.jar"
+jdbc_jar="target/ocient-jdbc4-1.0.jar"
 if [ ! -e "$jdbc_jar" ]; then
 	jdbc_jar="${SCRIPTPATH}/${jdbc_jar}"
 	if [ ! -e "$jdbc_jar" ]; then
