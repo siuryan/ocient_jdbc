@@ -1,0 +1,9 @@
+*.class
+sources.txt
+testSources.txt
+bin/
+ocient-jdbc4.jar
+tmp/
+scripts/*.test
+scripts/*/*.test
+target/

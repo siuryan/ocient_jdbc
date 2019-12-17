@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# Script for running the ocient-jdbc jar using the latest JRE on macOS.
+
+# Path to this script
+SCRIPTPATH=$(dirname "$0")
+
+jdbc_jar="ocient-jdbc4.jar"
+if [ ! -e "$jdbc_jar" ]; then
+	jdbc_jar="${SCRIPTPATH}/${jdbc_jar}"
+	if [ ! -e "$jdbc_jar" ]; then
+		echo "Missing ocient-jdbc4.jar JDBC driver.  Expected to find it in current path: \"$(pwd)\""
+		exit 1
+	fi
+fi
+
+java_args="-cp \"${jdbc_jar}\" com.ocient.cli.CLI $*"
+
+run_jdbc_client()
+{
+	echo "Ocient JDBC CLI"
+	exec sh -c "\"$1\" $2"
+}
+
+try_java()
+{
+	java_bin="$1"
+
+	# Don't do version check on non-Mac machines
+	if [ "$(uname -a | grep Darwin)" = "" ]; then
+		run_jdbc_client "${java_bin}" "${java_args}"
+	fi;
+
+	# Otherwise we need to check that we have a recent version of Java that allows
+	# the encryption level we want to use on Mac
+	java_version=$(sh -c "\"$1\" -version" 2>&1 | head -n1 | grep -Eo '([0-9]+\.)+[0-9_]+')
+	major=$(echo "$java_version" | awk -F. '{print $1}')
+	minor=$(echo "$java_version" | awk -F. '{print $2}')
+	rev=$(echo "$java_version" | awk -F. '{print $3}' | awk -F_ '{print $1}')
+	build=$(echo "$java_version" | awk -F. '{print $3}' | awk -F_ '{print $2}')
+	if [ "$major" ] && [ "$minor" ] && [ "$rev" ] && [ "$build" ]; then
+		if [ "$major" -gt "1" ] || [ "$minor" -gt 8 ] || [ "$rev" -gt 0 ] || [ "$build" -ge 231 ]; then
+			run_jdbc_client "${java_bin}" "${java_args}"
+		fi
+	fi
+}
+
+for j in "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java"; do
+	[ -e "$j" ] && try_java "${j}"
+done
+
+if which java 1>/dev/null 2>&1; then
+	try_java java
+fi
+
+echo "No up-to-date java binary found.  Please install the latest JRE available at https://java.com/en/download/manual.jsp"
+exit 1
+

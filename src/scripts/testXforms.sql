@@ -1,0 +1,10 @@
+explain ((select c1 from sys.dummy1000000000) union (select c1 from sys.dummy1000000000)) union all (select case when c1 > 10 then c1 else 0 end as switchCol from sys.dummy1000000000);
+explain ((select c1 from sys.dummy1000000000) intersect (select c1 from sys.dummy1000000000)) intersect all (select case when c1 > 10 then c1 else 0 end as switchCol from sys.dummy1000000000);
+explain ((select c1 from sys.dummy1000000000) except (select c1 from sys.dummy1000000000)) except all (select case when c1 > 10 then c1 else 0 end as switchCol from sys.dummy1000000000);
+explain ((select c1 from sys.dummy1000000000) except (select c1 from sys.dummy1000000000)) except all ((select c1 from sys.dummy1000000000) union (select c1 from sys.dummy1000000000));
+explain select count(distinct c1) from ((select c1 from sys.dummy1000000000) union all (select c1 from sys.dummy1000000000));
+explain select t3.c1 from (((select c1 from sys.dummy1000000000 where c1 > 5) union (select c1 from sys.dummy1000000000 where c1 > 10)) t1 inner join (select sum(c1) as c2 from sys.dummy1000000000) t2 on t1.c1 = t2.c2) t3 where t3.c1 > 20;
+explain select sum(t3.c1) from ((select c1, c1 as c2 from sys.dummy1000000000) t1 inner join (select c1 as c3, c1 as c4 from sys.dummy1000000000) t2 on t1.c1 = t2.c3 and t1.c2 = t2.c4) t3 group by t3.c1, t3.c2;
+explain select sum(c1) over(partition by c1 order by c1) as col1, avg(c1) over(partition by c1 order by c1) as col2 from sys.dummy1000000000;
+explain select * from (((select c1 from sys.dummy1000000000) t1 inner join (select c1 as c2 from sys.dummy1000000000) t2 on t1.c1 = t2.c2) t3 inner join (select c1 as c4 from sys.dummy1000000000) t4 on t3.c1 = t4.c4) t5;
+explain select modCol, count(c2) from (select c1 from sys.dummy100000000) t1 inner join (select c1 as c2, mod(c1, 100000000) as modCol from sys.dummy1000000000) t2 on t1.c1 = t2.modCol group by modCol;

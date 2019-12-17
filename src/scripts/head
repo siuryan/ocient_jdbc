@@ -1,0 +1,4 @@
+jason
+pwd
+connect to jdbc:ocient://localhost:4050/Test;
+timing on;

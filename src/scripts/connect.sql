@@ -1,0 +1,13 @@
+connect to jdbc:ocient://192.168.111.80:4050/Test;
+connect to jdbc:ocient://192.168.111.80:4050/Test force;
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using p;
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using p force;
+CONNECT TO jdbc:ocient://192.168.111.80:4050/Test user u using p force;
+connect to jdbc:ocient://192.168.111.80:4050/Test user USer using passWORD FoRcE;
+connect to jdbc:ocient://192.168.111.80:4050/Test user "USer" using passWORD FoRcE;
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using a long password with spaces in it;
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using a long password with spaces in it force;
+connect to jdbc:ocient://192.168.111.80:4050/Test user "a long username with whitespace" using a long password with whitespace;
+connect to jdbc:ocient://192.168.111.80:4050/Test user "a long username with whitespace" using a long password with whitespace force;
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using "a long password with spaces and quotes";
+connect to jdbc:ocient://192.168.111.80:4050/Test user u using "a long password with spaces and quotes" force;

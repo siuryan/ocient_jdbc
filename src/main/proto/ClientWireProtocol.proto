@@ -1,0 +1,399 @@
+syntax = "proto3";
+import "PlanProtocol.proto";
+package xg.cmdcomp;
+option java_package = "com.ocient.jdbc.proto";
+option java_outer_classname = "ClientWireProtocol";
+
+message ClientConnection
+{
+    string userid = 1;
+    string database = 2;
+    string clientid = 3;
+    string version = 4;
+}
+
+message ClientConnectionResponse 
+{
+    ConfirmationResponse response = 1;
+    bytes iv = 2;
+    string pubKey = 3;
+}
+
+message ClientConnection2
+{
+	bytes cipher = 1;
+	bool force = 2; //Force = true means not allowed to redirect the connection
+   bytes hmac = 3;
+   string pubKey = 4;
+}
+
+message ClientConnection2Response
+{
+	ConfirmationResponse response = 1;
+	bool redirect = 2; //Redirect = true, means we are telling client to connect elsewhere
+	string redirectHost = 3;
+	fixed32 redirectPort = 4;
+	repeated string cmdcomps = 5; //If redirect = false, this is a list of all cmdcomps
+}
+
+message GetSchema
+{
+}
+
+message GetSchemaResponse
+{
+	ConfirmationResponse response = 1;
+	string schema = 2;
+}
+
+message SetSchema
+{
+	string schema = 1;
+}
+
+message CloseConnection
+{
+}
+
+message TestConnection
+{
+}
+
+message FetchData
+{
+	sfixed32 fetch_size = 1;
+}
+
+message ResultSet
+{
+	int32 numParts = 1;
+	repeated int32 blobLengths = 2;
+	repeated bytes blobs = 3;
+}
+
+message FetchDataResponse
+{
+	ConfirmationResponse response = 1;
+	ResultSet result_set = 2;
+}
+
+message FetchMetadata
+{
+}
+
+message FetchMetadataResponse
+{
+	ConfirmationResponse response = 1;
+	map<string, sfixed32> cols2pos = 2;
+	map<string, string> cols2Types = 3;
+}
+
+message FetchSystemMetadata
+{
+	enum SystemMetadataCall
+	{
+		INVALID = 0;
+		
+		// ResultSets
+		GET_SCHEMAS = 1;
+		GET_TABLES = 2;
+		GET_SYSTEM_TABLES = 14;
+		GET_VIEWS = 25; 
+		GET_COLUMNS = 3;
+		GET_INDEX_INFO = 4;
+		GET_TYPE_INFO = 5;
+		
+		// strings
+		GET_SQL_KEYWORDS = 6;
+		GET_NUMERIC_FUNCTIONS = 7;
+		GET_STRING_FUNCTIONS = 8;
+		GET_TIME_DATE_FUNCTIONS = 9;
+		GET_SYSTEM_FUNCTIONS = 10;
+		GET_DATABASE_PRODUCT_VERSION = 11;
+		
+		// ints
+		GET_DATABASE_MAJOR_VERSION = 12;
+		GET_DATABASE_MINOR_VERSION = 13;	
+	}
+	
+	SystemMetadataCall call = 1;
+	// Parameters for calls
+	string schema = 2;
+	string table = 3;
+	string column = 4;
+	string view = 5; 
+	bool test = 6;// whether to test against patterns
+}
+
+message FetchSystemMetadataResponse
+{
+	ConfirmationResponse response = 1;
+	oneof result_oneof
+	{
+		ResultSet result_set_val = 2;
+		string string_val = 3;
+		sfixed32 int_val = 4;
+	}
+}
+
+message CloseResultSet
+{
+}
+
+message ExecuteQuery
+{
+	string sql = 1;
+	bool force = 2;
+}
+
+message ExecuteQueryResponse
+{
+	ConfirmationResponse response = 1;
+	bool redirect = 2; //Redirect = true, means we are telling client to send the command elsewhere
+	string redirectHost = 3;
+	fixed32 redirectPort = 4;
+}
+
+message ExecuteUpdate
+{
+	string sql = 1;
+	bool force = 2;
+}
+
+message ExecuteUpdateResponse
+{
+	ConfirmationResponse response = 1;
+	sfixed32 updateRowCount = 2;
+	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
+	string redirectHost = 4;
+	fixed32 redirectPort = 5;
+}
+
+message ExecuteExplain
+{
+	string sql = 1;
+	bool force = 2;
+}
+
+message ExecuteExplainForSpark
+{
+	enum PartitioningType
+	{
+		INVALID_PARTITIONING = 0;
+		BY_SIZE = 1;
+		BY_NUMBER = 2;
+	}
+	
+	string sql = 1;
+	PartitioningType type = 2;
+	sfixed32 partitioningParam = 3;
+	bool force = 4;
+}
+
+message ExplainResponse
+{
+	ConfirmationResponse response = 1;
+	xg.db.sqlPlans.PlanMessage plan = 2;
+	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
+	string redirectHost = 4;
+	fixed32 redirectPort = 5;
+}
+
+message SystemWideQueries
+{
+}
+
+message SystemWideQueriesResponse
+{
+	ConfirmationResponse response = 1;
+	repeated SysQueriesRow rows = 2;
+}
+
+message LocalQueries
+{
+	//Same data as md::objectId object
+	//Ideally would like to import objectId proto object, but proto lives in libxgsysnconfig
+	int32 identity = 1;
+	oneof	one_identity_option {
+		bytes uuid_identity	= 2;
+	}
+	
+	string database = 3;
+}
+
+message LocalQueriesResponse
+{
+	ConfirmationResponse response = 1;
+	repeated SysQueriesRow rows = 2;
+}
+
+message SysQueriesRow
+{
+	string query_id = 1;
+	float importance = 2;
+	int32 estimated_time_sec = 3;
+	string userid = 4;
+	string sql_text = 5;
+	int32 elapsed_time_sec = 6;
+	string status = 7;
+	string query_server = 8;
+	string database = 9;
+}
+
+message LoadBroadcast
+{
+	string cmdcompId = 1;
+	double load = 2;
+}
+
+// The request has a type and then the relevant optional field is 
+// filled.
+//
+message Request 
+{
+    enum RequestType 
+    {
+        INVALID = 0;
+        CLIENT_CONNECTION = 1;
+        CLIENT_CONNECTION2 = 2;
+        GET_SCHEMA = 3;
+        CLOSE_CONNECTION = 4;
+        SET_SCHEMA = 5;
+        TEST_CONNECTION = 6;
+        FETCH_DATA = 7;
+        FETCH_METADATA = 8;
+        CLOSE_RESULT_SET = 9;
+        EXECUTE_QUERY = 10;
+        EXECUTE_EXPLAIN = 11;
+        EXECUTE_EXPLAIN_FOR_SPARK = 12;
+        EXECUTE_UPDATE = 13;
+        LOAD_BROADCAST = 14;
+        FETCH_SYSTEM_METADATA = 15;
+        CANCEL_QUERY = 16;
+        SYSTEM_WIDE_QUERIES = 17;
+        LOCAL_QUERIES = 18;
+        EXECUTE_PLAN = 19;
+        EXPLAIN_PLAN = 20;
+        LIST_PLAN = 21;
+        KILL_QUERY = 22;
+        EXECUTE_INLINE_PLAN = 23;
+        FORCE_EXTERNAL = 24;
+        EXECUTE_EXPORT = 25;
+    }
+
+    RequestType type = 1;
+    oneof request_oneof
+    {
+    	ClientConnection client_connection = 2;
+    	ClientConnection2 client_connection2 = 3;
+    	GetSchema get_schema = 4;
+    	CloseConnection close_connection = 5;
+    	SetSchema set_schema = 6;
+    	TestConnection test_connection = 7;
+    	FetchData fetch_data = 8;
+    	FetchMetadata fetch_metadata = 9;
+    	CloseResultSet close_result_set = 10;
+    	ExecuteQuery execute_query = 11;
+    	ExecuteExplain execute_explain = 12;
+    	ExecuteExplainForSpark execute_explain_for_spark = 13;
+    	ExecuteUpdate execute_update = 14;
+    	LoadBroadcast load_broadcast = 15;
+    	FetchSystemMetadata fetch_system_metadata = 16;
+    	CancelQuery cancel_query = 17;
+    	SystemWideQueries system_wide_queries = 18;
+    	LocalQueries local_queries = 19;
+    	ExecutePlan execute_plan = 20;
+    	ExplainPlan explain_plan = 21;
+    	ListPlan list_plan = 22;
+    	KillQuery kill_query = 23;
+    	ExecuteInlinePlan execute_inline_plan = 24;
+    	ForceExternal force_external = 25;
+    	ExecuteExport execute_export = 26;
+    }
+}
+
+message ConfirmationResponse
+{
+	enum ResponseType
+	{
+		INVALID = 0;
+		RESPONSE_OK = 1;
+		RESPONSE_WARN = 2;
+		RESPONSE_ERROR = 3;
+	}
+	
+	ResponseType type = 1;
+	string reason = 2;
+	string sql_state = 3;
+	sfixed32 vendor_code = 4;
+}
+
+message ExecutePlan
+{
+	//sql is actually the plan name but this allows us to easily use reflection in Java
+	string sql = 1;
+	bool force = 2;
+}
+
+message ExecuteInlinePlan
+{
+	//sql is actually the plan text but this allows us to easily use reflection in Java
+	string sql = 1;
+	bool force = 2;
+}
+
+message ExplainPlan
+{
+	//sql is actually the plan name but this makes the logic easier
+	string sql = 1;
+	bool force = 2;
+}
+
+message ForceExternal
+{
+	bool force = 1; //whether or not we are forcing plans to run externally, primarily for testing
+}
+
+message ListPlan
+{
+}
+
+message ListPlanResponse
+{
+	ConfirmationResponse response = 1; 
+	repeated string planName = 2;
+	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
+	string redirectHost = 4;
+	fixed32 redirectPort = 5;
+}
+
+message CancelQuery
+{
+	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+}
+
+message CancelQueryResponse
+{
+	ConfirmationResponse response = 1;
+}
+
+message KillQuery
+{
+	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+}
+
+message KillQueryResponse
+{
+	ConfirmationResponse response = 1;
+}
+
+message ExecuteExport
+{
+	string sql = 1;
+}
+
+message ExecuteExportResponse
+{
+	ConfirmationResponse response = 1;
+	string exportStatement = 2;
+}

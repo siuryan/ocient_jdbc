@@ -1,0 +1,1163 @@
+syntax = "proto3";
+package xg.db.sqlPlans;
+option java_package = "com.ocient.jdbc.proto";
+option java_outer_classname = "PlanProtocol";
+
+//
+// The opaque set of bytes that represent a logged in user.
+//
+message securityToken {
+	//
+	// The opaque set of bytes used to represent a logged in user
+	//
+	bytes token = 2;
+
+	//
+	// Signature of token data to validate authenticity
+	//
+	bytes signature = 3;
+
+	//
+	// Admin certificate used to issue token
+	//
+	bytes issuer_certificate = 4 [deprecated = true];
+
+	//
+	// Fingerprint of admin certificate used to issue token
+	//
+	bytes issuer_fingerprint = 5;
+}
+
+//Represents a single "col/val op col/val" boolean statement
+//Will never be "val op val"
+message FilterClause
+{
+	enum FilterOp
+    {
+        INVALID = 0;
+        OP_EQUAL = 1;
+        OP_NOT_EQUAL = 2;
+        OP_GREATER_THAN = 3;
+        OP_GREATER_THAN_OR_EQUAL = 4;
+        OP_LESS_THAN = 5;
+        OP_LESS_THAN_OR_EQUAL = 6;
+        OP_LIKE = 7;
+        OP_NOT_LIKE = 8;
+        OP_FALSE = 9;
+        OP_TRUE = 10;
+    }
+
+	//Either a column name or a string representation of a literal
+	string lhs = 1;
+	FilterOp op = 2;
+	string rhs = 3;
+	//The types are only meaningful if it is not a column
+	SqlColType lhsType = 4;
+	SqlColType rhsType = 5;
+	bool lhsIsCol = 6;
+	bool rhsIsCol = 7;
+}
+
+//A disjunction is a list of filter clauses
+//It is true if at least one of the filter clauses is true
+message Disjunction
+{
+	repeated FilterClause clause = 1;
+}
+
+//a CNF, if true if every disjunction is true
+message CNF
+{
+	repeated Disjunction disjunct = 1;
+}
+
+//a single vm execution cluster
+message ExecutionCluster
+{
+	//the uuid of the vm cluster
+	bytes vm_cluster_id = 1;
+	//the csn identifying this set of peers as a subset of the cluster
+	uint32 compute_sequence_number = 2;
+	//the set of node ids (participants of the specified vm cluster)
+	repeated uint32 node_ids = 3;
+	// the osn identifying the segment ownership for leaf nodes in the storage cluster
+	uint64 ownership_sequence_number = 4;
+}
+
+//a set of vm execution clusters
+message ExecutionClusters
+{
+	//the level at which this configuration applies
+	repeated ExecutionCluster execution_clusters = 1;
+}
+
+//a (potentially partial) compute configuration, when it is being returned during
+//a query probe operation. This is simply a container message
+message ComputeConfiguration
+{
+	map<uint32, ExecutionClusters> compute_configuration = 1;
+}
+
+//Header that starts of the plan message
+message PlanHeader
+{
+	//A map of column name to it's position (zero-based) in the result set
+	map<string, uint32> cols2pos = 1;
+	//A map from column name to type (uses optimizer types)
+	map<string, SqlColType> cols2Types = 2;
+	double totalCost = 5;
+	//Only used by Spark connector
+	string partitioningCol = 6;
+	//Only used by Spark connector
+	repeated float partitioningPoints = 7;
+	//Only used by Spark connector
+	SqlColType partitioningColType = 8;
+	//Only used by Explain
+	uint64 rsSizeInBytes = 9;
+	//Uniquely identifies the plan
+	string uuid = 10;
+	//Scale factor for plan priority
+	double priority = 11;
+	//Whether or not trace is turned on
+	bool trace = 12;
+	//partitioning offset
+	uint32 partitioning_offset = 13;
+	//branching offset
+	uint32 branching_offset = 14;
+	// query sequence #
+	uint64 querySeq = 15;
+	// partition count, is set by vm while processing  GATHER operator,  prior to sending the plan to downstream peers
+	uint32 partition_count = 16;
+	//index and query memory usage in bytes
+	uint64 indexMemUsage = 17;
+	uint64 queryMemUsage = 18;
+	bool rate_limited = 19; //Deprecated
+	uint32 global_pfactor = 20; 
+	//Only used by Spark connector
+	bool partitioningColNullable = 21;
+	uint32 version = 22;
+	string database = 23;
+	double internalCost = 24;
+	double externalCost = 25;
+	//only used during actual execution, not populated by optimizer/plangen
+	//defines the compute configuration to be used for query
+	map<uint32, ExecutionClusters> compute_configuration = 26;	
+}
+
+//The actual plan sent by the command compiler
+message PlanMessage
+{
+	enum PlanType
+    {
+        INVALID = 0;
+        TKT_PLAN = 1;
+    }
+
+	//Header first
+    PlanHeader header = 1;
+    //The type of the plan
+    PlanType type = 2;
+    //The root operator - this is the last operator
+    //In other words, the data that comes out of here is what is returned to the caller
+    Operator rootNode = 3;
+    //This is only needed for explain
+    //For actual execution we don't even bother generating a plan
+    //If this is set, nothing else will be set
+    bool emptyResultSet = 4;
+}
+
+enum SqlColType
+{
+    INVALID = 0;
+    TYPE_INT = 1; //4 bytes signed
+    TYPE_BIGINT = 2; //8 bytes signed
+    TYPE_FLOAT = 3; //4 bytes float
+    TYPE_DOUBLE = 4; //8 bytes float
+    TYPE_VARCHAR = 5;
+    TYPE_IPV4 = 6;
+    TYPE_TIMESTAMP = 7; //time + date
+    TYPE_DATE = 8; //just date
+    TYPE_BOOLEAN = 9;
+    TYPE_BINARY = 10; //binary string
+    TYPE_SMALLINT = 11; //2 bytes signed
+    TYPE_BYTE = 12; //1 byte signed int
+    //The following types can only appear in intermediate results in an extend operation
+    TYPE_MILLISECONDS = 13;
+    TYPE_SECONDS = 14;
+    TYPE_MINUTES = 15;
+    TYPE_HOURS = 16;
+    TYPE_DAYS = 17;
+    TYPE_MONTHS = 18;
+    TYPE_YEARS = 19;
+    //This type can appear anywhere in the plan, but will go away before the final output that gets returned to the user
+    TYPE_MATRIX = 20;
+    //Indicates a NULL literal known at compile time
+    TYPE_NULL = 21;
+    TYPE_UUID = 22;
+    TYPE_HASH = 23; //Fixed length binary type
+    TYPE_IP = 24; //IPv6 type
+    TYPE_ST_POINT= 25; //ST POINT
+    TYPE_TIME= 26;
+    TYPE_DECIMAL = 27;
+}
+
+//Represents an operator node in the plan
+message Operator
+{
+	enum OperatorType
+    {
+        INVALID = 0;
+		REFERENCE = 1;
+		AGGREGATION_OPERATOR = 2;
+		EXTEND_OPERATOR = 3;
+		GATHER_OPERATOR = 4;
+		INDEX_OPERATOR = 5;
+		LIMIT_OPERATOR = 6;
+		OFFSET_OPERATOR = 7;
+		ORDERED_GATHER_OPERATOR = 8;
+		PROJECT_OUT_OPERATOR = 9;
+		RENAME_OPERATOR = 10;
+		REORDER_OPERATOR = 11;
+		SELECT_OPERATOR = 12;
+		SORT_OPERATOR = 13;
+		ROOT_OPERATOR = 14;
+		MAKE_VECTOR_OPERATOR = 15;
+		UNMAKE_VECTOR_OPERATOR = 16;
+		MATRIX_EXTEND_OPERATOR = 17;
+		TABLE_SCAN_OPERATOR = 18;
+		INCREMENTING_INT_OPERATOR = 19;
+		GENERATE_OPERATOR = 20;
+		SUPER_SELECT_OPERATOR = 21;
+		QUERIES_VIRTUAL_OPERATOR = 22;
+		RANDOM_INT_OPERATOR = 23;
+		COLUMN_EMITTER_OPERATOR = 24;
+		UNION_OPERATOR = 25;
+		INTERSECT_OPERATOR = 26;
+		EXCEPT_OPERATOR = 27;
+		SWITCH_OPERATOR = 28;
+		PRODUCT_OPERATOR = 29;
+		HASH_JOIN_OPERATOR = 30;
+		EOS_OPERATOR = 31;
+		TEE_OPERATOR = 32;
+		SHUFFLE_OPERATOR = 33;
+		BROADCAST_OPERATOR = 34;
+		WINDOW_OPERATOR = 35;
+		ERROR_OPERATOR = 36;
+		INDEX_AGG_OPERATOR = 37;
+		ORDERED_AGG_OPERATOR = 38;
+		INDEX_DISTINCT_OPERATOR = 39;
+		ORDERED_DISTINCT_OPERATOR = 40;
+		INCREMENTING_BIGINT_OPERATOR = 41;
+		INDEX_COUNT_STAR_OPERATOR = 42;
+		GDC_LOOKUP_OP = 43;
+		MODIFY_SCHEMA_OPERATOR = 44;
+		USERS_VIRTUAL_OPERATOR = 45;
+		GROUPS_VIRTUAL_OPERATOR = 46;
+		ROLES_VIRTUAL_OPERATOR = 47;
+		USER_GROUPS_VIRTUAL_OPERATOR = 48;
+		TABLE_CARD_VIRTUAL_OPERATOR = 49;
+		COL_CARD_VIRTUAL_OPERATOR = 50;
+		AVG_COL_SIZE_VIRTUAL_OPERATOR = 51;
+		USER_ROLES_VIRTUAL_OPERATOR = 52;
+		GROUP_ROLES_VIRTUAL_OPERATOR = 53;
+		TABLES_VIRTUAL_OPERATOR = 54;
+		DATABASES_VIRTUAL_OPERATOR = 55;
+		USER_DATABASES_VIRTUAL_OPERATOR = 56;
+		TKT_TABLE_INFO_VIRTUAL_OPERATOR = 57;
+		GROUP_DATABASES_VIRTUAL_OPERATOR = 58;
+		ROLE_DATABASES_VIRTUAL_OPERATOR = 59;
+		TKT_TABLE_CLUSTERING_COLUMN_INDICES_VIRTUAL_OPERATOR = 60;
+		GLOBAL_MAP_TABLE_INFO_VIRTUAL_OPERATOR = 61;
+		COLUMNS_VIRTUAL_OPERATOR = 62;
+		INDEXES_VIRTUAL_OPERATOR = 63;
+		SEGMENT_PART_REDUNDANCY_INFO_VIRTUAL_OPERATOR = 64;
+		STORAGE_SPACES_VIRTUAL_OPERATOR = 65;
+		INDEX_COLUMNS_VIRTUAL_OPERATOR = 66;
+		CLUSTERS_VIRTUAL_OPERATOR = 67;
+		VIEWS_VIRTUAL_OPERATOR = 68;
+		LTS_CLUSTER_INFO_VIRTUAL_OPERATOR = 69;
+		NODES_VIRTUAL_OPERATOR = 70;
+		NODE_CLUSTERS_VIRTUAL_OPERATOR = 71;
+		RIGHTS_VIRTUAL_OPERATOR = 72;
+		DATA_CENTERS_VIRTUAL_OPERATOR = 73;
+		RACKS_VIRTUAL_OPERATOR = 74;
+		SEGMENT_GROUPS_VIRTUAL_OPERATOR = 75;
+		SEGMENTS_VIRTUAL_OPERATOR = 76;
+		STORED_SEGMENTS_VIRTUAL_OPERATOR = 77;
+		SYSTEM_INFORMATION_VIRTUAL_OPERATOR = 78;
+		COL_DIST_VIRTUAL_OPERATOR = 79;
+		MEMORY_MODULE_MODELS_VIRTUAL_OPERATOR = 80;
+		MACHINE_LEARNING_MODELS_VIRTUAL_OPERATOR = 81;
+		SIMPLE_LINEAR_REGRESSION_MODELS_VIRTUAL_OPERATOR = 82;
+		MULTIPLE_LINEAR_REGRESSION_MODELS_VIRTUAL_OPERATOR = 83;
+		SERVICE_ROLES_VIRTUAL_OPERATOR = 84;
+		NODE_CHASSIS_VIRTUAL_OPERATOR = 85;
+		MULTIPLE_LINEAR_REGRESSION_MODEL_SLOPES_VIRTUAL_OPERATOR = 86;
+		MACHINE_LEARNING_MODEL_OPTIONS_VIRTUAL_OPERATOR = 87;
+		NODE_MOTHERBOARDS_VIRTUAL_OPERATOR = 88;
+		MOTHERBOARD_MODELS_VIRTUAL_OPERATOR = 89;
+		NODE_STORAGE_DEVICES_VIRTUAL_OPERATOR = 90;
+		NODE_CPUS_VIRTUAL_OPERATOR = 91;
+		CPU_MODELS_VIRTUAL_OPERATOR = 92;
+		STORAGE_DEVICE_MODELS_VIRTUAL_OPERATOR = 93;
+		NODE_MEMORY_MODULES_VIRTUAL_OPERATOR = 94;
+		NETWORK_INTERFACE_MODELS_VIRTUAL_OPERATOR = 95;
+		NODE_NETWORK_INTERFACES_VIRTUAL_OPERATOR = 96;
+		NETWORK_INTERFACE_USAGE_TYPES_VIRTUAL_OPERATOR = 97;
+		EXTERNAL_CONNECTIONS_VIRTUAL_OPERATOR = 98;
+		HADOOP_FILE_SYSTEM_CONNECTIONS_VIRTUAL_OPERATOR = 99;
+		CHASSIS_MODELS_VIRTUAL_OPERATOR = 100;
+		CHANNEL_ENDPOINT_PARAMETERS_VIRTUAL_OPERATOR = 101;
+		SERVICE_ROLE_CHANNEL_ENDPOINTS_VIRTUAL_OPERATOR = 102;
+		HUGEPAGE_CONFIGURATIONS_VIRTUAL_OPERATOR = 103;
+		BULK_LOAD_JOB_TEMPLATES_VIRTUAL_OPERATOR = 104;
+		BULK_LOAD_JOB_SCHEDULES_VIRTUAL_OPERATOR = 105;
+		HADOOP_FILE_SYSTEM_FILE_PATHS_VIRTUAL_OPERATOR = 106;
+		HADOOP_FILE_SYSTEM_GROUP_REGEXES_VIRTUAL_OPERATOR = 107;
+		HADOOP_FILE_SYSTEM_ORIGIN_PATHS_VIRTUAL_OPERATOR = 108;
+	}
+
+    OperatorType type = 1;
+    //The id of the operator (used for referencing to a previously defined operator)
+    //If type is REFERENCE, then this is the id of the operator being referenced
+    //This is a uuid
+    string id = 2;
+    //The children of this operator - order does matter
+    repeated Operator children = 3;
+    //The columns that come out of this operator
+    repeated string outputColumns = 4;
+    //The types for each of those columns (in the same order)
+    repeated SqlColType outputTypes = 5;
+    //The estimated # of unique values for each col (in the same order)
+    repeated uint64 colCard = 6;
+    //The estimated number of rows produced by this operator
+    uint64 outputCardinality = 7;
+    //The estimated number of bytes of memory needed by this operator (may be zero)
+    uint64 memoryUsage = 8;
+    //The cost for this operator as determined by the optimizer
+    double cost = 9;
+    //If there is a guarantee that the data is sorted when it leaves this operator
+    //The indexes (based on outputColumns) are listed here to specify which columns dictate the sort order
+    repeated uint32 sortOrder = 10;
+    //For all the indexes listed in sortOrder (if any), there is a corresponding entry in sortDirections
+    //Indicating whether data is sorted ascending (true) or descending (false) by that column
+    repeated bool sortDirections = 11;
+    //If there is a guarantee on how the data is partitioned (all rows with the same values in some cols
+    //or set of cols are guaranteed to be on the same node) when it leaves this operator,
+    //the indexes that define the partitioning are listed here
+    repeated uint32 partitioning = 12;
+    //Which output columns are nullable?
+    repeated bool outputIsNullable = 13;
+    uint32 numParents = 14;
+    //the average size of each output column
+    repeated uint32 colSizes = 15;
+
+    // used for vm error testing only when TEST_VM_ERROR is defined
+    enum ErrorType
+    {
+        ERR_UNDEFINED = 0;              //no error
+        ERR_INVALID_DATABLOCK_HDR = 1;	// generate mal-formed datablock for specified partitions so that tryLoad fails
+        ERR_INIT_DATABLOCK_ERROR = 2; // Fails to initialize a datablock
+        ERR_INVALID_PARTITION = 3;	// generate datablocks with invalid partitions for specified partitions
+        ERR_INTERNAL_ERROR = 4;		// trigger INTERNAL_ERROR for specified partitions
+        ERR_INIT_MULTI_DATABLOCK_ERROR = 5;	// Fails to initialize multiple datablocks
+        ERR_BEGIN_PULL = 6;	// trigger INTERNAL_ERROR on the onBeginPull call.
+        ERR_PLAN_COMPILATION_ERROR = 7; //forces an error during plan compilation
+        ERR_EOF_FAILURE = 8; 		// triggers  error during EOF processing
+        ERR_INVALID_PARTITION_OFFSET = 9;	// Invalid partition offset in plan message header
+        ERR_INVALID_BRANCH_OFFSET = 10;		// Invalid branch offset in plan message header
+        ERR_SEND_PLAN_DOWNSTREAM = 11;		// Failure to send plan downstream
+        ERR_SEND_PULL_SIGNAL = 12;		// Failure to send PULL signal downstream
+        ERR_SEND_ABORT_SIGNAL = 13;		// Failure to send ABORT signal downstream
+        ERR_INITIALIZATION_FAILURE = 14; 	// generates and error during initialization of an operator
+        ERR_AP_REQUEST_ERROR = 15; //vm protocol request to AP fails. used for GDC table request from gdc operator
+
+	// TKT I/O operator specific errors
+	ERR_TKT_INVALID_MANIFEST = 30;			// forces an error in beginAcquireTktManifest()
+	ERR_TKT_PARTITION_IO_FAILURE = 31;		// forces an error in onPartitionIo()
+	ERR_TKT_AWAIT_FINALIZATION = 32;		// forces an error when operator enters AWAIT_FINALIZATION state
+	ERR_TKT_ALLOC_OP_BUFFER_FAILURE = 33;		// forces OpBuffer allocation failure
+	ERR_TKT_WAKE_UP_EVENT_FAILURE = 34;		// forces an error while processing Aux WAKE_UP event
+	ERR_TKT_DISK_READ_FAILURE = 35;			// generates error during io operator disk read
+	ERR_TKT_ADD_BUFFER_TO_BLOCK_FAILURE = 36;	// generates error during io operator buffer manipulation
+	ERR_TKT_OOO_BUFFER_FAILURE = 37;		// OOO buffer processing failure
+        ERR_TKT_SEGMENT_INDEX = 38; 			// generates error during io operator doing index searches
+        ERR_TKT_INDEX_CURSOR = 39; 			// generates error during iteration over index results cursor (lck buffer)
+        ERR_MANIFEST_UNAVAILABLE = 40; 		// generates error on notifyTktManifestPartitionAvailable()
+        ERR_INDEX_AGG_GROUP_PROCESSING_SEARCH_FAILURE = 41;	// generates error on indexAggregationGroupIOOperatorInstance_t::executeGroupProcessingStateMachine
+        ERR_INDEX_AGG_GROUP_PROCESSING_BLOCK_START = 42;	// generates error on indexAggregationGroupIOOperatorInstance_t::executeGroupProcessingStateMachine
+        ERR_INDEX_AGG_GROUP_READ_FAILURE = 43;
+    }
+
+    ErrorType errorType = 16;
+    repeated uint32 errorPartition = 17;	// errorPartition = UNIT_MAX => apply the error on all partitions
+    repeated uint32 errorTktLevel = 18;		// 0 => tkt Leaf, >0 => tkt AUX, UINT_MAX => on all tkt levels
+
+    //If true, the operator should run externally
+    bool external = 19;
+    
+    uint32 numDistinctParents = 20;
+    uint64 distance_from_leaf = 21;
+    // these are calculated by level-1(sql-node) vm compilation process
+    uint32 child_index = 22;
+    uint32 branch_index = 23;
+    uint32 partition_index = 24;
+    repeated uint32 partition_counts = 25;
+    repeated string storage_space_uuids = 26;
+
+    oneof request_oneof
+    {
+    	AggregationOperator aggregation_operator = 32;
+    	ExtendOperator extend_operator = 33;
+    	GatherOperator gather_operator = 34;
+    	IndexOperator index_operator = 35;
+    	LimitOperator limit_operator = 36;
+    	OffsetOperator offset_operator = 37;
+    	OrderedGatherOperator ordered_gather_operator = 38;
+    	ProjectOutOperator project_out_operator = 39;
+    	RenameOperator rename_operator = 40;
+    	ReorderOperator reorder_operator = 41;
+    	SelectOperator select_operator = 42;
+    	SortOperator sort_operator = 43;
+    	RootOperator root_operator = 44;
+    	MakeVectorOperator make_vector_operator = 45;
+    	UnmakeVectorOperator unmake_vector_operator = 46;
+    	MatrixExtendOperator matrix_extend_operator = 47;
+    	TableScanOperator table_scan_operator = 48;
+     	IncrementingIntOperator incrementing_int_operator = 49;
+    	GenerateOperator generate_operator = 50;
+    	SuperSelectOperator super_select_operator = 51;
+    	QueriesVirtualOperator queries_virtual_operator = 52;
+    	RandomIntOperator random_int_operator = 53;
+    	ColumnEmitterOperator column_emitter_operator = 54;
+        UnionOperator union_operator = 55;
+        IntersectOperator intersect_operator = 56;
+        ExceptOperator except_operator = 57;
+        SwitchOperator switch_operator = 58;
+        ProductOperator product_operator = 59;
+        HashJoinOperator hash_join_operator = 60;
+        EosOperator eos_operator = 61;
+        TeeOperator tee_operator = 62;
+        ShuffleOperator shuffle_operator = 63;
+        BroadcastOperator broadcast_operator = 64;
+        WindowOperator window_operator = 65;
+        ErrorOperator error_operator = 66;
+        IndexAggOperator index_agg_operator = 67;
+        OrderedAggOperator ordered_agg_operator = 68;
+        IndexDistinctOperator index_distinct_operator = 69;
+        OrderedDistinctOperator ordered_distinct_operator = 70;
+     	IncrementingBigIntOperator incrementing_bigint_operator = 71;
+        IndexCountStarOperator index_count_star_operator = 72;
+        GdcLookupOperator gdc_lookup_operator = 73;
+        ReferenceOperator reference_operator = 74;
+        ModifySchemaOperator modify_schema_operator = 75;
+        SystemConfigurationVirtualOperator system_configuration_virtual_operator = 76;
+        TableCardVirtualOperator table_card_virtual_operator = 77;
+        ColCardVirtualOperator col_card_virtual_operator = 78;
+        AvgColSizeVirtualOperator avg_col_size_virtual_operator = 79;
+        ColDistVirtualOperator col_dist_virtual_operator = 80;
+    }
+
+	//Vector of OOM flags for testing
+    repeated uint64 testoomflags = 200;
+}
+
+message ReferenceOperator
+{
+	//The only thing we track here is the string version of all the types
+	repeated string colTypes = 1;
+	uint32 parent_index = 2;
+}
+
+message AggregationOperator
+{
+	enum AggregationOp
+    {
+        INVALID = 0;
+        AGG_OP_SUM = 1;
+        AGG_OP_COUNT = 2;
+        AGG_OP_COUNT_STAR = 3;
+        AGG_OP_MIN = 4;
+        AGG_OP_MAX = 5;
+        AGG_OP_COUNT_DISTINCT = 6;
+        AGG_OP_SUM_DISTINCT = 7;
+		AGG_OP_COUNT_GDC = 8;
+		AGG_OP_PRODUCT = 9;
+        AGG_OP_PRODUCT_DISTINCT = 10;
+    }
+
+	//The GROUP BY columns - might be empty
+	repeated string keys = 1;
+	//The aggregation operations to perform
+	repeated AggregationOp ops = 2;
+	//The columns to perform each aggregation on
+	//In the same order as ops (and same size)
+	//AGG_OP_COUNT_STAR has no input - so a value in that position is garbage
+	repeated string inputCols = 3;
+	//The name to give to the columns created by each aggregation operation
+	repeated string outputCols = 4;
+	//The types for the outputCols, in the same order
+	repeated string outputColsTypes = 5;
+	//Flag for runtime
+	bool forceOnePartition = 6;
+	//Flag for runtime
+	bool use_vector = 7;
+}
+
+message OrderedAggOperator
+{
+	//The GROUP BY columns - can't be empty
+	repeated string keys = 1;
+	//The aggregation operations to perform
+	repeated AggregationOperator.AggregationOp ops = 2;
+	//The columns to perform each aggregation on
+	//In the same order as ops (and same size)
+	//AGG_OP_COUNT_STAR has no input - so a value in that position is garbage
+	repeated string inputCols = 3;
+	//The name to give to the columns created by each aggregation operation
+	repeated string outputCols = 4;
+	//The types for the outputCols, in the same order
+	repeated string outputColsTypes = 5;
+	GatherLevel level = 6;
+}
+
+//Creates a new column by doing a calculation involving existing columns
+message ExtendOperator
+{
+	string newColName = 1;
+	//Tokens are function calls (+, -, *, / or beginning with ())
+	//Or columns
+	//Or literals
+	repeated string postfixExpressionTokens = 2;
+	//The type of the new column
+	string type = 3;
+}
+
+message PostfixExpression
+{
+	repeated string postfixExpressionTokens = 1;
+}
+
+message ModifySchemaOperator
+{
+	repeated string extendNames = 1; //The names for the result of each postfix expression
+	repeated PostfixExpression expressions = 2; //The postfix expressions
+	repeated string extendTypes = 3; //The result data type for each postfix expression
+	repeated string getRidOf = 4; //The columns to project out - might include some of the extend columns
+	repeated bool expressionNullable = 5; //Whether or not the expressions are nullable
+}
+
+//TODO(N_LEVELS): this is going to need to change when we generify levels
+enum GatherLevel
+{
+    LEVEL_INVALID = 0;
+    SUPER_COORD = 1;
+    COORD = 2;
+}
+
+//Represents a coordinator (or super coord) receiving data from multiple nodes
+//Technically it just does a non-distinct union
+message GatherOperator
+{
+	GatherLevel level = 1;
+}
+
+message OrderedDistinctOperator
+{
+	GatherLevel level = 1;
+	bool emitCount = 2; //If true, emit a count rather than the actual distinct values
+}
+
+//Represents the reading of table data via some index
+message IndexOperator
+{
+	//The table schema
+	string schema = 1;
+	//The table name
+	string tableName = 2;
+	//Which index?
+	string indexName = 3;
+	//Which columns need to be fetched?
+	repeated string colNames = 4;
+	//Filter conditions to apply via index
+	repeated Disjunction filters = 5;
+	//If there is no limit being applied, this is set to -1
+	int64 limitVal = 6;
+	//Database name - a table really needs db.schema.name to be uniquely referenced
+	string db = 7;
+	string table_uuid = 8;
+	string storage_space_uuid = 9;
+	string index_uuid = 10;
+	//Time filter disjunctions
+	repeated Disjunction time_filters = 11;
+	//whether or not this is a segment distinct index
+	bool segmentDistinct = 12;
+	//The string representation of the type of ALL output columns
+	repeated string colTypes = 13;
+}
+
+//Specialized index operator for count(*)
+message IndexCountStarOperator
+{
+	//The table schema
+	string schema = 1;
+	//The table name
+	string tableName = 2;
+	//Which index?
+	string indexName = 3;
+	//Filter conditions on the index columns
+	repeated Disjunction index_filters = 4;
+	//Database name - a table really needs db.schema.name to be uniquely referenced
+	string db = 5;
+	string table_uuid = 6;
+	string storage_space_uuid = 7;
+	string index_uuid = 8;
+	//Time filter disjunctions, guaranteed to be aligned
+	repeated Disjunction time_filters = 9;
+}
+
+//Hybrid operator that combines index and removal of duplicates, and outputs distinct values in sorted order
+message IndexDistinctOperator
+{
+	//The table schema
+	string schema = 1;
+	//The table name
+	string tableName = 2;
+	//Which index?
+	string indexName = 3;
+	//Which columns need to be fetched?
+	repeated string colNames = 4;
+	//Filter conditions to apply via index
+	repeated Disjunction filters = 5;
+	//Database name - a table really needs db.schema.name to be uniquely referenced
+	string db = 7;
+	string table_uuid = 8;
+	string storage_space_uuid = 9;
+	string index_uuid = 10;
+	//Time filter disjunctions
+	repeated Disjunction time_filters = 11;
+	repeated SortPartition point = 12;
+	//The string representation of the type of ALL output columns
+	repeated string colTypes = 13;
+}
+
+//Hybrid operator that combines index and aggregation
+message IndexAggOperator
+{
+	//The table schema
+	string schema = 1;
+	//The table name
+	string tableName = 2;
+	//Which index?
+	string indexName = 3;
+	//Which columns need to be fetched?
+	repeated string colNames = 4;
+	//Filter conditions to apply via index
+	repeated Disjunction filters = 5;
+	//Database name - a table really needs db.schema.name to be uniquely referenced
+	string db = 6;
+	string table_uuid = 7;
+	string storage_space_uuid = 8;
+	string index_uuid = 9;
+	//Time filter disjunctions
+	repeated Disjunction time_filters = 10;
+	//The GROUP BY columns - can't be empty
+	repeated string keys = 11;
+	//The aggregation operations to perform
+	repeated AggregationOperator.AggregationOp ops = 12;
+	//The columns to perform each aggregation on
+	//In the same order as ops (and same size)
+	//AGG_OP_COUNT_STAR has no input - so a value in that position is garbage
+	repeated string inputCols = 13;
+	//The name to give to the columns created by each aggregation operation
+	repeated string outputCols = 14;
+	//The types for the outputCols, in the same order
+	repeated string outputColsTypes = 15;
+	repeated SortPartition point = 16;
+	repeated Disjunction non_index_filters = 17;
+	//The string representation of the type of ALL output columns
+	repeated string colTypes = 18;
+}
+
+//Represents the reading of table data via a scan
+message TableScanOperator
+{
+	//The table schema
+	string schema = 1;
+	//The table name
+	string tableName = 2;
+	//Which columns need to be fetched?
+	repeated string colNames = 3;
+	//If there is no limit being applied, this is set to -1
+	int64 limitVal = 4;
+	//Database name - a table really needs db.schema.name to be uniquely referenced
+	string db = 5;
+	string table_uuid = 6;
+	string storage_space_uuid = 7;
+	//Time filter disjunctions
+	repeated Disjunction time_filters = 8;
+	//The string representation of the type of ALL output columns
+	repeated string colTypes = 9;
+}
+
+//Keep only the first n rows
+message LimitOperator
+{
+	uint64 limitVal = 1;
+	bool exactlyOne = 2;
+	bool grouped = 3; //If true, this is a grouped limit as is used by correlated subqueries
+	repeated string groupingKeys = 4; //And these are the grouping keys
+}
+
+//Skip the first n rows
+message OffsetOperator
+{
+	uint64 offsetVal = 1;
+	bool grouped = 2; //If true, this is a grouped limit as is used by correlated subqueries
+	repeated string groupingKeys = 3; //And these are the grouping keys
+}
+
+//Same as gather operator except that the streams received from each
+//node are already sorted and we need to merge the sorted streams
+message OrderedGatherOperator
+{
+	//The sort columns - order matters
+	repeated string sortKeys = 1;
+	//The directions for each sort col - true = ascending
+	repeated bool directions = 2;
+	GatherLevel level = 3;
+}
+
+//Discard some columns
+message ProjectOutOperator
+{
+	repeated string getRidOf = 1;
+}
+
+//Rename some columns
+message RenameOperator
+{
+	//Map old names to new names
+	map<string, string> old2New = 1;
+}
+
+//Enforces a specific ordering on the columns
+message ReorderOperator
+{
+	repeated string columns = 1;
+}
+
+//Filter out some data
+message SelectOperator
+{
+	Disjunction filter = 1;
+}
+
+//CNF version of SelectOperator
+message SuperSelectOperator
+{
+	//Filter conditions to apply
+	repeated Disjunction filters = 1;
+}
+
+message SortPartition
+{
+	//The values are guaranteed to be in sort key order
+	//There may not be a value for all sort keys though
+	//For example, there may only be a value for the first sort
+	//key, which means we can partition only on that
+	//and we don't need to worry about subsequent sort keys
+	//All partitions are closed on the lower side and open on the higher side
+	repeated float denormVal = 1;
+}
+
+message SortOperator
+{
+	//The sort columns - order matters
+	repeated string sortKeys = 1;
+	//The directions for each sort col - true = ascending
+	repeated bool directions = 2;
+	//If we know we only need the top n rows of the sort
+	//that is noted here
+	//If there is no limit being applied, this is set to -1
+	int64 limitVal = 3;
+	//This defines the list of partitioning points for dividing the sort into streams
+	//There's no guarantees on the size of this
+	//It could be completely empty, which could happen if it look like all the data
+	//has the same sort key - implies that we don't know what to do besides
+	//one sort stream
+	//There is no guarantee that the partitioning points are in order
+	repeated SortPartition point = 4;
+}
+
+message RootOperator
+{
+	//nothing here
+}
+
+message MakeVectorOperator
+{
+	//The input columns that make up the vector
+	repeated string vectorCols = 1;
+	//The name of the new vector column
+	string outName = 2;
+}
+
+message UnmakeVectorOperator
+{
+	//The name of the vector column to unpack
+	string vectorCol = 1;
+	//The names of the columns to create
+	repeated string outNames = 2;
+}
+
+message MatrixExtendOperator
+{
+	string newColName = 1;
+	//Tokens are function calls (+, -, * or beginning with ())
+	//Or columns
+	//Or literals
+	repeated string postfixExpressionTokens = 2;
+	//The type of the new column
+	string type = 3;
+}
+
+
+message GenerateOperator
+{
+	uint64 startTime = 1;
+	double rowsPerSecond = 2;
+	uint64 rowsToGenerate = 3;
+	double clusteringFactor = 4;
+	double clusteringBalanceFactor = 5;
+	uint64 randomSeed = 6;
+	repeated uint32 extraValues = 7;
+	//If there is no limit being applied, this is set to -1
+	int64 limitVal = 8;
+}
+
+message IncrementingIntOperator
+{
+	int32 start = 1;
+	int32 end = 2;
+
+    // if null count is N, and the column is nullable, every Nth
+    // value will be null (e.g. if null_count is 4, the operator
+    // will produce NULL, 1, 2, 3, NULL, 5, 6, 7, NULL...)
+    //
+    // If null count is negative, every Nth value will be NOT null
+    // (e.g. if null_count is -4 the operator will produce
+    // 0, NULL, NULL, NULL, 4, NULL, NULL, NULL, 8...)
+    int32 nullCount = 3;
+}
+
+message IncrementingBigIntOperator
+{
+	int64 start = 1;
+	int64 end = 2;
+
+    // if null count is N, and the column is nullable, every Nth
+    // value will be null (e.g. if null_count is 4, the operator
+    // will produce NULL, 1, 2, 3, NULL, 5, 6, 7, NULL...)
+    //
+    // If null count is negative, every Nth value will be NOT null
+    // (e.g. if null_count is -4 the operator will produce
+    // 0, NULL, NULL, NULL, 4, NULL, NULL, NULL, 8...)
+    int64 nullCount = 3;
+}
+
+message QueriesVirtualOperator
+{
+	//Probably always set to something other than -1, just used to indicate to VM that there should only be
+	//one operator instance of this (and therefore only 1 partition)
+	int64 limitVal = 1;
+	string database = 2;
+}
+
+message RandomIntOperator
+{
+	int32 smallest = 1;
+	int32 largest = 2;
+	uint64 numRows = 3;
+	uint64 numCols = 4;
+	double nullChance = 5; //a value in the range [0, 1] representing the chance for a null value
+}
+
+message TestColumn
+{
+	SqlColType colType = 1;//the type of the column, can't be an interval, matrix, or invalid for use in the column emitter operator
+	uint64 cycleLen = 2;//the length of the cycle for this column, this is the number of times the same value should be emitted before incrementing
+	oneof start_vals
+	{
+		int32 byte_start = 3;//note that this will be cast to an int8_t but protobuf doesnt have an int8 type
+		int32 smallint_start = 4;//note that this will be cast to an int16_t but protobuf doesnt have an int16 type
+		int32 int_start = 5;
+		int64 bigint_start = 6;
+		float float_start = 7;
+		double double_start = 8;
+		bool bool_start = 9;
+		uint32 ipv4_start = 10;
+		string varchar_start = 11;//note that this must be an int32 in string format
+		string binary_start = 12;//note that this must also be an int32 in string format
+		int32 date_start = 13;//note that this must be a valid date
+		int64 timestamp_start = 14;
+	}
+	double nullChance = 15;
+	uint64 nullCycle = 16;
+}
+
+message ColumnEmitterOperator
+{
+	repeated TestColumn columns = 1;
+	uint64 numRows = 2;
+}
+
+message UnionOperator
+{
+    //this flag differentiates UNION from UNION ALL
+    bool all = 1;
+    bool is_switch_union = 2; //Is this the top of a switch block
+	bool not_needed = 3; //If false, this doesn't have to be an exact distinct
+	bool use_vector = 4; //If distinct can be computed with vectors instead of maps
+}
+
+message IntersectOperator
+{
+    //this flag differentiates INTERSECT from INTERSECT ALL
+    bool all = 1;
+}
+
+message ExceptOperator
+{
+    //this flag differentiates EXCEPT from EXCEPT ALL
+    bool all = 1;
+}
+
+message SwitchOperator
+{
+	//the cnf representing each case, the final "else" case is implicit, and if none of these evaluate to true then the implicit else is used
+	//always evaluate the cases in order, ie. check case 0, if thats true then done, if not check case 1, etc
+	repeated CNF filters = 1;
+}
+
+enum JoinType
+{
+	INVALID_JOIN_TYPE = 0;
+	INNER = 1;
+	LEFT = 2;
+	FULL = 3;
+	SEMI = 4;
+	ANTI = 5;
+}
+
+message ProductOperator
+{
+	//Represents a cartesian product or, if there is a filter, a nested loop join
+	repeated Disjunction filters = 1;
+	JoinType type = 2;
+}
+
+message JoinCols
+{
+	repeated string col = 1;
+}
+
+message HashJoinOperator
+{
+	//Each entry represents the equijoin columns for one child, they are in order of the children
+	repeated JoinCols join_cols = 1;
+	//Any additional filters that have to be applied to the join
+	//If there are more than 2 children, it will be empty
+	repeated Disjunction filters = 2;
+	//Type of the join - if there are more than 2 children, it will be INNER
+	JoinType type = 3;
+	//flags indicating that this is actually a correlated count bug correction join
+	bool cbc = 4;
+	bool scalar = 5;
+	bool zero = 6;
+	//Whether or not this is a gdc join
+	bool gdcJoin = 7;
+	//Whether or not this join is matching null keys
+	bool matchNullKeys = 8;
+	// implicitly project gdc keys [(for left child, for right child), ...] each
+	repeated bool implicit_projs = 9;
+}
+
+message EosOperator
+{
+	//The string representation of the type of ALL output columns
+	repeated string colTypes = 1;
+}
+
+message ShuffleOperator
+{
+	//The keys we are hashing by (in order) to determine the destination
+	repeated string keys = 1;
+	uint64 shuffle_rotation = 2;
+}
+
+message TeeOperator
+{
+
+}
+
+message BroadcastOperator
+{
+
+}
+
+message FrameSpec
+{
+	enum FrameType
+    {
+        INVALID = 0;
+        FRAME_TYPE_LEFT_HALF = 1;
+        FRAME_TYPE_RIGHT_HALF = 2;
+        FRAME_TYPE_FULL = 3;
+        FRAME_TYPE_INTERVAL = 4;
+	}
+
+	FrameType frame_type = 1;
+	bool include_peers = 2;
+	//Only used for frame type interval
+	int64 relative_start = 3;
+	int64 relative_end = 4;
+}
+
+message WindowOperator
+{
+	enum WindowOp
+    {
+        INVALID = 0;
+        //Takes a normal column argument
+        WINDOW_OP_SUM = 1;
+        WINDOW_OP_COUNT = 2;
+        //Takes no argument
+        WINDOW_OP_COUNT_STAR = 3;
+        //Takes a normal column argument
+        WINDOW_OP_MIN = 4;
+        WINDOW_OP_MAX = 5;
+        //Takes no argument
+        WINDOW_OP_RANK = 6;
+        WINDOW_OP_DENSE_RANK = 7;
+        WINDOW_OP_ROW_NUMBER = 8;
+        WINDOW_OP_FIRST_VALUE = 9;
+        WINDOW_OP_LAST_VALUE = 10;
+        //Takes an argument that must be constant and positive integer
+        WINDOW_OP_NTH_VALUE = 11;
+        //Takes a normal column argument plus a constant positive integer argument
+        WINDOW_OP_LEAD = 12;
+        WINDOW_OP_LAG = 13;
+        //Takes no argument
+        WINDOW_OP_CUME_DIST = 14;
+        WINDOW_OP_PERCENT_RANK = 15;
+        //Takes an argument that must be constant and positive integer
+        WINDOW_OP_NTILE = 16;
+        //Takes a normal column argument and an argument that must be constant and be floating point between 0 and 1
+        WINDOW_OP_PERCENTILE = 17;
+        //Takes a normal column argument
+        WINDOW_OP_RATIO_TO_REPORT = 18;
+        WINDOW_OP_FIRST_VALUE_IGNORE_NULLS = 19;
+        WINDOW_OP_LAST_VALUE_IGNORE_NULLS = 20;
+        WINDOW_OP_NTH_VALUE_IGNORE_NULLS = 21;
+        WINDOW_OP_PRODUCT = 22;
+    }
+
+	//Partitioning columns
+	repeated string partitioning_cols = 1;
+	//The sort columns - already includes partitioning cols if any
+	repeated string sortKeys = 2;
+	//The directions for each sort col - true = ascending
+	repeated bool directions = 3;
+	//The aggregation operations to perform
+	repeated WindowOp ops = 4;
+	//The columns to perform each aggregation on (for operations that take a normal column argument)
+	//In the same order as ops (and same size)
+	//The following operations have no input, so any value in those positions is garbage
+	//WINDOW_OP_COUNT_STAR
+	//WINDOW_OP_RANK
+	//WINDOW_OP_DENSE_RANK
+	//WINDOW_OP_ROW_NUMBER
+	//WINDOW_OP_FIRST_VALUE
+	//WINDOW_OP_LAST_VALUE
+	//WINDOW_OP_CUME_DIST
+	//WINDOW_OP_PERCENT_RANK
+	//Additionally these operations only have constant input values, not a column input - so there is nothing here
+	//WINDOW_OP_NTH_VALUE
+	//WINDOW_OP_NTILE
+	repeated string inputCols = 5;
+	//The name to give to the columns created by each aggregation operation
+	repeated string outputCols = 6;
+	//The types for the outputCols, in the same order
+	repeated string outputColsTypes = 7;
+	//The frame specification for each op, in the same order
+	repeated FrameSpec frames = 8;
+	//For functions that take a constant integer argument - they are here - there's an entry for every op even if it isn't used
+	repeated int64 constIntArgs = 9;
+	//For functions that take a constant floating point argument - they are here - there's an entry for every op even if it isn't used
+	repeated double constFloatArgs = 10;
+	bool limit1 = 11; //Is there an immediate following limit 1?
+}
+
+message ErrorOperator
+{
+	bool invalidDataBlock = 1;
+	uint32 partitionCount = 2;
+	int32 sqlErrorCode = 3;
+}
+
+message GdcLookupOperator
+{
+	//a string identifier that is the uuid of this lookup table, and the version number(higher is newer)
+	string id = 1;
+	int64 version = 2;
+}
+
+message SystemConfigurationVirtualOperator
+{
+	// The security token of the logged-in user
+	securityToken security_token = 1;
+}
+
+//Column info used for stats requests 
+message StatsColInfo 
+{
+	string col_uuid = 1;
+	uint64 index = 2;
+	int32 derived_type = 3;
+}
+
+//Table info used for stats requests
+message StatsTableInfo 
+{
+	string table_uuid = 1;
+	string storage_space_uuid = 2;
+	repeated StatsColInfo columns = 3;
+}
+
+//Info used for stats requests
+message StatsRequestInfo 
+{
+	repeated StatsTableInfo stats_tables_info = 1;
+}
+
+message TableCardVirtualOperator
+{
+ 	StatsRequestInfo statsInfo = 1;
+}
+
+message ColCardVirtualOperator
+{
+ 	StatsRequestInfo statsInfo = 1;
+}
+
+message ColDistVirtualOperator
+{
+ 	StatsRequestInfo statsInfo = 1;
+}
+
+message AvgColSizeVirtualOperator
+{
+ 	StatsRequestInfo statsInfo = 1;
+}
+
