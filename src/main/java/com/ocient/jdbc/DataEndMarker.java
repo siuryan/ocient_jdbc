@@ -1,6 +1,5 @@
 package com.ocient.jdbc;
 
-public class DataEndMarker
-{
+public class DataEndMarker {
 
 }

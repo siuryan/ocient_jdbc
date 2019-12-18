@@ -22,27 +22,23 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
-public class XGPreparedStatement extends XGStatement implements PreparedStatement
-{
+public class XGPreparedStatement extends XGStatement implements PreparedStatement {
 	private final String sql;
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final boolean force,
-			final boolean oneShotForce)
-	{
+			final boolean oneShotForce) {
 		super(conn, force, oneShotForce);
 		this.sql = sql;
 	}
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final int arg1, final int arg2,
-			final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException
-	{
+			final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException {
 		super(conn, arg1, arg2, force, oneShotForce);
 		this.sql = sql;
 	}
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final int arg1, final int arg2,
-			final int arg3, final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException
-	{
+			final int arg3, final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException {
 		super(conn, arg1, arg2, arg3, force, oneShotForce);
 		this.sql = sql;
 	}
@@ -54,8 +50,7 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void clearParameters() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -109,13 +104,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setBigDecimal(final int parameterIndex, final BigDecimal x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -155,13 +148,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setBoolean(final int parameterIndex, final boolean x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -170,13 +161,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setByte(final int parameterIndex, final byte x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -185,13 +174,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setBytes(final int parameterIndex, final byte[] x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -232,13 +219,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setDate(final int parameterIndex, final Date x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -252,13 +237,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setDouble(final int parameterIndex, final double x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -267,13 +250,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setFloat(final int parameterIndex, final float x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -282,13 +263,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setInt(final int parameterIndex, final int x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -297,13 +276,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setLong(final int parameterIndex, final long x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -343,13 +320,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setNull(final int parameterIndex, final int sqlType) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -363,13 +338,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setObject(final int parameterIndex, final Object x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -399,13 +372,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setShort(final int parameterIndex, final short x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -419,13 +390,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setString(final int parameterIndex, final String x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 
@@ -434,17 +403,15 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setTime(final int parameterIndex, final Time x) throws SQLException {
-		if (closed)
-        {
-            throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
-        }
+		if (closed) {
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
 
-        while (parameterIndex - 1 > parms.size())
-        {
-            parms.add(null);
-        }
+		while (parameterIndex - 1 > parms.size()) {
+			parms.add(null);
+		}
 
-        parms.add(parameterIndex - 1, x);
+		parms.add(parameterIndex - 1, x);
 	}
 
 	@Override
@@ -454,13 +421,11 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
 	@Override
 	public void setTimestamp(final int parameterIndex, final Timestamp x) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		while (parameterIndex - 1 > parms.size())
-		{
+		while (parameterIndex - 1 > parms.size()) {
 			parms.add(null);
 		}
 

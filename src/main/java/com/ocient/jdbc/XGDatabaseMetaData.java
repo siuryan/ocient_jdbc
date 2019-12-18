@@ -8,12 +8,10 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 
-public class XGDatabaseMetaData implements DatabaseMetaData
-{
+public class XGDatabaseMetaData implements DatabaseMetaData {
 	private final Connection conn;
 
-	public XGDatabaseMetaData(final Connection conn)
-	{
+	public XGDatabaseMetaData(final Connection conn) {
 		this.conn = conn;
 	}
 
@@ -203,8 +201,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 		// and don't report index statistics so have no use for approximate
 		boolean test = false;
 		String wireSchema = "";
-		if (schema != null)
-		{
+		if (schema != null) {
 			test = true;
 			wireSchema = schema;
 		}
@@ -437,22 +434,22 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_TABLES, schemaPattern, tableNamePattern,
 				"", true);
 	}
-	
+
 	public ResultSet getSystemTables(final String catalog, final String schemaPattern, final String tableNamePattern,
 			final String[] types) throws SQLException {
 		// we only have one table type
 		return ((XGStatement) conn.createStatement()).fetchSystemMetadataResultSet(
-				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SYSTEM_TABLES, schemaPattern, tableNamePattern,
-				"", true);
+				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SYSTEM_TABLES, schemaPattern,
+				tableNamePattern, "", true);
 	}
-		
-	public ResultSet getViews(final String catalog, final String schemaPattern, final String viewNamePattern, 
+
+	public ResultSet getViews(final String catalog, final String schemaPattern, final String viewNamePattern,
 			final String[] types) throws SQLException {
 		return ((XGStatement) conn.createStatement()).fetchSystemMetadataResultSet(
-				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_VIEWS, schemaPattern, viewNamePattern, 
-				"", true); 
+				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_VIEWS, schemaPattern, viewNamePattern, "",
+				true);
 	}
-		
+
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
@@ -829,8 +826,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsResultSetConcurrency(final int type, final int concurrency) throws SQLException {
-		if (type == ResultSet.TYPE_FORWARD_ONLY && concurrency == ResultSet.CONCUR_READ_ONLY)
-		{
+		if (type == ResultSet.TYPE_FORWARD_ONLY && concurrency == ResultSet.CONCUR_READ_ONLY) {
 			return true;
 		}
 
@@ -839,8 +835,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsResultSetHoldability(final int holdability) throws SQLException {
-		if (holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT)
-		{
+		if (holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT) {
 			return true;
 		}
 
@@ -849,8 +844,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsResultSetType(final int type) throws SQLException {
-		if (type == ResultSet.TYPE_FORWARD_ONLY)
-		{
+		if (type == ResultSet.TYPE_FORWARD_ONLY) {
 			return true;
 		}
 
@@ -934,8 +928,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsTransactionIsolationLevel(final int level) throws SQLException {
-		if (level == Connection.TRANSACTION_NONE)
-		{
+		if (level == Connection.TRANSACTION_NONE) {
 			return true;
 		}
 
