@@ -5,10 +5,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 import java.util.TreeMap;
-<<<<<<< HEAD
-=======
-import java.math.BigDecimal;
->>>>>>> 224b50a7964b25942082ec6b8e612ce43f0c62a7
 
 public class XGResultSetMetaData implements ResultSetMetaData {
 	public final Map<String, Integer> cols2Pos;
