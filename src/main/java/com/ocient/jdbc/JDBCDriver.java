@@ -1,17 +1,14 @@
 package com.ocient.jdbc;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
-import java.util.jar.Manifest;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,22 +16,16 @@ import java.util.logging.SimpleFormatter;
 
 public class JDBCDriver implements Driver {
 
-	private static String version;
+	// FIXME - need to determine where this comes from
+	private static String version = "4.0.0";
 	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
 	private String logFileName;
 	private FileHandler logHandler;
 
 	static {
 		try {
-			final Class<JDBCDriver> cls = JDBCDriver.class;
-			final String clsPath = cls.getResource(cls.getSimpleName() + ".class").toString();
-			final String mPath = clsPath.substring(0, clsPath.lastIndexOf("!") + 1) + "/META-INF/MANIFEST.MF";
-			final InputStream i = new URL(mPath).openStream();
-			version = (new Manifest(i)).getMainAttributes().getValue("Implementation-Version");
-			i.close();
-
 			DriverManager.registerDriver(new JDBCDriver());
-		} catch (final Exception e) {
+		} catch (final SQLException e) {
 			e.printStackTrace(System.err);
 		}
 	}
