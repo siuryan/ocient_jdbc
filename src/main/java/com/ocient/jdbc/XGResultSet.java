@@ -38,8 +38,7 @@ import com.ocient.jdbc.proto.ClientWireProtocol.FetchData;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 
-public class XGResultSet implements ResultSet
-{
+public class XGResultSet implements ResultSet {
 	private static int bytesToInt(final byte[] val) {
 		final int ret = java.nio.ByteBuffer.wrap(val).getInt();
 		return ret;
@@ -69,8 +68,7 @@ public class XGResultSet implements ResultSet
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
 
-	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception
-	{
+	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
@@ -78,8 +76,7 @@ public class XGResultSet implements ResultSet
 	}
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
-			final ClientWireProtocol.ResultSet re) throws Exception
-	{
+			final ClientWireProtocol.ResultSet re) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
@@ -117,8 +114,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void clearWarnings() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -127,18 +123,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void close() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			return;
 		}
 
-		try
-		{
+		try {
 			closed = true;
 			sendCloseRS();
-		}
-		catch (final Exception e)
-		{
+		} catch (final Exception e) {
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -150,14 +142,12 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int findColumn(final String columnLabel) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -193,35 +183,30 @@ public class XGResultSet implements ResultSet
 	public BigDecimal getBigDecimal(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -273,34 +258,29 @@ public class XGResultSet implements ResultSet
 	public boolean getBoolean(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return false;
 		}
 
-		if (!(col instanceof Boolean))
-		{
+		if (!(col instanceof Boolean)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -316,35 +296,30 @@ public class XGResultSet implements ResultSet
 	public byte getByte(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
-				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
-		{
+				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -361,34 +336,29 @@ public class XGResultSet implements ResultSet
 	public byte[] getBytes(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof byte[]))
-		{
+		if (!(col instanceof byte[])) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -422,8 +392,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getConcurrency() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -439,34 +408,29 @@ public class XGResultSet implements ResultSet
 	public Date getDate(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -492,34 +456,29 @@ public class XGResultSet implements ResultSet
 	public double getDouble(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -533,14 +492,12 @@ public class XGResultSet implements ResultSet
 	}
 
 	public ArrayList<Object> getEntireRow() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -549,8 +506,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -559,8 +515,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -571,35 +526,30 @@ public class XGResultSet implements ResultSet
 	public float getFloat(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -614,8 +564,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getHoldability() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -626,34 +575,29 @@ public class XGResultSet implements ResultSet
 	public int getInt(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -670,20 +614,15 @@ public class XGResultSet implements ResultSet
 		final byte[] inMsg = new byte[4];
 
 		int count = 0;
-		while (count < 4)
-		{
-			try
-			{
+		while (count < 4) {
+			try {
 				final int temp = conn.in.read(inMsg, count, 4 - count);
-				if (temp == -1)
-				{
+				if (temp == -1) {
 					throw SQLStates.UNEXPECTED_EOF.clone();
 				}
 
 				count += temp;
-			}
-			catch (final Exception e)
-			{
+			} catch (final Exception e) {
 				throw SQLStates.NETWORK_COMMS_ERROR.clone();
 			}
 		}
@@ -695,35 +634,30 @@ public class XGResultSet implements ResultSet
 	public long getLong(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -738,19 +672,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		try
-		{
+		try {
 			return new XGResultSetMetaData(cols2Pos, pos2Cols, cols2Types);
-		}
-		catch (final Exception e)
-		{
-			if (e instanceof SQLException)
-			{
+		} catch (final Exception e) {
+			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
 
@@ -759,11 +688,11 @@ public class XGResultSet implements ResultSet
 	}
 
 	/*
-	 * Returns true if it actually got data, false if it just received a zero size (ping) block of data
+	 * Returns true if it actually got data, false if it just received a zero size
+	 * (ping) block of data
 	 */
 	private boolean getMoreData() throws SQLException {
-		try
-		{
+		try {
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
 			builder.setFetchSize(fetchSize);
@@ -776,7 +705,8 @@ public class XGResultSet implements ResultSet
 			wrapper.writeTo(conn.out);
 			conn.out.flush();
 
-			// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
+			// get confirmation and data (fetchSize rows or zero size result set or
+			// terminated early with a DataEndMarker)
 			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
 			final int length = getLength();
 			final byte[] data = new byte[length];
@@ -786,11 +716,8 @@ public class XGResultSet implements ResultSet
 			final ResponseType rType = response.getType();
 			processResponseType(rType, response);
 			return mergeData(fdr.getResultSet());
-		}
-		catch (final Exception e)
-		{
-			if (e instanceof SQLException)
-			{
+		} catch (final Exception e) {
+			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
 
@@ -832,27 +759,23 @@ public class XGResultSet implements ResultSet
 	public Object getObject(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 		}
 
@@ -896,19 +819,16 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getRow() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1)
-		{
+		if (position == -1) {
 			return 0;
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return 0;
 		}
 
@@ -929,35 +849,30 @@ public class XGResultSet implements ResultSet
 	public short getShort(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
-				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
-		{
+				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -992,8 +907,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Statement getStatement() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1004,34 +918,29 @@ public class XGResultSet implements ResultSet
 	public String getString(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof String))
-		{
+		if (!(col instanceof String)) {
 			col = col.toString();
 		}
 
@@ -1047,38 +956,33 @@ public class XGResultSet implements ResultSet
 	public Time getTime(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Time))
-		{
+		if (!(col instanceof Time)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (Time)col;
+		return (Time) col;
 	}
 
 	@Override
@@ -1088,7 +992,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Time getTime(final String columnLabel) throws SQLException {
-        return getTime(cols2Pos.get(columnLabel) + 1);
+		return getTime(cols2Pos.get(columnLabel) + 1);
 	}
 
 	@Override
@@ -1100,34 +1004,29 @@ public class XGResultSet implements ResultSet
 	public Timestamp getTimestamp(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -1151,8 +1050,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getType() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1181,21 +1079,18 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (warnings.size() == 0)
-		{
+		if (warnings.size() == 0) {
 			return null;
 		}
 
 		final SQLWarning retval = warnings.get(0);
 		SQLWarning current = retval;
 		int i = 1;
-		while (i < warnings.size())
-		{
+		while (i < warnings.size()) {
 			current.setNextWarning(warnings.get(i));
 			current = warnings.get(i);
 			i++;
@@ -1211,29 +1106,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isAfterLast() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1 && rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (position == -1 && rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(rs.size() - 1);
-		if (!(row instanceof DataEndMarker))
-		{
+		if (!(row instanceof DataEndMarker)) {
 			return false;
 		}
 
-		if (position < firstRowIs + rs.size() - 1)
-		{
+		if (position < firstRowIs + rs.size() - 1) {
 			return false;
 		}
 
-		if (position > 0)
-		{
+		if (position > 0) {
 			return true;
 		}
 
@@ -1242,24 +1133,21 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position != -1)
-		{
+		if (position != -1) {
 			return false;
 		}
 
-		if (rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(0);
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
 		}
 
@@ -1273,24 +1161,21 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isFirst() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position != 0)
-		{
+		if (position != 0) {
 			return false;
 		}
 
-		if (rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(0);
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
 		}
 
@@ -1311,9 +1196,8 @@ public class XGResultSet implements ResultSet
 	public boolean last() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
-	
-	private boolean isBufferDem(ByteBuffer bb)
-	{
+
+	private boolean isBufferDem(ByteBuffer bb) {
 		return bb.limit() > 8 && bb.get(8) == 0;
 	}
 
@@ -1342,11 +1226,12 @@ public class XGResultSet implements ResultSet
 		bb.get(rawPackedBcdData);
 
 		// translate BCD -> character array of numerals
-		// leave room for the sign character, but don't bother dealing with scale and decimal point here
+		// leave room for the sign character, but don't bother dealing with scale and
+		// decimal point here
 		char[] formedDecimalString = new char[precision + 1];
 
 		// sign character
-		boolean isPositive = ((rawPackedBcdData[bytesNeeded-1] & 0x0f) == 0x0c);
+		boolean isPositive = ((rawPackedBcdData[bytesNeeded - 1] & 0x0f) == 0x0c);
 		formedDecimalString[0] = isPositive ? '+' : '-';
 
 		// set up starting indices for reading digits out
@@ -1376,58 +1261,49 @@ public class XGResultSet implements ResultSet
 		// set scale now, right at the end
 		return ((new BigDecimal(formedDecimalString)).movePointLeft(scale));
 	}
-	
+
 	/*
-	 * Returns true if we actually received data, false if there was no data to merge
+	 * Returns true if we actually received data, false if there was no data to
+	 * merge
 	 */
 	private boolean mergeData(final ClientWireProtocol.ResultSet re) throws SQLException {
 		final List<ByteString> buffers = re.getBlobsList();
 		this.rs.clear();
-		for (final ByteString buffer : buffers)
-		{
+		for (final ByteString buffer : buffers) {
 			ByteBuffer bb = buffer.asReadOnlyByteBuffer();
-			if (isBufferDem(bb))
-			{
+			if (isBufferDem(bb)) {
 				rs.add(new DataEndMarker());
-			}
-			else
-			{
+			} else {
 				int numRows = bb.getInt(0);
 				int offset = 4;
-				for (int i = 0; i < numRows; i++)
-				{
-					//Process this row
+				for (int i = 0; i < numRows; i++) {
+					// Process this row
 					final ArrayList<Object> alo = new ArrayList<>();
 					int rowLength = bb.getInt(offset);
 					int end = offset + rowLength;
 					offset += 4;
-					
-					while (offset < end)
-					{
-						//Get type tag
+
+					while (offset < end) {
+						// Get type tag
 						byte type = bb.get(offset);
 						offset++;
-						if (type == 1) //INT
+						if (type == 1) // INT
 						{
 							alo.add(bb.getInt(offset));
 							offset += 4;
-						}
-						else if (type == 2) //LONG
+						} else if (type == 2) // LONG
 						{
 							alo.add(bb.getLong(offset));
 							offset += 8;
-						}
-						else if (type == 3) //FLOAT
+						} else if (type == 3) // FLOAT
 						{
 							alo.add(Float.intBitsToFloat(bb.getInt(offset)));
 							offset += 4;
-						}
-						else if (type == 4) //DOUBLE
+						} else if (type == 4) // DOUBLE
 						{
 							alo.add(Double.longBitsToDouble(bb.getLong(offset)));
 							offset += 8;
-						}
-						else if (type == 5) //STRING
+						} else if (type == 5) // STRING
 						{
 							int stringLength = bb.getInt(offset);
 							offset += 4;
@@ -1436,22 +1312,18 @@ public class XGResultSet implements ResultSet
 							bb.get(dst);
 							alo.add(new String(dst, Charsets.UTF_8));
 							offset += stringLength;
-						}
-						else if (type == 6) //Timestamp
+						} else if (type == 6) // Timestamp
 						{
 							alo.add(new Date(bb.getLong(offset)));
 							offset += 8;
-						}
-						else if (type == 7) //Null
+						} else if (type == 7) // Null
 						{
 							alo.add(null);
-						}
-						else if (type == 8) //BOOL
+						} else if (type == 8) // BOOL
 						{
 							alo.add((bb.get(offset) != 0));
 							offset++;
-						}
-						else if (type == 9) //BINARY
+						} else if (type == 9) // BINARY
 						{
 							int stringLength = bb.getInt(offset);
 							offset += 4;
@@ -1460,39 +1332,33 @@ public class XGResultSet implements ResultSet
 							bb.get(dst);
 							alo.add(dst);
 							offset += stringLength;
-						}
-						else if (type == 10) //BYTE
+						} else if (type == 10) // BYTE
 						{
 							alo.add(bb.get(offset));
 							offset++;
-						}
-						else if (type == 11) //SHORT
+						} else if (type == 11) // SHORT
 						{
 							alo.add(bb.getShort(offset));
 							offset += 2;
-						}
-                        else if (type == 12) //TIME
-                        {
-                         	alo.add(new Time(bb.getLong(offset)));
-                         	offset += 8;
-                        }
-						else if (type == 13) //DECIMAL
+						} else if (type == 12) // TIME
+						{
+							alo.add(new Time(bb.getLong(offset)));
+							offset += 8;
+						} else if (type == 13) // DECIMAL
 						{
 							int precision = bb.get(offset);
 							alo.add(getDecimalFromBuffer(bb, offset));
-							offset += (2 + bcdLength(precision)); 
-						}
-						else
-						{
+							offset += (2 + bcdLength(precision));
+						} else {
 							throw SQLStates.INVALID_COLUMN_TYPE.clone();
 						}
 					}
-					
+
 					rs.add(alo);
 				}
 			}
 		}
-		
+
 		return rs.size() > 0;
 	}
 
@@ -1508,36 +1374,30 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean next() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		position++;
 
-		if (firstRowIs - 1 + rs.size() < position)
-		{
-			if (rs.size() > 0)
-			{
+		if (firstRowIs - 1 + rs.size() < position) {
+			if (rs.size() > 0) {
 				final Object row = rs.get(rs.size() - 1);
-				if (row instanceof DataEndMarker)
-				{
+				if (row instanceof DataEndMarker) {
 					return false;
 				}
 			}
 
 			// call to get more data
-			while (!getMoreData()) {}
+			while (!getMoreData()) {
+			}
 			firstRowIs = position;
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
-		}
-		else
-		{
+		} else {
 			return true;
 		}
 	}
@@ -1549,19 +1409,14 @@ public class XGResultSet implements ResultSet
 
 	private void processResponseType(final ResponseType rType, final ConfirmationResponse response)
 			throws SQLException {
-		if (rType.equals(ResponseType.INVALID))
-		{
+		if (rType.equals(ResponseType.INVALID)) {
 			throw SQLStates.INVALID_RESPONSE_TYPE.clone();
-		}
-		else if (rType.equals(ResponseType.RESPONSE_ERROR))
-		{
+		} else if (rType.equals(ResponseType.RESPONSE_ERROR)) {
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
 			throw new SQLException(reason, sqlState, code);
-		}
-		else if (rType.equals(ResponseType.RESPONSE_WARN))
-		{
+		} else if (rType.equals(ResponseType.RESPONSE_WARN)) {
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
@@ -1572,15 +1427,11 @@ public class XGResultSet implements ResultSet
 	private void readBytes(final byte[] bytes) throws Exception {
 		int count = 0;
 		final int size = bytes.length;
-		while (count < size)
-		{
+		while (count < size) {
 			final int temp = conn.in.read(bytes, count, bytes.length - count);
-			if (temp == -1)
-			{
+			if (temp == -1) {
 				throw SQLStates.UNEXPECTED_EOF.clone();
-			}
-			else
-			{
+			} else {
 				count += temp;
 			}
 		}
@@ -1611,8 +1462,8 @@ public class XGResultSet implements ResultSet
 		conn.out.flush();
 
 		// receive response
-		final ClientWireProtocol.FetchMetadataResponse.Builder fmdr =
-				ClientWireProtocol.FetchMetadataResponse.newBuilder();
+		final ClientWireProtocol.FetchMetadataResponse.Builder fmdr = ClientWireProtocol.FetchMetadataResponse
+				.newBuilder();
 		final int length = getLength();
 		final byte[] data = new byte[length];
 		readBytes(data);
@@ -1623,16 +1474,14 @@ public class XGResultSet implements ResultSet
 		cols2Pos = fmdr.getCols2PosMap();
 		cols2Types = fmdr.getCols2TypesMap();
 		pos2Cols = new TreeMap<>();
-		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
-		{
+		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet()) {
 			pos2Cols.put(entry.getValue(), entry.getKey());
 		}
 	}
 
 	@Override
 	public boolean rowDeleted() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1641,8 +1490,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean rowInserted() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1651,8 +1499,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean rowUpdated() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1668,41 +1515,34 @@ public class XGResultSet implements ResultSet
 		b2.setCloseResultSet(msg);
 		final Request wrapper = b2.build();
 
-		try
-		{
+		try {
 			conn.out.write(intToBytes(wrapper.getSerializedSize()));
 			wrapper.writeTo(conn.out);
 			conn.out.flush();
 			getStandardResponse();
-		}
-		catch (final IOException e)
-		{
+		} catch (final IOException e) {
 			// Doesn't matter...
 		}
 	}
 
 	@Override
 	public void setFetchDirection(final int direction) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (direction != ResultSet.FETCH_FORWARD)
-		{
+		if (direction != ResultSet.FETCH_FORWARD) {
 			throw new SQLFeatureNotSupportedException();
 		}
 	}
 
 	@Override
 	public void setFetchSize(final int rows) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (rows <= 0)
-		{
+		if (rows <= 0) {
 			throw SQLStates.INVALID_ARGUMENT.clone();
 		}
 
@@ -2140,8 +1980,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean wasNull() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
