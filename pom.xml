@@ -48,6 +48,16 @@
     <developerConnection>scm:git:ssh://github.com:simpligility/ossrh-demo.git</developerConnection>
     <url>http://github.com/simpligility/ossrh-demo/tree/master</url>
   </scm>
+  <distributionManagement>
+    <snapshotRepository>
+     <id>ossrh</id>
+     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+     <id>ossrh</id>
+     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
   <properties>
     <protoc>protoc</protoc>
   </properties>
@@ -82,8 +92,8 @@
         <extensions>true</extensions>
         <configuration>
           <checkStaleness>true</checkStaleness>
-		  <protocExecutable>${protoc}</protocExecutable>
-	    </configuration>
+          <protocExecutable>${protoc}</protocExecutable>
+        </configuration>
         <executions>
           <execution>
             <id>protobuf-compile</id>
@@ -101,6 +111,13 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+        </configuration>
+        </plugin>
     </plugins>
   </build>
 </project>
