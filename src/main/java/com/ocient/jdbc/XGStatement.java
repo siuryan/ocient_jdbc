@@ -37,6 +37,8 @@ import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
 import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
+import com.google.protobuf.util.JsonFormat;
+
 
 public class XGStatement implements Statement {
 	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
@@ -182,13 +184,64 @@ public class XGStatement implements Statement {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	@Override
+	@Override 
 	public int[] executeBatch() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
 
+	private static boolean startsWithIgnoreCase(final String in, final String cmp) {
+		int firstNonParentheses = 0;
+		int len = in.length();
+		while (firstNonParentheses < len && in.charAt(firstNonParentheses) == '(') {
+			firstNonParentheses++;
+		}
+		if (in.substring(firstNonParentheses).toUpperCase().startsWith(cmp.toUpperCase())) {
+			return true;
+		}
+
+		return false;
+	}	
+
 	@Override
 	public ResultSet executeQuery(final String sql) throws SQLException {
+		String explain = "";
+		boolean isExplain = false;
+		if (startsWithIgnoreCase(sql, "EXPLAIN JSON")) {
+			final String sqlQuery = sql.substring("EXPLAIN JSON" .length()).trim();
+			try {
+				//get the plan in proto format and convert it to its Json representation
+				final PlanMessage pm = explain(sqlQuery);
+				explain = JsonFormat.printer().print(pm);
+			} catch (Exception e) {
+				throw SQLStates.newGenericException(e);
+			}
+			isExplain = true;
+		}
+		else if (startsWithIgnoreCase(sql, "EXPLAIN")) {
+			final String sqlQuery = sql.substring("EXPLAIN ".length()).trim();
+
+			//get the plan in proto format and convert it to its google proto buffer string representation
+			final PlanMessage pm = explain(sqlQuery);
+			explain = pm.toString();
+			isExplain = true;
+		}
+
+		if(isExplain) {
+			//split the proto string using the line break delimiter and build an one string column resultset.
+			ArrayList<Object> rs = new ArrayList<>();
+			String lines[] = explain.split("\\r?\\n");
+
+			for(int i = 0; i < lines.length; i++) {
+				String str = lines[i];
+				ArrayList<Object> row = new ArrayList<>();
+				row.add(str);
+				rs.add(row);
+			}
+			result = conn.rs = new XGResultSet(conn, rs, this);
+			this.updateCount = -1;
+			return result;
+		}
+
 		sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false);
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);

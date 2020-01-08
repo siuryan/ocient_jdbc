@@ -800,21 +800,30 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
+		Statement stmt = null;
+		ResultSet rs = null;
 
 		try {
-			final Statement stmt = conn.createStatement();
+			stmt = conn.createStatement();
 			start = System.currentTimeMillis();
-			final String sql = cmd.substring("EXPLAIN ".length()).trim();
-			final PlanMessage pm = ((XGStatement) stmt).explain(sql);
+			rs = stmt.executeQuery(cmd);
 
-			System.out.println(pm);
-			printWarnings(stmt);
+			while (rs.next()) {
+				String planLine = rs.getString(1);
+				System.out.println(planLine);
+			}
 			end = System.currentTimeMillis();
 
+			rs.close();
 			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
+			try {
+					rs.close();
+					stmt.close();
+			} catch (Exception f) {
+			}
 			System.out.println("Error: " + e.getMessage());
 		}
 	}

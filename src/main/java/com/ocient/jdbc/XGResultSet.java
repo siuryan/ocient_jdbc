@@ -53,7 +53,7 @@ public class XGResultSet implements ResultSet {
 		return buff;
 	}
 
-	private final ArrayList<Object> rs = new ArrayList<>();
+	private ArrayList<Object> rs = new ArrayList<>();
 	private long firstRowIs = 0;
 	private long position = -1;
 	private boolean closed = false;
@@ -63,10 +63,23 @@ public class XGResultSet implements ResultSet {
 	private Map<String, Integer> cols2Pos;
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
+	private String stringData;
+
+	//tell whether the resultset was constructed with a pre-defined dataset.    
+	private boolean immutable = false;	
 
 	private final XGStatement stmt;
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
+
+	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt)
+	{
+		this.conn = conn;
+		this.rs = rs;
+		this.stmt = stmt;
+		this.rs.add(new DataEndMarker());
+		this.immutable = true;
+	}	
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception {
 		this.conn = conn;
@@ -692,6 +705,12 @@ public class XGResultSet implements ResultSet {
 	 * (ping) block of data
 	 */
 	private boolean getMoreData() throws SQLException {
+		if(immutable)
+		{
+			//no data to get as the resultset was prepopulate at construction time.
+			return false;
+		}
+
 		try {
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
