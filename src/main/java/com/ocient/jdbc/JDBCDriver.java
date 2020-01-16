@@ -8,24 +8,30 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.FileHandler;
 import java.util.logging.SimpleFormatter;
+import java.util.logging.Level;
 
-public class JDBCDriver implements Driver {
+public class JDBCDriver implements Driver
+{
 
 	// FIXME - need to determine where this comes from
 	private static String version = "4.0.0";
-	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
+	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 	private String logFileName;
 	private FileHandler logHandler;
 
-	static {
-		try {
+	static
+	{
+		try
+		{
 			DriverManager.registerDriver(new JDBCDriver());
-		} catch (final SQLException e) {
+		}
+		catch (final SQLException e)
+		{
 			e.printStackTrace(System.err);
 		}
 	}
@@ -33,7 +39,8 @@ public class JDBCDriver implements Driver {
 	@Override
 	public boolean acceptsURL(final String arg0) throws SQLException {
 		final String protocol = arg0.substring(0, 14);
-		if (!protocol.equals("jdbc:ocient://")) {
+		if (!protocol.equals("jdbc:ocient://"))
+		{
 			return false;
 		}
 
@@ -42,43 +49,55 @@ public class JDBCDriver implements Driver {
 
 	@Override
 	public Connection connect(final String arg0, final Properties arg1) throws SQLException {
-		try {
+		try
+		{
 			configLogger(arg1);
-
+			
 			final String protocol = arg0.substring(0, 14);
-			if (!protocol.equals("jdbc:ocient://")) {
+			if (!protocol.equals("jdbc:ocient://"))
+			{
 				return null;
 			}
 
 			final int portDelim = arg0.indexOf(":", "jdbc:ocient://".length());
-			if (portDelim < 0) {
+			if (portDelim < 0)
+			{
 				throw SQLStates.MALFORMED_URL.clone();
 			}
 			final int dbDelim = arg0.indexOf("/", portDelim);
-			if (dbDelim < 0) {
+			if (dbDelim < 0)
+			{
 				throw SQLStates.MALFORMED_URL.clone();
 			}
 			final String hostname = arg0.substring("jdbc:ocient://".length(), portDelim);
 			final String port = arg0.substring(portDelim + 1, dbDelim);
 			final String db = arg0.substring(dbDelim + 1);
 			int portNum = 0;
-			try {
+			try
+			{
 				portNum = Integer.parseInt(port);
-			} catch (final Exception e) {
+			}
+			catch (final Exception e)
+			{
 				throw SQLStates.MALFORMED_URL.clone();
 			}
 
 			Socket sock = null;
-			try {
+			try
+			{
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
 				sock.connect(new InetSocketAddress(hostname, portNum), 10000);
-			} catch (final Throwable e) {
-				try {
+			}
+			catch (final Throwable e)
+			{
+				try
+				{
 					sock.close();
-				} catch (final IOException f) {
 				}
+				catch (final IOException f)
+				{}
 
 				final SQLException g = SQLStates.FAILED_CONNECTION.clone();
 				final Exception connInfo = new Exception("Connection failed connecting to " + hostname + ":" + portNum);
@@ -89,11 +108,14 @@ public class JDBCDriver implements Driver {
 
 			return new XGConnection(sock, arg1.getProperty("user"), arg1.getProperty("password"), portNum, arg0, db,
 					version, arg1.getProperty("force", "false"));
-		} catch (final Exception e) {
-			if (e instanceof SQLException) {
+		}
+		catch (final Exception e)
+		{
+			if (e instanceof SQLException)
+			{
 				throw (SQLException) e;
 			}
-
+			
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -138,7 +160,7 @@ public class JDBCDriver implements Driver {
 		loglevel.choices[0] = "OFF";
 		loglevel.choices[1] = "ERROR";
 		loglevel.choices[2] = "DEBUG";
-
+		
 		retval[2] = loglevel;
 
 		final DriverPropertyInfo logfile = new DriverPropertyInfo("logfile", null);
@@ -165,11 +187,12 @@ public class JDBCDriver implements Driver {
 				LOGGER.setLevel(Level.WARNING);
 			}
 		}
-
+		
 		String logfile = props.getProperty("logfile");
 
 		/* If logfile hasn't changed, return */
-		if (((logfile == null) && (logFileName == null)) || logfile.equals(logFileName)) {
+		if (((logfile == null) && (logFileName == null)) ||
+			logfile.equals(logFileName)) {
 			return;
 		}
 
@@ -178,6 +201,11 @@ public class JDBCDriver implements Driver {
 			LOGGER.removeHandler(logHandler);
 			logHandler = null;
 			logFileName = null;
+		}
+
+		/* If we don't have a new log file, we're done */
+		if (logfile == null) {
+			return;
 		}
 
 		try {

@@ -5,8 +5,8 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.Reader;
+import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -23,20 +23,21 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,22 +45,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.commons.collections4.bag.TreeBag;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.UserInterruptException;
 import com.google.common.collect.TreeMultimap;
+import com.google.protobuf.util.JsonFormat;
 import com.ocient.jdbc.DataEndMarker;
 import com.ocient.jdbc.XGConnection;
 import com.ocient.jdbc.XGDatabaseMetaData;
 import com.ocient.jdbc.XGStatement;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
 import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
+import java.util.TimeZone;
+import java.sql.Time;
 
 public class CLI {
 	private static Connection conn;
@@ -232,7 +234,8 @@ public class CLI {
 		} else if (startsWithIgnoreCase(cmd, "EXPLAIN")) {
 			explain(cmd);
 		} else if (startsWithIgnoreCase(cmd, "CREATE") || startsWithIgnoreCase(cmd, "DROP")
-				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")) {
+				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")
+				|| startsWithIgnoreCase(cmd, "SET PSO")) {
 			update(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LOAD INTO")) {
 			loadFromFiles(cmd);
@@ -461,16 +464,17 @@ public class CLI {
 			if (m.group("verbose") != null) {
 				printResultSet(rs, meta);
 			} else {
-				final StringBuilder line = new StringBuilder(1024);
+				ArrayList<String> tableNames = new ArrayList<>();
 				while (rs.next()) {
-					line.append(rs.getString("TABLE_SCHEM"));
-					line.append(".");
-					line.append(rs.getString("TABLE_NAME"));
-					line.append(", ");
+					tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
 				}
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					System.out.println(line);
+				if (!tableNames.isEmpty()) {
+					// TODO: This is a lexicographic sort. Clients ordering their tables by number
+					// will not see the ordering they expect.
+					Collections.sort(tableNames);
+					for (String tableName : tableNames) {
+						System.out.println(tableName);
+					}
 				}
 			}
 			printWarnings(rs);
@@ -541,16 +545,17 @@ public class CLI {
 			if (m.group("verbose") != null) {
 				printResultSet(rs, meta);
 			} else {
-				final StringBuilder line = new StringBuilder(1024);
+				ArrayList<String> viewNames = new ArrayList<>();
 				while (rs.next()) {
-					line.append(rs.getString("VIEW_SCHEM"));
-					line.append(".");
-					line.append(rs.getString("VIEW_NAME"));
-					line.append(", ");
+					viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
 				}
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					System.out.println(line);
+				if (!viewNames.isEmpty()) {
+					// TODO: This is a lexicographic sort. Clients ordering their tables by number
+					// will not see the ordering they expect.
+					Collections.sort(viewNames);
+					for (String viewName : viewNames) {
+						System.out.println(viewName);
+					}
 				}
 			}
 			printWarnings(rs);
@@ -603,11 +608,28 @@ public class CLI {
 					line.append(rs.getString("COLUMN_NAME"));
 					line.append(" (");
 					line.append(rs.getString("TYPE_NAME"));
-					line.append("), ");
+					// TODO: figure out precision stuff
+					if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
+						line.append("(");
+						line.append(rs.getString("DECIMAL_PRECISION"));
+						line.append(",");
+						line.append(rs.getString("DECIMAL_SCALE"));
+						line.append(")");
+					} else if (rs.getString("TYPE_NAME").equals("VARCHAR") || rs.getString("TYPE_NAME").equals("BINARY")
+							|| rs.getString("TYPE_NAME").equals("HASH")) {
+						line.append("(");
+						line.append(rs.getString("COLUMN_SIZE"));
+						line.append(")");
+					}
+
+					line.append(")");
+					if (rs.getInt("NULLABLE") != 0) {
+						line.append(" nullable");
+					}
+					line.append("\n");
 				}
 				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					System.out.println(line);
+					System.out.print(line);
 				}
 			}
 			printWarnings(rs);
@@ -715,6 +737,7 @@ public class CLI {
 				printResultSet(rs, meta);
 			} else {
 				final StringBuilder line = new StringBuilder(1024);
+				ArrayList<String> indexNames = new ArrayList<>();
 				String currIndex = "";
 				while (rs.next()) {
 					final String nextIndex = rs.getString("INDEX_NAME");
@@ -722,7 +745,9 @@ public class CLI {
 						currIndex = nextIndex;
 						if (line.length() > 0) {
 							line.setLength(line.length() - 2);
-							line.append("), ");
+							line.append(")");
+							indexNames.add(line.toString());
+							line.setLength(0);
 						}
 						line.append(currIndex);
 						line.append(" (");
@@ -733,7 +758,15 @@ public class CLI {
 				if (line.length() != 0) {
 					line.setLength(line.length() - 2);
 					line.append(")");
-					System.out.println(line);
+					indexNames.add(line.toString());
+				}
+				if (!indexNames.isEmpty()) {
+					// TODO: This is a lexicographic sort. Clients ordering their tables by number
+					// will not see the ordering they expect.
+					Collections.sort(indexNames);
+					for (String indexName : indexNames) {
+						System.out.println(indexName);
+					}
 				}
 			}
 
@@ -767,6 +800,7 @@ public class CLI {
 			stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			rs = stmt.executeQuery(cmd);
+			printWarnings(stmt);
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (outputCSVFile.isEmpty()) {
@@ -775,7 +809,6 @@ public class CLI {
 				outputResultSet(rs, meta);
 				outputCSVFile = "";
 			}
-			printWarnings(stmt);
 			printWarnings(rs);
 			end = System.currentTimeMillis();
 
@@ -820,8 +853,8 @@ public class CLI {
 			printTime(start, end);
 		} catch (final Exception e) {
 			try {
-					rs.close();
-					stmt.close();
+				rs.close();
+				stmt.close();
 			} catch (Exception f) {
 			}
 			System.out.println("Error: " + e.getMessage());
@@ -904,13 +937,23 @@ public class CLI {
 		try {
 			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
-			final String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
+			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
+
+			boolean jsonFormat = false;
+			if (plan.substring(0, "JSON ".length()).equalsIgnoreCase("JSON ")) {
+				plan = plan.substring("JSON ".length()).trim();
+				jsonFormat = true;
+			}
 			final PlanMessage pm = ((XGStatement) stmt).explainPlan(plan);
 
-			System.out.println(pm);
+			if (jsonFormat) {
+				final String planJsonFormat = JsonFormat.printer().print(pm);
+				System.out.println(planJsonFormat);
+			} else {
+				System.out.println(pm);
+			}
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
 			stmt.close();
 
 			printTime(start, end);
@@ -1819,18 +1862,19 @@ public class CLI {
 		}
 	}
 
-//	/*
-//	 * Calls nextToken on a tokenizer, but trims tokens and throws away empty ones
-//	 */
-//	private static String betterNextToken(final StringTokenizer tokens) throws NoSuchElementException {
-//		String retval = "";
-//		while (retval.equals(""))
-//		{
-//			retval = tokens.nextToken().trim();
-//		}
-//
-//		return retval;
-//	}
+	// /*
+	// * Calls nextToken on a tokenizer, but trims tokens and throws away empty ones
+	// */
+	// private static String betterNextToken(final StringTokenizer tokens) throws
+	// NoSuchElementException {
+	// String retval = "";
+	// while (retval.equals(""))
+	// {
+	// retval = tokens.nextToken().trim();
+	// }
+	//
+	// return retval;
+	// }
 
 	private final static char[] hexArray = "0123456789abcdef".toCharArray();
 

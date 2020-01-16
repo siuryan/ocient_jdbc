@@ -141,7 +141,7 @@ message PlanHeader
 	double externalCost = 25;
 	//only used during actual execution, not populated by optimizer/plangen
 	//defines the compute configuration to be used for query
-	map<uint32, ExecutionClusters> compute_configuration = 26;	
+	map<uint32, ExecutionClusters> compute_configuration = 26;
 }
 
 //The actual plan sent by the command compiler
@@ -199,6 +199,12 @@ enum SqlColType
     TYPE_ST_POINT= 25; //ST POINT
     TYPE_TIME= 26;
     TYPE_DECIMAL = 27;
+}
+
+//Represents equivalent partitioning, meaning we are partitioned on at least one of these columns and they are identical
+message EquivalentPartitioning
+{
+	repeated uint32 index = 1; //the column indexes in this partitioning
 }
 
 //Represents an operator node in the plan
@@ -315,6 +321,7 @@ message Operator
 		HADOOP_FILE_SYSTEM_FILE_PATHS_VIRTUAL_OPERATOR = 106;
 		HADOOP_FILE_SYSTEM_GROUP_REGEXES_VIRTUAL_OPERATOR = 107;
 		HADOOP_FILE_SYSTEM_ORIGIN_PATHS_VIRTUAL_OPERATOR = 108;
+		COMPUTE_CONFIGURATIONS_VIRTUAL_OPERATOR = 109;
 	}
 
     OperatorType type = 1;
@@ -345,7 +352,7 @@ message Operator
     //If there is a guarantee on how the data is partitioned (all rows with the same values in some cols
     //or set of cols are guaranteed to be on the same node) when it leaves this operator,
     //the indexes that define the partitioning are listed here
-    repeated uint32 partitioning = 12;
+    repeated EquivalentPartitioning partitioning = 12;
     //Which output columns are nullable?
     repeated bool outputIsNullable = 13;
     uint32 numParents = 14;
@@ -404,6 +411,7 @@ message Operator
     uint32 partition_index = 24;
     repeated uint32 partition_counts = 25;
     repeated string storage_space_uuids = 26;
+    bool upstream_partition_sensitive = 27;
 
     oneof request_oneof
     {
@@ -481,8 +489,8 @@ message AggregationOperator
         AGG_OP_MAX = 5;
         AGG_OP_COUNT_DISTINCT = 6;
         AGG_OP_SUM_DISTINCT = 7;
-		AGG_OP_COUNT_GDC = 8;
-		AGG_OP_PRODUCT = 9;
+        AGG_OP_COUNT_GDC = 8;
+        AGG_OP_PRODUCT = 9;
         AGG_OP_PRODUCT_DISTINCT = 10;
     }
 
@@ -543,11 +551,12 @@ message ModifySchemaOperator
 	repeated string extendNames = 1; //The names for the result of each postfix expression
 	repeated PostfixExpression expressions = 2; //The postfix expressions
 	repeated string extendTypes = 3; //The result data type for each postfix expression
-	repeated string getRidOf = 4; //The columns to project out - might include some of the extend columns
-	repeated bool expressionNullable = 5; //Whether or not the expressions are nullable
+	repeated bool expressionNullable = 4; //Whether or not the expressions are nullable
+	repeated uint64 getRidOfInputs = 5; //the input columns being projected out
+	repeated uint64 getRidOfExtends = 6; //the extendedt columns being projected out
 }
 
-//TODO(N_LEVELS): this is going to need to change when we generify levels
+//TODO(N_LEVELS): This will need to be changed, probabaly from an enum to an int when we generify the concept of levels
 enum GatherLevel
 {
     LEVEL_INVALID = 0;
@@ -917,7 +926,7 @@ message UnionOperator
     //this flag differentiates UNION from UNION ALL
     bool all = 1;
     bool is_switch_union = 2; //Is this the top of a switch block
-	bool not_needed = 3; //If false, this doesn't have to be an exact distinct
+	bool not_needed = 3; //If true, this doesn't have to be an exact distinct
 	bool use_vector = 4; //If distinct can be computed with vectors instead of maps
 }
 
@@ -978,9 +987,11 @@ message HashJoinOperator
 	//Whether or not this is a gdc join
 	bool gdcJoin = 7;
 	//Whether or not this join is matching null keys
-	bool matchNullKeys = 8;
+	bool matchNullKeys = 8; // deprecated in v4. does not need to be set v4+, it has no effect
 	// implicitly project gdc keys [(for left child, for right child), ...] each
 	repeated bool implicit_projs = 9;
+	// Which equi join conditions match null keys? The index here corresponds to join col position in join_cols
+	repeated uint64 matchNullKeysIdxes = 10;
 }
 
 message EosOperator
