@@ -277,8 +277,9 @@ message Request
         LIST_PLAN = 21;
         KILL_QUERY = 22;
         EXECUTE_INLINE_PLAN = 23;
-        FORCE_EXTERNAL = 24;
-        EXECUTE_EXPORT = 25;
+		FORCE_EXTERNAL = 24;
+		EXECUTE_EXPORT = 25;
+		SET_PSO = 26;
     }
 
     RequestType type = 1;
@@ -307,8 +308,9 @@ message Request
     	ListPlan list_plan = 22;
     	KillQuery kill_query = 23;
     	ExecuteInlinePlan execute_inline_plan = 24;
-    	ForceExternal force_external = 25;
-    	ExecuteExport execute_export = 26;
+		ForceExternal force_external = 25;
+		ExecuteExport execute_export = 26;
+		SetPSO set_pso = 27;
     }
 }
 
@@ -396,4 +398,10 @@ message ExecuteExportResponse
 {
 	ConfirmationResponse response = 1;
 	string exportStatement = 2;
+}
+
+message SetPSO
+{
+	int64 threshold = 1; //what we want the new threshhold to be
+	bool reset = 2; //whether we should reset back to the default, overrides whatever threshold is
 }
