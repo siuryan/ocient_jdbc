@@ -492,6 +492,7 @@ message AggregationOperator
         AGG_OP_COUNT_GDC = 8;
         AGG_OP_PRODUCT = 9;
         AGG_OP_PRODUCT_DISTINCT = 10;
+	AGG_OP_COUNT_DISTINCT_GDC = 11;
     }
 
 	//The GROUP BY columns - might be empty
