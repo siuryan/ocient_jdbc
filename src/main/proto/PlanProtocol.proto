@@ -198,7 +198,9 @@ enum SqlColType
     TYPE_IP = 24; //IPv6 type
     TYPE_ST_POINT= 25; //ST POINT
     TYPE_TIME= 26;
-    TYPE_DECIMAL = 27;
+	TYPE_DECIMAL = 27;
+	TYPE_MICROSECONDS = 28;
+    TYPE_NANOSECONDS = 29;	
 }
 
 //Represents equivalent partitioning, meaning we are partitioned on at least one of these columns and they are identical
