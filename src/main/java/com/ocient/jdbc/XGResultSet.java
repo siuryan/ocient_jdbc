@@ -6,6 +6,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.sql.Array;
 import java.sql.Blob;
@@ -1449,7 +1450,7 @@ public class XGResultSet implements ResultSet
 							int stringLength = bb.getInt(offset);
 							offset += 4;
 							byte[] dst = new byte[stringLength];
-							bb.position(offset);
+							((Buffer)bb).position(offset);
 							bb.get(dst);
 							alo.add(new String(dst, Charsets.UTF_8));
 							offset += stringLength;
@@ -1473,7 +1474,7 @@ public class XGResultSet implements ResultSet
 							int stringLength = bb.getInt(offset);
 							offset += 4;
 							byte[] dst = new byte[stringLength];
-							bb.position(offset);
+							((Buffer)bb).position(offset);
 							bb.get(dst);
 							alo.add(dst);
 							offset += stringLength;
