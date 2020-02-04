@@ -44,6 +44,8 @@ public class XGStatement implements Statement
 {
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 
+	private static final int defaultFetchSize = 30000;
+
 	private static String bytesToHex(final byte[] in) {
 		final StringBuilder builder = new StringBuilder();
 		for (final byte b : in)
@@ -71,7 +73,7 @@ public class XGStatement implements Statement
 	private final XGConnection conn;
 	private XGResultSet result;
 	private int updateCount = -1;
-	private int fetchSize = 30000;
+	private int fetchSize = defaultFetchSize;
 	protected ArrayList<Object> parms = new ArrayList<>();
 	private int maxRows = 0;
 
@@ -1092,12 +1094,18 @@ public class XGStatement implements Statement
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (rows <= 0)
+		if (rows < 0)
 		{
 			throw SQLStates.INVALID_ARGUMENT.clone();
 		}
 
-		fetchSize = rows;
+		if(rows == 0) {
+			//switch back to the default settings
+			fetchSize = defaultFetchSize;
+		}
+		else {
+			fetchSize = rows;
+		}
 	}
 
 	@Override
@@ -1272,7 +1280,8 @@ public class XGStatement implements Statement
 
 	@Override
 	public void setQueryTimeout(final int seconds) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		//The proper support is being implemented on the ticket: http://jira.corp.ocient.com:8080/browse/DB-9856
+		//throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
