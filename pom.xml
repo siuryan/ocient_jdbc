@@ -67,6 +67,7 @@
     <protoc>protoc</protoc>
   </properties>
   <build>
+    <finalName>ocient-jdbc4-1.0</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -123,6 +124,18 @@
           <source>8</source>
         </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.1</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
+          </configuration>
+      </plugin>        
     </plugins>
   </build>
 </project>
