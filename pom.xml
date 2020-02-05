@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-  <version>1.0</version>
+  <version>1.4</version> <!--JDBC VERSION NUMBER HERE-->
   <name>xgjdbc</name>
   <url>http://www.ocient.com</url>
   <licenses>
@@ -67,6 +67,7 @@
     <protoc>protoc</protoc>
   </properties>
   <build>
+    <finalName>ocient-jdbc4-1.0</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -76,6 +77,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries> 
               <mainClass>com.ocient.cli.CLI</mainClass>
             </manifest>
           </archive>
@@ -123,6 +125,18 @@
           <source>8</source>
         </configuration>
         </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>        
     </plugins>
   </build>
 </project>
