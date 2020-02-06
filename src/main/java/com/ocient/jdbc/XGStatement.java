@@ -7,12 +7,15 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -38,6 +41,12 @@ import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.KillQuery;
 import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+
+import com.google.common.base.Preconditions;
 import com.google.protobuf.util.JsonFormat;
 
 public class XGStatement implements Statement
@@ -77,9 +86,15 @@ public class XGStatement implements Statement
 	protected ArrayList<Object> parms = new ArrayList<>();
 	private int maxRows = 0;
 
+	// not thread safe because individual queries are single threaded
+	// The queryId is set on the initial call to executeQuery()
+	// TODO enable timeouts on initial call to executeQuery()
+	private String queryId = null;
+
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
 
 	private final boolean force;
+	private volatile long timeoutMillis = 0L;
 
 	private boolean oneShotForce;
 
@@ -131,6 +146,109 @@ public class XGStatement implements Statement
 		}
 	}
 
+	/**
+	 * Associates the query with this statement
+	 */
+	private void associateQuery(final String queryId) {
+		assert this.queryId == null : "Statement was not cleaned up before next query was dispatched";
+		this.queryId = queryId;
+	}
+
+	/**
+	 * Dissociate the current query with this statement
+	 */
+	private void dissociateQuery() {
+		this.queryId = null;
+	}
+
+	protected Optional<String> getQueryId() {
+		return Optional.ofNullable(queryId).filter(s -> !s.isEmpty());
+	}
+
+	/**
+	 * Same as {@link Runnable} but can throw an exception
+	 */
+	protected interface ExceptionalRunnable {
+		void run() throws Exception;
+	}
+
+	/**
+	 * Executes a potentially exceptional task, canceling the backing query its it takes longer 
+	 * than the timeout specified by {@link #getQueryTimeout()}.
+	 * 
+	 * @param task 				the task to execute
+	 * @param queryId 			the query associated with this task
+	 * @param timeoutMillis		the number of milliseconds to wait before firing off a kill query
+	 * 							command to the sql node
+	 * 
+	 * @throws SQLTimeoutException if the timeout is reached before the call completes
+	 */
+	protected void startTask(ExceptionalRunnable task, Optional<String> optQueryId, final long timeoutMillis) throws Exception {
+		// Check if we even have a cancelable query at this point
+		if (!optQueryId.isPresent()) {
+			task.run();
+			return;
+		}
+
+		// Check if a timeout value has been set
+		if (timeoutMillis == 0L) {
+			task.run();
+			return;
+		}
+		
+		// Create a future that we'll use the propagate timeouts to the caller
+		final CompletableFuture<SQLTimeoutException> killFuture = new CompletableFuture<>();
+		
+		// Create a task that will cancel this query if the timeout has been exceeded
+		final TimerTask killQueryTask = new TimerTask(){
+			
+			@Override
+			public void run() {
+				// execute the cancel routine iff it's still active
+				final long timeoutSec = timeoutMillis / 1000;
+				
+				LOGGER.log(Level.INFO, String.format(
+					"Timeout invoked after %s seconds. Canceling query %s", timeoutSec, optQueryId));
+					
+					// TODO consider creating a dedicated thread for processing the kill queries.
+					// Our timer is shared across all connections, so if killQuery() hangs, timeouts 
+					// are temporarily disabled, not sure what is acceptable behavior here
+					SQLException suppressed = null;
+					try {
+						XGStatement.this.killQuery(optQueryId.get());
+					} catch (SQLException e) {
+						LOGGER.log(Level.WARNING, "Could not cancel SQL query", e);
+						suppressed = e;
+					} finally {
+						final SQLTimeoutException e = new SQLTimeoutException(String.format("Timeout of %s seconds exceeded", timeoutSec));
+						if (suppressed != null) {
+							e.addSuppressed(suppressed);
+						}
+						
+						killFuture.complete(e);
+					}
+				}
+			};
+			
+		// Make our current state visible to the timeout thread
+		Preconditions.checkArgument(timeoutMillis >= 0L);
+		conn.addTimeout(killQueryTask, timeoutMillis);
+
+		try {
+			// run the task
+			task.run();
+		} finally {
+			// Our task completed, cancel the timeout task we created above
+			if (!killQueryTask.cancel()) {
+				// this is ugly, but we're within the context of a synchronous framework so whatever
+				throw killFuture.get(); 
+			} else {
+				// Removes our canceled task (any those from any other connection) from the timer task queue
+				conn.purgeTimeoutTasks();
+			}
+		}
+	}
+
 	@Override
 	public void addBatch(final String sql) throws SQLException {
 		throw new SQLFeatureNotSupportedException();
@@ -163,6 +281,7 @@ public class XGStatement implements Statement
 			result.close();
 		}
 
+		dissociateQuery();
 		result = null;
 		closed = true;
 	}
@@ -258,7 +377,7 @@ public class XGStatement implements Statement
 	public ResultSet executeQuery(String sql) throws SQLException {
 		String explain = "";
 		boolean isExplain = false;
-    sql = sql.trim();
+    	sql = sql.trim();
 		if (startsWithIgnoreCase(sql, "EXPLAIN JSON")) {
 			final String sqlQuery = sql.substring("EXPLAIN JSON" .length()).trim();
 			try {
@@ -321,6 +440,7 @@ public class XGStatement implements Statement
 				}
 				throw SQLStates.newGenericException(reconnectException);
 			}
+
 			return executeQuery(sql);
 		}
 		this.updateCount = -1;
@@ -709,6 +829,7 @@ public class XGStatement implements Statement
 		{
 			result.close();
 			result = null;
+			dissociateQuery();
 		}
 
 		return false;
@@ -725,7 +846,12 @@ public class XGStatement implements Statement
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-		return 0;
+
+		return Math.toIntExact((int) (timeoutMillis / 1000));
+	}
+
+	protected long getQueryTimeoutMillis() {
+		return timeoutMillis;
 	}
 
 	@Override
@@ -893,6 +1019,8 @@ public class XGStatement implements Statement
 		{
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
 		}
+
+		// Lord forgive us for our reflective ways, an abject abuse of power.
 		try
 		{
 			Object b1, br;
@@ -901,6 +1029,7 @@ public class XGStatement implements Statement
 			final Request.Builder b2 = Request.newBuilder();
 			boolean forceFlag = true;
 			boolean redirectFlag = true;
+			boolean hasQueryId = false; // set to true if the query ID is encoded in the response message
 			switch (requestType)
 			{
 				case EXECUTE_QUERY:
@@ -908,6 +1037,7 @@ public class XGStatement implements Statement
 					b1 = ExecuteQuery.newBuilder();
 					br = ClientWireProtocol.ExecuteQueryResponse.newBuilder();
 					setWrapped = b2.getClass().getMethod("setExecuteQuery", c);
+					hasQueryId = true;
 					break;
 				case EXECUTE_EXPLAIN:
 					c = ExecuteExplain.class;
@@ -1047,6 +1177,15 @@ public class XGStatement implements Statement
 						final Method getRedirectPort = br.getClass().getMethod("getRedirectPort");
 						redirect((String) getRedirectHost.invoke(br), (int) getRedirectPort.invoke(br));
 						return sendAndReceive(sql, requestType, val, isInMb);
+					}
+				}
+
+				if (hasQueryId) { 
+					final Method getQueryId = br.getClass().getMethod("getQueryId");
+					final String recvQueryId = ((String) getQueryId.invoke(br));
+					if (!recvQueryId.isEmpty())
+					{
+						associateQuery(recvQueryId);
 					}
 				}
 
@@ -1280,8 +1419,14 @@ public class XGStatement implements Statement
 
 	@Override
 	public void setQueryTimeout(final int seconds) throws SQLException {
-		//The proper support is being implemented on the ticket: http://jira.corp.ocient.com:8080/browse/DB-9856
-		//throw new SQLFeatureNotSupportedException();
+		if (seconds < 0) {
+			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
+		}
+		if (closed) {
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+		timeoutMillis = seconds * 1000;
+		LOGGER.log(Level.FINE, "Query timeout set to {} seconds", seconds);
 	}
 
 	@Override
