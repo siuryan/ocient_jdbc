@@ -12,6 +12,7 @@ import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Driver;
 import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,7 +28,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -122,6 +127,7 @@ public class XGConnection implements Connection
 	private boolean closed = false;
 	private boolean connected = true;
 	private Socket sock;
+	private final Supplier<Timer> timerSupplier;
 	protected XGResultSet rs;
 	protected int portNum;
 	protected ArrayList<SQLWarning> warnings = new ArrayList<>();
@@ -134,14 +140,13 @@ public class XGConnection implements Connection
 	protected boolean force = false;
 
 	protected boolean oneShotForce = false;
-
 	protected ArrayList<String> cmdcomps = new ArrayList<>();
 
 	protected String pwd;
 	private int retryCounter;
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
-			final String database, final String version, final String force) throws Exception
+			final String database, final String version, final String force, final Supplier<Timer> timerSupplier) throws Exception
 	{
 		if (force.equals("true"))
 		{
@@ -155,6 +160,7 @@ public class XGConnection implements Connection
 		this.portNum = portNum;
 		this.database = database;
 		this.version = version;
+		this.timerSupplier = timerSupplier;
 		this.retryCounter = 0;
 		in = new BufferedInputStream(sock.getInputStream());
 		out = new BufferedOutputStream(sock.getOutputStream());
@@ -197,6 +203,26 @@ public class XGConnection implements Connection
 		}
 
 		warnings.clear();
+	}
+
+	/**
+	 * Schedules the task to run after the specified delay
+	 * 
+	 * @param task the task to run
+	 * @param timeout delay in milliseconds
+	 */
+	protected void addTimeout(final TimerTask task, final long timeout) {
+		timerSupplier.get().schedule(task, timeout);
+	}
+
+	/**
+	 * Purges all canceled tasks from the timer.
+	 * 
+	 * Note: You should only call this if you've canceled a timer. This call may create a {@link Timer} 
+	 * object if one does not already exist
+	 */
+	protected void purgeTimeoutTasks() {
+		timerSupplier.get().purge();
 	}
 
 	private void clientHandshake(final String userid, final String pwd, final String db) throws Exception {
