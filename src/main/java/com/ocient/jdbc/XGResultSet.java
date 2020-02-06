@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
@@ -65,6 +66,7 @@ public class XGResultSet implements ResultSet
 	private Map<String, Integer> cols2Pos;
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
+	private final long timeoutMillis; // timeout used for every invocation of getMoreData()
 
 	//tell whether the resultset was constructed with a pre-defined dataset.    
 	private boolean immutable = false;	
@@ -79,8 +81,9 @@ public class XGResultSet implements ResultSet
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
+		timeoutMillis = stmt.getQueryTimeoutMillis();
 	}
-
+	
 	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt)
 	{
 		this.conn = conn;
@@ -88,16 +91,24 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		this.rs.add(new DataEndMarker());
 		this.immutable = true;
+		timeoutMillis = stmt.getQueryTimeoutMillis();
 	}	
-
+	
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
-			final ClientWireProtocol.ResultSet re) throws Exception
+	final ClientWireProtocol.ResultSet re) throws Exception
 	{
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
 		mergeData(re);
+		timeoutMillis = stmt.getQueryTimeoutMillis();
+	}
+
+	private Optional<String> getQueryId() {
+		// TODO The query id should be known when the result set is created (on executeQuery())
+		// but this would require some additional server side work, so we'll do this hac for now
+		return stmt.getQueryId();
 	}
 
 	@Override
@@ -781,6 +792,7 @@ public class XGResultSet implements ResultSet
 			return false;
 		}
 
+		final Optional<String> queryId = getQueryId();
 		try { 
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
@@ -794,16 +806,20 @@ public class XGResultSet implements ResultSet
 			wrapper.writeTo(conn.out);
 			conn.out.flush();
 
-			// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
-			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
-			final int length = getLength();
-			final byte[] data = new byte[length];
-			readBytes(data);
-			fdr.mergeFrom(data);
-			final ConfirmationResponse response = fdr.getResponse();
+			// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
+			final ClientWireProtocol.FetchDataResponse.Builder[] fdr = {ClientWireProtocol.FetchDataResponse.newBuilder()};
+			stmt.startTask(() -> {
+				// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
+				final int length = getLength();
+				final byte[] data = new byte[length];
+				readBytes(data);
+				fdr[0].mergeFrom(data);
+			}, queryId, timeoutMillis);
+
+			final ConfirmationResponse response = fdr[0].getResponse();
 			final ResponseType rType = response.getType();
 			processResponseType(rType, response);
-			return mergeData(fdr.getResultSet());
+			return mergeData(fdr[0].getResultSet());
 		}
 		catch (final Exception e)
 		{
