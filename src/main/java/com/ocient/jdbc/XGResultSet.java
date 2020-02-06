@@ -1356,7 +1356,7 @@ public class XGResultSet implements ResultSet
 		// read raw data
 		int bytesNeeded = bcdLength(precision);
 		byte[] rawPackedBcdData = new byte[bytesNeeded];
-		bb.position(offset);
+		((Buffer)bb).position(offset);
 		bb.get(rawPackedBcdData);
 
 		// translate BCD -> character array of numerals
