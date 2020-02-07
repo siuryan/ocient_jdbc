@@ -31,7 +31,7 @@ import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -127,7 +127,6 @@ public class XGConnection implements Connection
 	private boolean closed = false;
 	private boolean connected = true;
 	private Socket sock;
-	private final Supplier<Timer> timerSupplier;
 	protected XGResultSet rs;
 	protected int portNum;
 	protected ArrayList<SQLWarning> warnings = new ArrayList<>();
@@ -142,11 +141,14 @@ public class XGConnection implements Connection
 	protected boolean oneShotForce = false;
 	protected ArrayList<String> cmdcomps = new ArrayList<>();
 
+	// The timer is initially null, created when the first query timeout is set and destroyed on close()
+	private final AtomicReference<Timer> timer = new AtomicReference<>();
+
 	protected String pwd;
 	private int retryCounter;
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
-			final String database, final String version, final String force, final Supplier<Timer> timerSupplier) throws Exception
+			final String database, final String version, final String force) throws Exception
 	{
 		if (force.equals("true"))
 		{
@@ -160,7 +162,6 @@ public class XGConnection implements Connection
 		this.portNum = portNum;
 		this.database = database;
 		this.version = version;
-		this.timerSupplier = timerSupplier;
 		this.retryCounter = 0;
 		in = new BufferedInputStream(sock.getInputStream());
 		out = new BufferedOutputStream(sock.getOutputStream());
@@ -206,13 +207,20 @@ public class XGConnection implements Connection
 	}
 
 	/**
+	 * Creates a new {@link Timer} or returns the existing one if it already exists
+	 */
+	private Timer getTimer() {
+		return this.timer.updateAndGet(existing -> existing != null ? existing : new Timer());
+	}
+
+	/**
 	 * Schedules the task to run after the specified delay
 	 * 
 	 * @param task the task to run
 	 * @param timeout delay in milliseconds
 	 */
 	protected void addTimeout(final TimerTask task, final long timeout) {
-		timerSupplier.get().schedule(task, timeout);
+		getTimer().schedule(task, timeout);
 	}
 
 	/**
@@ -222,7 +230,7 @@ public class XGConnection implements Connection
 	 * object if one does not already exist
 	 */
 	protected void purgeTimeoutTasks() {
-		timerSupplier.get().purge();
+		getTimer().purge();
 	}
 
 	private void clientHandshake(final String userid, final String pwd, final String db) throws Exception {
@@ -425,6 +433,16 @@ public class XGConnection implements Connection
 		}
 		catch (final Exception e)
 		{}
+
+		// Cleanup our timer, if one exists
+		Timer t = null;
+		do {
+			t = timer.get();
+			if (t == null) {
+				return;
+			}
+		} while (!timer.compareAndSet(t, null));
+		t.cancel();
 	}
 
 	@Override

@@ -184,6 +184,8 @@ public class XGStatement implements Statement
 	 * @throws SQLTimeoutException if the timeout is reached before the call completes
 	 */
 	protected void startTask(ExceptionalRunnable task, Optional<String> optQueryId, final long timeoutMillis) throws Exception {
+		Preconditions.checkArgument(timeoutMillis >= 0L);
+		
 		// Check if we even have a cancelable query at this point
 		if (!optQueryId.isPresent()) {
 			task.run();
@@ -230,8 +232,6 @@ public class XGStatement implements Statement
 				}
 			};
 			
-		// Make our current state visible to the timeout thread
-		Preconditions.checkArgument(timeoutMillis >= 0L);
 		conn.addTimeout(killQueryTask, timeoutMillis);
 
 		try {

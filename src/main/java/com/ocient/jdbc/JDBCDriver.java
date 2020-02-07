@@ -26,11 +26,6 @@ public class JDBCDriver implements Driver
 	private String logFileName;
 	private FileHandler logHandler;
 
-	// Only create if timeout is actually set.
-	// FIXME 1 driver per process, right?
-	// FIXME do driver's have a teardown routine? Do we need to manage lifecycle here?
-	private final AtomicReference<Timer> timer = new AtomicReference<>();
-
 	static
 	{
 		try
@@ -114,7 +109,7 @@ public class JDBCDriver implements Driver
 			}
 
 			return new XGConnection(sock, arg1.getProperty("user"), arg1.getProperty("password"), portNum, arg0, db,
-					version, arg1.getProperty("force", "false"), this::getTimer);
+					version, arg1.getProperty("force", "false"));
 		}
 		catch (final Exception e)
 		{
@@ -125,13 +120,6 @@ public class JDBCDriver implements Driver
 			
 			throw SQLStates.newGenericException(e);
 		}
-	}
-
-	/**
-	 * Creates a new {@link Timer} or returns the existing one if it already exists
-	 */
-	private Timer getTimer() {
-		return this.timer.updateAndGet(existing -> existing != null ? existing : new Timer());
 	}
 
 	public String getDriverVersion() {
