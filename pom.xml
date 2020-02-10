@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-  <version>1.5</version> <!--JDBC VERSION NUMBER HERE-->
+  <version>1.6</version> <!--JDBC VERSION NUMBER HERE-->
   <name>xgjdbc</name>
   <url>http://www.ocient.com</url>
   <licenses>

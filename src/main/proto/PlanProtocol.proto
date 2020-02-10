@@ -98,6 +98,26 @@ message ComputeConfiguration
 	map<uint32, ExecutionClusters> compute_configuration = 1;
 }
 
+//Information about a column
+message ColumnInfo
+{
+	message DecimalInfo {
+		uint32 decimal_precision = 1;
+		uint32 decimal_scale = 2;
+	}
+	
+	bool is_compressed = 1;
+	uint32 ordinal = 2;
+
+	oneof extraMetadata {
+		DecimalInfo decimal_info = 20;
+	}
+
+	oneof defaultExpr {
+		string default_expression = 40;
+	}
+}
+
 //Header that starts of the plan message
 message PlanHeader
 {
@@ -590,7 +610,7 @@ message IndexOperator
 	//Which index?
 	string indexName = 3;
 	//Which columns need to be fetched?
-	repeated string colNames = 4;
+	repeated string colNames = 4 [deprecated=true];
 	//Filter conditions to apply via index
 	repeated Disjunction filters = 5;
 	//If there is no limit being applied, this is set to -1
@@ -606,6 +626,8 @@ message IndexOperator
 	bool segmentDistinct = 12;
 	//The string representation of the type of ALL output columns
 	repeated string colTypes = 13;
+	// The columns
+	map<string, ColumnInfo> columns = 14;
 }
 
 //Specialized index operator for count(*)
@@ -638,7 +660,7 @@ message IndexDistinctOperator
 	//Which index?
 	string indexName = 3;
 	//Which columns need to be fetched?
-	repeated string colNames = 4;
+	repeated string colNames = 4 [deprecated=true];
 	//Filter conditions to apply via index
 	repeated Disjunction filters = 5;
 	//Database name - a table really needs db.schema.name to be uniquely referenced
@@ -663,7 +685,7 @@ message IndexAggOperator
 	//Which index?
 	string indexName = 3;
 	//Which columns need to be fetched?
-	repeated string colNames = 4;
+	repeated string colNames = 4 [deprecated=true];
 	//Filter conditions to apply via index
 	repeated Disjunction filters = 5;
 	//Database name - a table really needs db.schema.name to be uniquely referenced
@@ -699,7 +721,7 @@ message TableScanOperator
 	//The table name
 	string tableName = 2;
 	//Which columns need to be fetched?
-	repeated string colNames = 3;
+	repeated string colNames = 3 [deprecated=true];
 	//If there is no limit being applied, this is set to -1
 	int64 limitVal = 4;
 	//Database name - a table really needs db.schema.name to be uniquely referenced
@@ -710,6 +732,8 @@ message TableScanOperator
 	repeated Disjunction time_filters = 8;
 	//The string representation of the type of ALL output columns
 	repeated string colTypes = 9;
+	// The columns
+	map<string, ColumnInfo> columns = 10;
 }
 
 //Keep only the first n rows
