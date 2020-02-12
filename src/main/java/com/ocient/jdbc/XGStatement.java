@@ -216,16 +216,21 @@ public class XGStatement implements Statement
 				LOGGER.log(Level.INFO, String.format(
 					"Timeout invoked after %s seconds. Canceling query %s", timeoutSec, optQueryId));
 					
-					// TODO consider creating a dedicated thread for processing the kill queries.
-					// Our timer is shared across all connections, so if killQuery() hangs, timeouts 
-					// are temporarily disabled, not sure what is acceptable behavior here
+					// send the kill query message on the timeout thread. This is okay because we don't
+					// share Timers across connection threads.
 					Exception suppressed = null;
 					try {
 
 						// interrupt the thread waiting for the server response
 						submittingThread.interrupt();
 
-						// FIXME this message needs to be sent on a different socket...
+						// we can't reuse the existing socket because it can now have garbage sitting
+						// on it (from the timed out request). We could add sequence numbers to our 
+						// protocol but that's a heavy handed solution. The easist thing to do here
+						// is to tear down our current connection.
+						conn.reconnect();
+
+						// send the kill query request on the new socket
 						XGStatement.this.killQuery(optQueryId.get());
 					} catch (Exception e) {
 						LOGGER.log(Level.WARNING, "Error sending kill query message", e);
