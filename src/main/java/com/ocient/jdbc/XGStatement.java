@@ -183,7 +183,7 @@ public class XGStatement implements Statement
 	 * 
 	 * @throws SQLTimeoutException if the timeout is reached before the call completes
 	 */
-	protected void startTask(ExceptionalRunnable task, Optional<String> optQueryId, final long timeoutMillis) throws Exception {
+	protected void startTask(ExceptionalRunnable task, final Optional<String> optQueryId, final long timeoutMillis) throws Exception {
 		Preconditions.checkArgument(timeoutMillis >= 0L);
 		
 		// Check if we even have a cancelable query at this point
@@ -197,15 +197,19 @@ public class XGStatement implements Statement
 			task.run();
 			return;
 		}
-		
+
 		// Create a future that we'll use the propagate timeouts to the caller
 		final CompletableFuture<SQLTimeoutException> killFuture = new CompletableFuture<>();
+
+		// Capture the current thread that will block waiting for a response from the server
+		final Thread submittingThread = Thread.currentThread();
 		
 		// Create a task that will cancel this query if the timeout has been exceeded
 		final TimerTask killQueryTask = new TimerTask(){
 			
 			@Override
 			public void run() {
+
 				// execute the cancel routine iff it's still active
 				final long timeoutSec = timeoutMillis / 1000;
 				
@@ -215,11 +219,16 @@ public class XGStatement implements Statement
 					// TODO consider creating a dedicated thread for processing the kill queries.
 					// Our timer is shared across all connections, so if killQuery() hangs, timeouts 
 					// are temporarily disabled, not sure what is acceptable behavior here
-					SQLException suppressed = null;
+					Exception suppressed = null;
 					try {
+
+						// interrupt the thread waiting for the server response
+						submittingThread.interrupt();
+
+						// FIXME this message needs to be sent on a different socket...
 						XGStatement.this.killQuery(optQueryId.get());
-					} catch (SQLException e) {
-						LOGGER.log(Level.WARNING, "Could not cancel SQL query", e);
+					} catch (Exception e) {
+						LOGGER.log(Level.WARNING, "Error sending kill query message", e);
 						suppressed = e;
 					} finally {
 						final SQLTimeoutException e = new SQLTimeoutException(String.format("Timeout of %s seconds exceeded", timeoutSec));
@@ -227,6 +236,7 @@ public class XGStatement implements Statement
 							e.addSuppressed(suppressed);
 						}
 						
+						// return the timeout exception to the blocking caller
 						killFuture.complete(e);
 					}
 				}
@@ -238,7 +248,7 @@ public class XGStatement implements Statement
 			// run the task
 			task.run();
 		} finally {
-			// Our task completed, cancel the timeout task we created above
+			// Our task completed or we were interrupted
 			if (!killQueryTask.cancel()) {
 				// this is ugly, but we're within the context of a synchronous framework so whatever
 				throw killFuture.get(); 
@@ -1180,7 +1190,7 @@ public class XGStatement implements Statement
 					}
 				}
 
-				if (hasQueryId) { 
+				if (hasQueryId) {
 					final Method getQueryId = br.getClass().getMethod("getQueryId");
 					final String recvQueryId = ((String) getQueryId.invoke(br));
 					if (!recvQueryId.isEmpty())
