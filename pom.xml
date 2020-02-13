@@ -4,7 +4,8 @@
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
   <version>1.6</version> <!--JDBC VERSION NUMBER HERE-->
-  <name>xgjdbc</name>
+  <name>${project.groupId}:${project.artifactId}</name>
+  <description>JDBC Driver for connecting to an Ocient Database</description>
   <url>http://www.ocient.com</url>
   <licenses>
     <license>
@@ -49,9 +50,9 @@
     </developer>
   </developers>
   <scm>
-    <connection>scm:git:git://github.com/simpligility/ossrh-demo.git</connection>
-    <developerConnection>scm:git:ssh://github.com:simpligility/ossrh-demo.git</developerConnection>
-    <url>http://github.com/simpligility/ossrh-demo/tree/master</url>
+    <connection>scm:git:https://github.com/Xeograph/ocient_jdbc.git</connection>
+    <developerConnection>scm:git:git://github.com/Xeograph/ocient_jdbc.git</developerConnection>
+    <url>https://github.com/Xeograph/ocient_jdbc/tree/master</url>
   </scm>
   <distributionManagement>
     <snapshotRepository>
@@ -67,8 +68,18 @@
     <protoc>protoc</protoc>
   </properties>
   <build>
-    <finalName>ocient-jdbc4-1.0</finalName>
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.8</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>false</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
@@ -124,7 +135,28 @@
         <configuration>
           <source>8</source>
         </configuration>
-        </plugin>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -137,6 +169,26 @@
           </archive>
         </configuration>
       </plugin>        
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
