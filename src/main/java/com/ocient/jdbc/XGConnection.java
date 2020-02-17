@@ -137,6 +137,7 @@ public class XGConnection implements Connection
 	protected String version;
 	protected String setSchema = "";
 	protected boolean force = false;
+	private volatile long timeoutMillis = 0L; // 0L means no timeout set
 
 	protected boolean oneShotForce = false;
 	protected ArrayList<String> cmdcomps = new ArrayList<>();
@@ -204,6 +205,20 @@ public class XGConnection implements Connection
 		}
 
 		warnings.clear();
+	}
+
+	/*!
+	 * This timeout will be applied to every XGStatement created
+	 */
+	public void setTimeout(final int seconds) throws SQLException {
+		if (seconds < 0) {
+			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
+		}
+		this.timeoutMillis = seconds * 1000;
+	}
+
+	protected long getTimeoutMillis() {
+		return timeoutMillis;
 	}
 
 	/**

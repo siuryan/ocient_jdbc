@@ -1025,15 +1025,10 @@ public class CLI {
 			return;
 		}
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final int timeout = Integer.parseInt(cmd.substring("SET TIMEOUT ".length()).trim());
-			((XGStatement) stmt).setQueryTimeout(timeout);
-			printWarnings(stmt);
+			((XGConnection)conn).setTimeout(timeout);
 			end = System.currentTimeMillis();
-
-			stmt.close();
-
 			printTime(start, end);
 		} catch (final Exception e) {
 			System.out.println("CLI Error: " + e.getMessage());

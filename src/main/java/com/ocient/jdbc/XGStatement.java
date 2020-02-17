@@ -94,7 +94,10 @@ public class XGStatement implements Statement
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
 
 	private final boolean force;
-	private volatile long timeoutMillis = 0L;
+
+	// the tmeout is inherited from the connection but can be updated
+	// via setQueryTimeout()
+	private volatile long timeoutMillis;
 
 	private boolean oneShotForce;
 
@@ -103,6 +106,7 @@ public class XGStatement implements Statement
 		this.conn = conn;
 		this.force = force;
 		this.oneShotForce = oneShotForce;
+		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
 	}
 
 	public XGStatement(final XGConnection conn, final int type, final int concur, final boolean force,
@@ -111,7 +115,7 @@ public class XGStatement implements Statement
 		this.conn = conn;
 		this.force = force;
 		this.oneShotForce = oneShotForce;
-
+		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
 		if (concur != ResultSet.CONCUR_READ_ONLY)
 		{
 			throw new SQLFeatureNotSupportedException();
@@ -129,6 +133,7 @@ public class XGStatement implements Statement
 		this.conn = conn;
 		this.force = force;
 		this.oneShotForce = oneShotForce;
+		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
 
 		if (concur != ResultSet.CONCUR_READ_ONLY)
 		{
@@ -191,7 +196,7 @@ public class XGStatement implements Statement
 			task.run();
 			return;
 		}
-
+		
 		// Check if a timeout value has been set
 		if (timeoutMillis == 0L) {
 			task.run();
@@ -214,7 +219,7 @@ public class XGStatement implements Statement
 				final long timeoutSec = timeoutMillis / 1000;
 				
 				LOGGER.log(Level.INFO, String.format(
-					"Timeout invoked after %s seconds. Canceling query %s", timeoutSec, optQueryId));
+					"Timeout invoked after %s seconds. Canceling query %s", timeoutSec, optQueryId.get()));
 					
 					// send the kill query message on the timeout thread. This is okay because we don't
 					// share Timers across connection threads.
@@ -230,7 +235,11 @@ public class XGStatement implements Statement
 						// is to tear down our current connection.
 						conn.reconnect();
 
-						// send the kill query request on the new socket
+						// set the result set to null. We forego closing it because the server sql node
+						// should clean up all resources related to this query. 
+						conn.rs = null; 
+
+						// send the kill query message to the server
 						XGStatement.this.killQuery(optQueryId.get());
 					} catch (Exception e) {
 						LOGGER.log(Level.WARNING, "Error sending kill query message", e);
@@ -256,7 +265,9 @@ public class XGStatement implements Statement
 			// Our task completed or we were interrupted
 			if (!killQueryTask.cancel()) {
 				// this is ugly, but we're within the context of a synchronous framework so whatever
-				throw killFuture.get(); 
+				SQLException e = killFuture.join(); // wait for the kill query response (don't interrupt)
+				Thread.interrupted(); // clear interrupted condition
+				throw e;
 			} else {
 				// Removes our canceled task (any those from any other connection) from the timer task queue
 				conn.purgeTimeoutTasks();
@@ -1434,16 +1445,16 @@ public class XGStatement implements Statement
 
 	@Override
 	public void setQueryTimeout(final int seconds) throws SQLException {
-		if (seconds < 0) {
-			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
-		}
 		if (closed) {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+		if (seconds < 0) {
+			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
 		}
 		timeoutMillis = seconds * 1000;
 		LOGGER.log(Level.FINE, "Query timeout set to {} seconds", seconds);
 	}
-
+	
 	@Override
 	public <T> T unwrap(final Class<T> iface) throws SQLException {
 		throw new SQLFeatureNotSupportedException();

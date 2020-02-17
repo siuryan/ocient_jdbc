@@ -66,7 +66,6 @@ public class XGResultSet implements ResultSet
 	private Map<String, Integer> cols2Pos;
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
-	private final long timeoutMillis; // timeout used for every invocation of getMoreData()
 
 	//tell whether the resultset was constructed with a pre-defined dataset.    
 	private boolean immutable = false;	
@@ -81,7 +80,6 @@ public class XGResultSet implements ResultSet
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
-		timeoutMillis = stmt.getQueryTimeoutMillis();
 	}
 	
 	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt)
@@ -91,7 +89,6 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		this.rs.add(new DataEndMarker());
 		this.immutable = true;
-		timeoutMillis = stmt.getQueryTimeoutMillis();
 	}	
 	
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
@@ -102,13 +99,16 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		requestMetaData();
 		mergeData(re);
-		timeoutMillis = stmt.getQueryTimeoutMillis();
 	}
 
 	private Optional<String> getQueryId() {
 		// TODO The query id should be known when the result set is created (on executeQuery())
 		// but this would require some additional server side work, so we'll do this hac for now
 		return stmt.getQueryId();
+	}
+
+	private long getTimeoutMillis() {
+		return stmt.getQueryTimeoutMillis();
 	}
 
 	@Override
@@ -814,7 +814,7 @@ public class XGResultSet implements ResultSet
 				final byte[] data = new byte[length];
 				readBytes(data);
 				fdr[0].mergeFrom(data);
-			}, queryId, timeoutMillis);
+			}, queryId, getTimeoutMillis());
 
 			final ConfirmationResponse response = fdr[0].getResponse();
 			final ResponseType rType = response.getType();
