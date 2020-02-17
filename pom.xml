@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-  <version>1.6</version> <!--JDBC VERSION NUMBER HERE-->
+  <version>1.7</version> <!--JDBC VERSION NUMBER HERE-->
   <name>${project.groupId}:${project.artifactId}</name>
   <description>JDBC Driver for connecting to an Ocient Database</description>
   <url>http://www.ocient.com</url>
@@ -88,7 +88,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries> 
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
               <mainClass>com.ocient.cli.CLI</mainClass>
             </manifest>
           </archive>
@@ -168,7 +168,7 @@
             </manifest>
           </archive>
         </configuration>
-      </plugin>        
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
