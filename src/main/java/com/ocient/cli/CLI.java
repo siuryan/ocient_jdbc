@@ -1942,7 +1942,7 @@ public class CLI {
 						String timeStr = sdf.format(o);
 						o = timeStr;
 					} else if (o instanceof Date) {
-						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 						final TimeZone utc = TimeZone.getTimeZone("UTC");
 						sdf.setTimeZone(utc);
 						String dateStr = sdf.format(o);
@@ -2062,7 +2062,7 @@ public class CLI {
 
 	/*
 	 * unused?
-	 * 
+	 *
 	 * We have a one or two part table name that might be double quoted with unknown
 	 * case We want the actual name of the table being referenced
 	 */
