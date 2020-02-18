@@ -807,19 +807,19 @@ public class XGResultSet implements ResultSet
 			conn.out.flush();
 
 			// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
-			final ClientWireProtocol.FetchDataResponse.Builder[] fdr = {ClientWireProtocol.FetchDataResponse.newBuilder()};
+			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
 			stmt.startTask(() -> {
 				// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
 				final int length = getLength();
 				final byte[] data = new byte[length];
 				readBytes(data);
-				fdr[0].mergeFrom(data);
+				fdr.mergeFrom(data);
 			}, queryId, getTimeoutMillis());
 
-			final ConfirmationResponse response = fdr[0].getResponse();
+			final ConfirmationResponse response = fdr.getResponse();
 			final ResponseType rType = response.getType();
 			processResponseType(rType, response);
-			return mergeData(fdr[0].getResultSet());
+			return mergeData(fdr.getResultSet());
 		}
 		catch (final Exception e)
 		{
