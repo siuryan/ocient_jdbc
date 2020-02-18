@@ -62,6 +62,7 @@ import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
 import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import java.util.TimeZone;
 import java.sql.Time;
+import java.sql.Timestamp;
 
 public class CLI {
 	private static Connection conn;
@@ -1955,18 +1956,21 @@ public class CLI {
 					Object o = (rs.getObject(i));
 					if (rs.wasNull()) {
 						o = "NULL";
-					} else if (o instanceof Time) {
+					} else if (meta.getColumnType(i) == java.sql.Types.TIME) {
 						SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 						final TimeZone utc = TimeZone.getTimeZone("UTC");
 						sdf.setTimeZone(utc);
-						String timeStr = sdf.format(o);
-						o = timeStr;
-					} else if (o instanceof Date) {
+						o = sdf.format(o);
+					} else if (meta.getColumnType(i) == java.sql.Types.TIMESTAMP) {
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 						final TimeZone utc = TimeZone.getTimeZone("UTC");
 						sdf.setTimeZone(utc);
-						String dateStr = sdf.format(o);
-						o = dateStr;
+						o = sdf.format(o);
+					} else if (meta.getColumnType(i) == java.sql.Types.DATE) {
+						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+						final TimeZone utc = TimeZone.getTimeZone("UTC");
+						sdf.setTimeZone(utc);
+						o = sdf.format(o);
 					} else if (o instanceof byte[]) {
 						o = "0x" + bytesToHex((byte[]) o);
 					}
@@ -2027,16 +2031,21 @@ public class CLI {
 					valueString = "NULL";
 				} else if (o instanceof byte[]) {
 					valueString = "0x" + bytesToHex((byte[]) o);
-				} else if (o instanceof Time) {
+				} else if (meta.getColumnType(i) == java.sql.Types.TIME) {
 					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 					final TimeZone utc = TimeZone.getTimeZone("UTC");
 					sdf.setTimeZone(utc);
 					valueString = sdf.format(o);
-				} else if (o instanceof Date) {
+				} else if (meta.getColumnType(i) == java.sql.Types.TIMESTAMP) {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 					final TimeZone utc = TimeZone.getTimeZone("UTC");
 					sdf.setTimeZone(utc);
 					valueString = sdf.format(o);
+				} else if (meta.getColumnType(i) == java.sql.Types.DATE) {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					valueString = sdf.format(o);;
 				} else if (o != null) {
 					valueString = o.toString();
 				}
@@ -2082,7 +2091,7 @@ public class CLI {
 
 	/*
 	 * unused?
-	 * 
+	 *
 	 * We have a one or two part table name that might be double quoted with unknown
 	 * case We want the actual name of the table being referenced
 	 */
