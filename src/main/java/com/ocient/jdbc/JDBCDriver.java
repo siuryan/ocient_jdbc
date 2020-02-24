@@ -1,6 +1,7 @@
 package com.ocient.jdbc;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.Connection;
@@ -52,7 +53,7 @@ public class JDBCDriver implements Driver
 		try
 		{
 			configLogger(arg1);
-			
+
 			final String protocol = arg0.substring(0, 14);
 			if (!protocol.equals("jdbc:ocient://"))
 			{
@@ -88,7 +89,22 @@ public class JDBCDriver implements Driver
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(hostname, portNum), 10000);
+				final InetAddress[] addrs = InetAddress.getAllByName(hostname);
+				boolean connected = false;
+				Throwable lastError = null;
+				for (InetAddress addr : addrs) {
+					try {
+						sock.connect(new InetSocketAddress(addr, portNum), 10000);
+						connected = true;
+						break;
+					} catch (final Throwable e) {
+						lastError = e;
+					}
+				}
+				if (!connected && lastError != null) {
+					// Represents failure to connect.  Socket will be cleaned up in catch block.
+					throw lastError;
+				}
 			}
 			catch (final Throwable e)
 			{
@@ -115,7 +131,7 @@ public class JDBCDriver implements Driver
 			{
 				throw (SQLException) e;
 			}
-			
+
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -160,7 +176,7 @@ public class JDBCDriver implements Driver
 		loglevel.choices[0] = "OFF";
 		loglevel.choices[1] = "ERROR";
 		loglevel.choices[2] = "DEBUG";
-		
+
 		retval[2] = loglevel;
 
 		final DriverPropertyInfo logfile = new DriverPropertyInfo("logfile", null);
@@ -187,7 +203,7 @@ public class JDBCDriver implements Driver
 				LOGGER.setLevel(Level.WARNING);
 			}
 		}
-		
+
 		String logfile = props.getProperty("logfile");
 
 		/* If logfile hasn't changed, return */

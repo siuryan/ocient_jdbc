@@ -347,6 +347,7 @@ public class CLI {
 			final String[] hosts = m.group("hosts").split(",");
 			final String preurl = m.group("preurl");
 			final String posturl = m.group("posturl");
+			Exception lastException = null;
 			for (String host : hosts) {
 				final String url = preurl + host + posturl;
 				try {
@@ -355,13 +356,16 @@ public class CLI {
 					} else {
 						doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
 					}
+					// No exception thrown means connection was successful, and connectTo may return
+					System.out.println("Connected to " + url);
+					return;
 				} catch (final Exception e) {
 					System.out.println("Failed to connect to " + host);
-					continue;
+					lastException = e;
 				}
-				// No exception thrown means connection was successful, and connectTo may return
-				System.out.println("Connected to " + url);
-				return;
+			}
+			if (lastException != null) {
+				throw lastException;
 			}
 		} catch (final Exception e) {
 			System.out.println("Error: " + e.getMessage());
