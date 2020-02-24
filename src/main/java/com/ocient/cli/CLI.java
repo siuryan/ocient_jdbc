@@ -325,7 +325,6 @@ public class CLI {
 	}
 
 	private static Pattern connectToSyntax = Pattern.compile(
-			// "connect to (?<url>.+?)(?<up> user (" + userTk() + ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?",
 			"connect to (?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up> user (" + userTk() + ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?",
 			Pattern.CASE_INSENSITIVE);
 
