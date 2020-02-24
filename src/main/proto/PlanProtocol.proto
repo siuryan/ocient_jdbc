@@ -437,7 +437,8 @@ message Operator
     uint32 partition_index = 24;
     repeated uint32 partition_counts = 25;
     repeated string storage_space_uuids = 26;
-    bool upstream_partition_sensitive = 27;
+	bool upstream_partition_sensitive = 27;
+	// value 28 is used up above under outputTypeStrings
 
     oneof request_oneof
     {
