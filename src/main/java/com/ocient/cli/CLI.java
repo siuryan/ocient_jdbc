@@ -272,6 +272,8 @@ public class CLI {
 			forceExternal(cmd);
 		} else if (startsWithIgnoreCase(cmd, "EXPORT TABLE")) {
 			exportTable(cmd);
+		} else if (startsWithIgnoreCase(cmd, "SET TIMEOUT")) {
+			setQueryTimeout(cmd);
 		} else {
 			System.out.println("Invalid command: " + cmd);
 		}
@@ -1027,6 +1029,24 @@ public class CLI {
 
 			stmt.close();
 
+			printTime(start, end);
+		} catch (final Exception e) {
+			System.out.println("CLI Error: " + e.getMessage());
+		}
+	}
+
+	private static void setQueryTimeout(final String cmd) {
+		long start = 0;
+		long end = 0;
+		if (!isConnected()) {
+			System.out.println("No database connection exists");
+			return;
+		}
+		try {
+			start = System.currentTimeMillis();
+			final int timeout = Integer.parseInt(cmd.substring("SET TIMEOUT ".length()).trim());
+			((XGConnection)conn).setTimeout(timeout);
+			end = System.currentTimeMillis();
 			printTime(start, end);
 		} catch (final Exception e) {
 			System.out.println("CLI Error: " + e.getMessage());

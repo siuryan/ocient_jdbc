@@ -152,6 +152,7 @@ message ExecuteQueryResponse
 	bool redirect = 2; //Redirect = true, means we are telling client to send the command elsewhere
 	string redirectHost = 3;
 	fixed32 redirectPort = 4;
+	string queryId = 5; // The query ID (generated server side) can be used by a client to cancel/kill
 }
 
 message ExecuteUpdate

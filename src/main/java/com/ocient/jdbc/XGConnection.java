@@ -12,6 +12,7 @@ import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Driver;
 import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,7 +28,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -132,10 +137,13 @@ public class XGConnection implements Connection
 	protected String version;
 	protected String setSchema = "";
 	protected boolean force = false;
+	private volatile long timeoutMillis = 0L; // 0L means no timeout set
 
 	protected boolean oneShotForce = false;
-
 	protected ArrayList<String> cmdcomps = new ArrayList<>();
+
+	// The timer is initially null, created when the first query timeout is set and destroyed on close()
+	private final AtomicReference<Timer> timer = new AtomicReference<>();
 
 	protected String pwd;
 	private int retryCounter;
@@ -197,6 +205,47 @@ public class XGConnection implements Connection
 		}
 
 		warnings.clear();
+	}
+
+	/*!
+	 * This timeout will be applied to every XGStatement created
+	 */
+	public void setTimeout(final int seconds) throws SQLException {
+		if (seconds < 0) {
+			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
+		}
+		this.timeoutMillis = seconds * 1000;
+	}
+
+	protected long getTimeoutMillis() {
+		return timeoutMillis;
+	}
+
+	/**
+	 * Creates a new {@link Timer} or returns the existing one if it already exists
+	 */
+	private Timer getTimer() {
+		return this.timer.updateAndGet(existing -> existing != null ? existing : new Timer());
+	}
+
+	/**
+	 * Schedules the task to run after the specified delay
+	 * 
+	 * @param task the task to run
+	 * @param timeout delay in milliseconds
+	 */
+	protected void addTimeout(final TimerTask task, final long timeout) {
+		getTimer().schedule(task, timeout);
+	}
+
+	/**
+	 * Purges all canceled tasks from the timer.
+	 * 
+	 * Note: You should only call this if you've canceled a timer. This call may create a {@link Timer} 
+	 * object if one does not already exist
+	 */
+	protected void purgeTimeoutTasks() {
+		getTimer().purge();
 	}
 
 	private void clientHandshake(final String userid, final String pwd, final String db) throws Exception {
@@ -399,6 +448,16 @@ public class XGConnection implements Connection
 		}
 		catch (final Exception e)
 		{}
+
+		// Cleanup our timer, if one exists
+		Timer t = null;
+		do {
+			t = timer.get();
+			if (t == null) {
+				return;
+			}
+		} while (!timer.compareAndSet(t, null));
+		t.cancel();
 	}
 
 	@Override
