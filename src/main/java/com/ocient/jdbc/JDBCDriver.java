@@ -86,14 +86,14 @@ public class JDBCDriver implements Driver
 			Socket sock = null;
 			try
 			{
-				sock = new Socket();
-				sock.setReceiveBufferSize(4194304);
-				sock.setSendBufferSize(4194304);
 				final InetAddress[] addrs = InetAddress.getAllByName(hostname);
 				boolean connected = false;
 				Throwable lastError = null;
 				for (InetAddress addr : addrs) {
 					try {
+						sock = new Socket();
+						sock.setReceiveBufferSize(4194304);
+						sock.setSendBufferSize(4194304);
 						sock.connect(new InetSocketAddress(addr, portNum), 10000);
 						connected = true;
 						break;
