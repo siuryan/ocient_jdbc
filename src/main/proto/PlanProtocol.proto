@@ -1028,6 +1028,8 @@ message HashJoinOperator
 	repeated bool implicit_projs = 9;
 	// Which equi join conditions match null keys? The index here corresponds to join col position in join_cols
 	repeated uint64 matchNullKeysIdxes = 10;
+	//Should we use a product multiplexer instead of a hash join multiplexer?
+	bool productMultiplex = 11;
 }
 
 message EosOperator
