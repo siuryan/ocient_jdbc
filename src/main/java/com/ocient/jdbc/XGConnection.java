@@ -1095,6 +1095,82 @@ public class XGConnection implements Connection
 			}
 		}
 
+		if (force)
+		{
+			sock = null;
+			try
+			{
+				sock = new Socket();
+				sock.setReceiveBufferSize(4194304);
+				sock.setSendBufferSize(4194304);
+				sock.connect(new InetSocketAddress(this.url, this.portNum));
+			}
+			catch (final Exception e)
+			{
+				try
+				{
+					sock.close();
+				}
+				catch (final IOException f)
+				{}
+
+				// reconnect failed so we are no longer connected
+				connected = false;
+
+				if(e instanceof IOException) {
+					throw (IOException)e;
+				}
+
+				throw new IOException();
+			}
+
+			try
+			{
+				in = new BufferedInputStream(sock.getInputStream());
+				out = new BufferedOutputStream(sock.getOutputStream());
+
+				clientHandshake(user, pwd, database);
+				if (!setSchema.equals(""))
+				{
+					setSchema(setSchema);
+				}
+
+				if (setPso == -1)
+				{
+					//We have to turn it off
+					setPSO(false);
+				}
+				else if (setPso > 0)
+				{
+					//Set non-default threshold
+					setPSO(setPso);
+				}
+
+				return;
+			}
+			catch (final Exception handshakeException)
+			{
+				try
+				{
+					in.close();
+					out.close();
+					sock.close();
+				}
+				catch (final IOException f)
+				{}
+
+				// reconnect failed so we are no longer connected
+				connected = false;
+
+				// Failed on the client handshake, so capture exception
+				if(handshakeException instanceof SQLException) {
+					throw (SQLException) handshakeException;
+				}
+
+				throw new IOException();
+			}
+		}
+
 		// capture any exception from trying to connect
 		SQLException retVal = null;
 		for (final String cmdcomp : cmdcomps)
@@ -1136,6 +1212,17 @@ public class XGConnection implements Connection
 				if (!setSchema.equals(""))
 				{
 					setSchema(setSchema);
+				}
+
+				if (setPso == -1)
+				{
+					//We have to turn it off
+					setPSO(false);
+				}
+				else if (setPso > 0)
+				{
+					//Set non-default threshold
+					setPSO(setPso);
 				}
 
 				if (setPso == -1)
@@ -1227,6 +1314,17 @@ public class XGConnection implements Connection
 			if (!setSchema.equals(""))
 			{
 				setSchema(setSchema);
+			}
+
+			if (setPso == -1)
+			{
+				//We have to turn it off
+				setPSO(false);
+			}
+			else if (setPso > 0)
+			{
+				//Set non-default threshold
+				setPSO(setPso);
 			}
 
 			if (setPso == -1)
