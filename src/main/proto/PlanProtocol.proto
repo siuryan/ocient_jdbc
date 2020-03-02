@@ -220,7 +220,9 @@ enum SqlColType
     TYPE_TIME= 26;
 	TYPE_DECIMAL = 27;
 	TYPE_MICROSECONDS = 28;
-    TYPE_NANOSECONDS = 29;	
+	TYPE_NANOSECONDS = 29;
+	TYPE_ARRAY = 30;
+    TYPE_TUPLE = 31;
 }
 
 //Represents equivalent partitioning, meaning we are partitioned on at least one of these columns and they are identical
@@ -357,6 +359,8 @@ message Operator
     repeated string outputColumns = 4;
     //The types for each of those columns (in the same order)
     repeated SqlColType outputTypes = 5;
+    //The types for each of those columns as strings (in the same order)
+    repeated string outputTypeStrings = 28;
     //The estimated # of unique values for each col (in the same order)
     repeated uint64 colCard = 6;
     //The estimated number of rows produced by this operator
@@ -433,7 +437,8 @@ message Operator
     uint32 partition_index = 24;
     repeated uint32 partition_counts = 25;
     repeated string storage_space_uuids = 26;
-    bool upstream_partition_sensitive = 27;
+	bool upstream_partition_sensitive = 27;
+	// value 28 is used up above under outputTypeStrings
 
     oneof request_oneof
     {
@@ -495,7 +500,7 @@ message Operator
 message ReferenceOperator
 {
 	//The only thing we track here is the string version of all the types
-	repeated string colTypes = 1;
+	repeated string colTypes = 1 [deprecated=true];
 	uint32 parent_index = 2;
 }
 
@@ -513,8 +518,8 @@ message AggregationOperator
         AGG_OP_SUM_DISTINCT = 7;
         AGG_OP_COUNT_GDC = 8;
         AGG_OP_PRODUCT = 9;
-        AGG_OP_PRODUCT_DISTINCT = 10;
-	AGG_OP_COUNT_DISTINCT_GDC = 11;
+		AGG_OP_PRODUCT_DISTINCT = 10;
+		AGG_OP_COUNT_DISTINCT_GDC = 11;
     }
 
 	//The GROUP BY columns - might be empty
@@ -625,7 +630,7 @@ message IndexOperator
 	//whether or not this is a segment distinct index
 	bool segmentDistinct = 12;
 	//The string representation of the type of ALL output columns
-	repeated string colTypes = 13;
+	repeated string colTypes = 13 [deprecated=true];
 	// The columns
 	map<string, ColumnInfo> columns = 14;
 }
@@ -731,7 +736,7 @@ message TableScanOperator
 	//Time filter disjunctions
 	repeated Disjunction time_filters = 8;
 	//The string representation of the type of ALL output columns
-	repeated string colTypes = 9;
+	repeated string colTypes = 9 [deprecated=true];
 	// The columns
 	map<string, ColumnInfo> columns = 10;
 }
@@ -1028,7 +1033,7 @@ message HashJoinOperator
 message EosOperator
 {
 	//The string representation of the type of ALL output columns
-	repeated string colTypes = 1;
+	repeated string colTypes = 1 [deprecated=true];
 }
 
 message ShuffleOperator
