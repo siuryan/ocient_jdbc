@@ -270,17 +270,21 @@ message Request
         EXECUTE_UPDATE = 13;
         LOAD_BROADCAST = 14;
         FETCH_SYSTEM_METADATA = 15;
-        CANCEL_QUERY = 16;
+		CANCEL_QUERY = 16;
+		LOCAL_CANCEL_QUERY = 27;
         SYSTEM_WIDE_QUERIES = 17;
         LOCAL_QUERIES = 18;
         EXECUTE_PLAN = 19;
         EXPLAIN_PLAN = 20;
         LIST_PLAN = 21;
-        KILL_QUERY = 22;
+		KILL_QUERY = 22;
+		LOCAL_KILL_QUERY = 28;
         EXECUTE_INLINE_PLAN = 23;
 		FORCE_EXTERNAL = 24;
 		EXECUTE_EXPORT = 25;
 		SET_PSO = 26;
+		// 27 used above
+		// 28 used above
     }
 
     RequestType type = 1;
@@ -301,17 +305,21 @@ message Request
     	ExecuteUpdate execute_update = 14;
     	LoadBroadcast load_broadcast = 15;
     	FetchSystemMetadata fetch_system_metadata = 16;
-    	CancelQuery cancel_query = 17;
+		CancelQuery cancel_query = 17;
+		LocalCancelQuery local_cancel_query = 28;
     	SystemWideQueries system_wide_queries = 18;
     	LocalQueries local_queries = 19;
     	ExecutePlan execute_plan = 20;
     	ExplainPlan explain_plan = 21;
     	ListPlan list_plan = 22;
-    	KillQuery kill_query = 23;
+		KillQuery kill_query = 23;
+		LocalKillQuery local_kill_query = 29;
     	ExecuteInlinePlan execute_inline_plan = 24;
 		ForceExternal force_external = 25;
 		ExecuteExport execute_export = 26;
 		SetPSO set_pso = 27;
+		// 28 is defined above
+		// 29 is defined above
     }
 }
 
@@ -380,12 +388,32 @@ message CancelQueryResponse
 	ConfirmationResponse response = 1;
 }
 
+message LocalCancelQuery
+{
+	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+}
+
+message LocalCancelQueryResponse
+{
+	ConfirmationResponse response = 1;
+}
+
 message KillQuery
 {
 	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
 }
 
 message KillQueryResponse
+{
+	ConfirmationResponse response = 1;
+}
+
+message LocalKillQuery
+{
+	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+}
+
+message LocalKillQueryResponse
 {
 	ConfirmationResponse response = 1;
 }
