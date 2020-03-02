@@ -44,14 +44,15 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
 import com.google.protobuf.util.JsonFormat;
 
 public class XGStatement implements Statement
 {
-	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
+	public static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 
 	private static final int defaultFetchSize = 30000;
 
@@ -89,7 +90,26 @@ public class XGStatement implements Statement
 	// not thread safe because individual queries are single threaded
 	// The queryId is set on the initial call to executeQuery()
 	// TODO enable timeouts on initial call to executeQuery()
-	private String queryId = null;
+	private volatile String queryId = null;
+
+	private volatile AtomicReference<Thread> runningQueryThread = new AtomicReference<Thread>(null);
+	private volatile AtomicBoolean queryCancelled = new AtomicBoolean(false);
+	public void setQueryCancelled(boolean b) { queryCancelled.set(b); }
+    public void setRunningQueryThread(Thread t) { runningQueryThread.set(t); }
+	public void passUpCancel(boolean clearCancelFlag) throws SQLException
+	{
+		synchronized (this)
+		{
+			boolean cancelled = queryCancelled.get();
+			if (clearCancelFlag)
+			{
+				queryCancelled.set(false);
+			}
+			if (cancelled || conn.isClosed()) {
+				throw SQLStates.OK.cloneAndSpecify("Query cancelled");
+			}
+		}
+	}
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
 
@@ -178,25 +198,25 @@ public class XGStatement implements Statement
 	}
 
 	/**
-	 * Executes a potentially exceptional task, canceling the backing query its it takes longer 
+	 * Executes a potentially exceptional task, canceling the backing query its it takes longer
 	 * than the timeout specified by {@link #getQueryTimeout()}.
-	 * 
+	 *
 	 * @param task 				the task to execute
 	 * @param optQueryId 		the query associated with this task. Empty of none exists
 	 * @param timeoutMillis		the number of milliseconds to wait before firing off a kill query
 	 * 							command to the sql node
-	 * 
+	 *
 	 * @throws SQLTimeoutException if the timeout is reached before the call completes
 	 */
 	protected void startTask(ExceptionalRunnable task, final Optional<String> optQueryId, final long timeoutMillis) throws Exception {
 		Preconditions.checkArgument(timeoutMillis >= 0L);
-		
+
 		// Check if we even have a cancelable query at this point
 		if (!optQueryId.isPresent()) {
 			task.run();
 			return;
 		}
-		
+
 		// Check if a timeout value has been set
 		if (timeoutMillis == 0L) {
 			task.run();
@@ -208,54 +228,54 @@ public class XGStatement implements Statement
 
 		// Capture the current thread that will block waiting for a response from the server
 		final Thread submittingThread = Thread.currentThread();
-		
+
 		// Create a task that will cancel this query if the timeout has been exceeded
 		final TimerTask killQueryTask = new TimerTask(){
-			
+
 			@Override
 			public void run() {
 
 				// execute the cancel routine iff it's still active
 				final long timeoutSec = timeoutMillis / 1000;
-				
+
 				LOGGER.log(Level.INFO, String.format(
 					"Timeout invoked after %s seconds. Canceling query %s", timeoutSec, optQueryId.get()));
-					
-					// send the kill query message on the timeout thread. This is okay because we don't
-					// share Timers across connection threads.
-					Exception suppressed = null;
-					try {
 
-						// interrupt the thread waiting for the server response
-						submittingThread.interrupt();
+				// send the kill query message on the timeout thread. This is okay because we don't
+				// share Timers across connection threads.
+				Exception suppressed = null;
+				try {
 
-						// we can't reuse the existing socket because it can now have garbage sitting
-						// on it (from the timed out request). We could add sequence numbers to our 
-						// protocol but that's a heavy handed solution. The easist thing to do here
-						// is to tear down our current connection.
-						conn.reconnect();
+					// interrupt the thread waiting for the server response
+					submittingThread.interrupt();
 
-						// set the result set to null. We forego closing it because the server sql node
-						// should clean up all resources related to this query. 
-						conn.rs = null; 
+					// we can't reuse the existing socket because it can now have garbage sitting
+					// on it (from the timed out request). We could add sequence numbers to our
+					// protocol but that's a heavy handed solution. The easist thing to do here
+					// is to tear down our current connection.
+					conn.reconnect();
 
-						// send the kill query message to the server
-						XGStatement.this.killQuery(optQueryId.get());
-					} catch (Exception e) {
-						LOGGER.log(Level.WARNING, "Error sending kill query message", e);
-						suppressed = e;
-					} finally {
-						final SQLTimeoutException e = new SQLTimeoutException(String.format("Timeout of %s seconds exceeded", timeoutSec));
-						if (suppressed != null) {
-							e.addSuppressed(suppressed);
-						}
-						
-						// return the timeout exception to the blocking caller
-						killFuture.complete(e);
+					// set the result set to null. We forego closing it because the server sql node
+					// should clean up all resources related to this query.
+					conn.rs = null;
+
+					// send the kill query message to the server
+					XGStatement.this.killQuery(optQueryId.get());
+				} catch (Exception e) {
+					LOGGER.log(Level.WARNING, "Error sending kill query message", e);
+					suppressed = e;
+				} finally {
+					final SQLTimeoutException e = new SQLTimeoutException(String.format("Timeout of %s seconds exceeded", timeoutSec));
+					if (suppressed != null) {
+						e.addSuppressed(suppressed);
 					}
+
+					// return the timeout exception to the blocking caller
+					killFuture.complete(e);
 				}
-			};
-			
+			}
+		};
+
 		conn.addTimeout(killQueryTask, timeoutMillis);
 
 		try {
@@ -280,9 +300,41 @@ public class XGStatement implements Statement
 		throw new SQLFeatureNotSupportedException();
 	}
 
+	/**
+	 * Kill the currently running query
+	 *
+	 * @throws SQLException
+	 */
 	@Override
 	public void cancel() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		// TODO: Fail gracefully upon cancel
+		// See startTask
+        synchronized (this)
+		{
+			// Only statements associated to a query may be cancelled
+			// No need to cancel queries twice
+			if (queryId == null || queryCancelled.get())
+			{
+				return;
+			}
+			setQueryCancelled(true);
+			if (runningQueryThread.get() != null && runningQueryThread.get() != Thread.currentThread())
+			{
+				runningQueryThread.get().interrupt();
+			}
+
+			try
+			{
+				conn.reconnect();
+				conn.rs = null;
+
+				killQuery(queryId);
+			}
+			catch (IOException | SQLException e)
+			{
+				LOGGER.log(Level.SEVERE, "Error cancelling query: " + e.getMessage(), e);
+			}
+		}
 	}
 
 	@Override
@@ -320,15 +372,16 @@ public class XGStatement implements Statement
 	@Override
 	public boolean execute(String sql) throws SQLException {
 		clearWarnings();
+		setRunningQueryThread(Thread.currentThread());
 		sql = sql.trim();
-		
+
 		while (sql.startsWith("--") || sql.startsWith("/*"))
 		{
 			if (sql.startsWith("--"))
 			{
 				//Single line comment
 				int index = sql.indexOf('\n');
-		
+
 				if  (index == -1)
 				{
 					sql = "";
@@ -338,7 +391,7 @@ public class XGStatement implements Statement
 					sql = sql.substring(index + 1).trim();
 				}
 			}
-		
+
 			if (sql.startsWith("/*"))
 			{
 				//Multi-line comment
@@ -353,16 +406,29 @@ public class XGStatement implements Statement
 				}
 			}
 		}
-		
-		if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH"))
+
+		try
 		{
-			this.result = (XGResultSet) executeQuery(sql);
-			return true;
+			passUpCancel(false);
+			if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH"))
+			{
+				this.result = (XGResultSet) executeQuery(sql);
+				return true;
+			}
+			else
+			{
+				this.executeUpdate(sql);
+				return false;
+			}
 		}
-		else
+		catch (SQLException sqle)
 		{
-			this.executeUpdate(sql);
-			return false;
+			throw sqle;
+		}
+		finally
+		{
+			setRunningQueryThread(null);
+			passUpCancel(true);
 		}
 	}
 
@@ -439,13 +505,13 @@ public class XGStatement implements Statement
 			this.updateCount = -1;
 			return result;
 		}
-			
+
     //Handle maxRows
 		if (maxRows != 0)
 		{
 			sql =  "WITH THE_USER_QUERY_TO_ADD_A_LIMIT_TO as (" + sql + ") SELECT * FROM THE_USER_QUERY_TO_ADD_A_LIMIT_TO LIMIT " + maxRows;
 		}
-    
+
 		sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false);
 		try
 		{
@@ -454,6 +520,7 @@ public class XGStatement implements Statement
 		catch (final Exception e)
 		{
 			LOGGER.log( Level.WARNING, "executeQuery: "+sql, e);
+			passUpCancel(false);
 			try
 			{
 				reconnect();
@@ -487,7 +554,7 @@ public class XGStatement implements Statement
 					if(e instanceof SQLException) {
 						throw (SQLException) e;
 					}
-					
+
 					throw SQLStates.newGenericException(e);
 				}
 			}
@@ -500,17 +567,17 @@ public class XGStatement implements Statement
 						if(e instanceof SQLException) {
 							throw (SQLException) e;
 						}
-					
+
 						throw SQLStates.newGenericException(e);
 					}
 				} catch (final NumberFormatException e) {
 					throw SQLStates.SYNTAX_ERROR.cloneAndSpecify("SET PSO command requires argument \"ON\" or \"OFF\" or an integer, got: " + ending);
 				}
 			}
-			
+
 			return 0;
 		}
-	
+
 		//otherwise we are handling a normal update command
 		final ClientWireProtocol.ExecuteUpdateResponse.Builder eur =
 				(ClientWireProtocol.ExecuteUpdateResponse.Builder) sendAndReceive(sql,
@@ -540,15 +607,15 @@ public class XGStatement implements Statement
 						false);
 		return er.getPlan();
 	}
-	
+
 	//used by CLI
 	public PlanMessage explainPlan(final String plan) throws SQLException {
-		final ClientWireProtocol.ExplainResponse.Builder er = 
+		final ClientWireProtocol.ExplainResponse.Builder er =
 				(ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(plan, Request.RequestType.EXPLAIN_PLAN, 0,
 						false);
-		return er.getPlan();	
+		return er.getPlan();
 	}
-	
+
 	//used by CLI
 	public ResultSet executePlan(final String plan) throws SQLException {
 		sendAndReceive(plan, Request.RequestType.EXECUTE_PLAN, 0, false);
@@ -558,6 +625,7 @@ public class XGStatement implements Statement
 		}
 		catch (final Exception e)
 		{
+			passUpCancel(false);
 			try
 			{
 				reconnect();
@@ -574,7 +642,7 @@ public class XGStatement implements Statement
 		this.updateCount = -1;
 		return result;
 	}
-	
+
 	//used by CLI
 	public ResultSet executeInlinePlan(final String plan) throws SQLException {
 		sendAndReceive(plan, Request.RequestType.EXECUTE_INLINE_PLAN, 0, false);
@@ -584,6 +652,7 @@ public class XGStatement implements Statement
 		}
 		catch (final Exception e)
 		{
+			passUpCancel(false);
 			try
 			{
 				reconnect();
@@ -600,36 +669,36 @@ public class XGStatement implements Statement
 		this.updateCount = -1;
 		return result;
 	}
-	
+
 	//used by CLI
 	public ArrayList<String>  listPlan() throws SQLException {
-		final ClientWireProtocol.ListPlanResponse.Builder er = 
+		final ClientWireProtocol.ListPlanResponse.Builder er =
 				(ClientWireProtocol.ListPlanResponse.Builder) sendAndReceive("", Request.RequestType.LIST_PLAN, 0, false);
 		ArrayList<String> planNames = new ArrayList<String> (er.getPlanNameCount());
 		for(int i=0; i<er.getPlanNameCount(); ++i)
 			planNames.add(er.getPlanName(i));
 
-		return planNames;	
+		return planNames;
 	}
 
 	//used by CLI
 	public void cancelQuery(String uuid) throws SQLException {
-		final ClientWireProtocol.CancelQueryResponse.Builder er = 
+		final ClientWireProtocol.CancelQueryResponse.Builder er =
 				(ClientWireProtocol.CancelQueryResponse.Builder) sendAndReceive(uuid, Request.RequestType.CANCEL_QUERY, 0, false);
 		return;
 	}
-	
+
 	public void killQuery(String uuid) throws SQLException {
-		final ClientWireProtocol.KillQueryResponse.Builder er = 
+		final ClientWireProtocol.KillQueryResponse.Builder er =
 				(ClientWireProtocol.KillQueryResponse.Builder) sendAndReceive(uuid, Request.RequestType.KILL_QUERY, 0, false);
 		return;
 	}
-	
+
 	//used by CLI
 	public ArrayList<SysQueriesRow> listAllQueries() throws SQLException {
-		final ClientWireProtocol.SystemWideQueriesResponse.Builder er = 
+		final ClientWireProtocol.SystemWideQueriesResponse.Builder er =
 				(ClientWireProtocol.SystemWideQueriesResponse.Builder) sendAndReceive("", Request.RequestType.SYSTEM_WIDE_QUERIES, 0, false);
-			
+
 		ArrayList<SysQueriesRow> queries = new ArrayList<SysQueriesRow> (er.getRowsCount());
 		for(int i=0; i<er.getRowsCount(); ++i) {
 			queries.add( er.getRows(i) );
@@ -644,14 +713,14 @@ public class XGStatement implements Statement
 				(ClientWireProtocol.ExecuteExportResponse.Builder) sendAndReceive(table, Request.RequestType.EXECUTE_EXPORT, 0, false);
 		return er.getExportStatement();
 	}
-	
+
 	// used by Spark
 	// val is the size of each partition (if isInMb is true), or the number of partitions (otherwise)
 	public PlanMessage explain(final String sql, final int val, final boolean isInMb) throws SQLException {
 		final ClientWireProtocol.ExplainResponse.Builder er =
 				(ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(sql,
 						Request.RequestType.EXECUTE_EXPLAIN_FOR_SPARK, val, isInMb);
-	
+
 		return er.getPlan();
 	}
 
@@ -676,7 +745,7 @@ public class XGStatement implements Statement
 			}
 			if ((call == FetchSystemMetadata.SystemMetadataCall.GET_VIEWS) && (table != null) && (!table.equals("")))
 			{
-				b1.setView(table); 
+				b1.setView(table);
 			}
 			else if ((table != null) && (!table.equals("")))
 			{
@@ -718,6 +787,7 @@ public class XGStatement implements Statement
 				{
 					throw e;
 				}
+				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
 				return fetchSystemMetadata(call, schema, table, col, test);
 			}
@@ -751,6 +821,7 @@ public class XGStatement implements Statement
 		catch (final Exception e)
 		{
 			LOGGER.log( Level.WARNING, "fetchSystemMetadataResultSet: ", e);
+			passUpCancel(false);
 			try
 			{
 				reconnect();
@@ -840,7 +911,7 @@ public class XGStatement implements Statement
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-		
+
 		return maxRows;
 	}
 
@@ -1045,7 +1116,6 @@ public class XGStatement implements Statement
 		{
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
 		}
-
 		// Lord forgive us for our reflective ways, an abject abuse of power.
 		try
 		{
@@ -1106,8 +1176,10 @@ public class XGStatement implements Statement
 					b1 = ListPlan.newBuilder();
 					br = ClientWireProtocol.ListPlanResponse.newBuilder();
 					setWrapped = b2.getClass().getMethod("setListPlan", c);
+					forceFlag = false;
+					redirectFlag = false;
 					break;
-				case CANCEL_QUERY:
+                case CANCEL_QUERY:
 					c = CancelQuery.class;
 					b1 = CancelQuery.newBuilder();
 					br = ClientWireProtocol.CancelQueryResponse.newBuilder();
@@ -1123,7 +1195,7 @@ public class XGStatement implements Statement
 					forceFlag = false;
 					redirectFlag = false;
 					break;
-				case KILL_QUERY:
+                case KILL_QUERY:
 					c = KillQuery.class;
 					b1 = KillQuery.newBuilder();
 					br = ClientWireProtocol.KillQueryResponse.newBuilder();
@@ -1160,7 +1232,7 @@ public class XGStatement implements Statement
 				sql = setParms(sql);
 			}
 
-			if (sql.length() > 0) 
+			if (sql.length() > 0)
 			{
 				b1.getClass().getMethod("setSql", String.class).invoke(b1, sql);
 				if(forceFlag)
@@ -1174,7 +1246,7 @@ public class XGStatement implements Statement
 					}
 				}
 			}
-			
+
 			b2.getClass().getMethod("setType", requestType.getClass()).invoke(b2, requestType);
 			setWrapped.invoke(b2, c.cast(b1.getClass().getMethod("build").invoke(b1)));
 			final Request wrapper = (Request) b2.getClass().getMethod("build").invoke(b2);
@@ -1188,12 +1260,12 @@ public class XGStatement implements Statement
 				final byte[] data = new byte[length];
 				readBytes(data);
 				br.getClass().getMethod("mergeFrom", byte[].class).invoke(br, data);
-				
+
 				final Method getResponse = br.getClass().getMethod("getResponse");
 				final ConfirmationResponse response = (ConfirmationResponse) getResponse.invoke(br);
 				final ResponseType rType = response.getType();
 				processResponseType(rType, response);
-				
+
 				if(redirectFlag)
 				{
 					final Method getRedirect = br.getClass().getMethod("getRedirect");
@@ -1223,6 +1295,7 @@ public class XGStatement implements Statement
 				{
 					throw e;
 				}
+				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
 				return sendAndReceive(sql, requestType, val, isInMb);
 			}
@@ -1284,7 +1357,7 @@ public class XGStatement implements Statement
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-		
+
 		maxRows = max;
 	}
 
@@ -1307,9 +1380,9 @@ public class XGStatement implements Statement
 						try
 						{
 							final Object parm = parms.get(x);
-							
+
 							//System.out.println("parm type: " + parm.getClass());
-							
+
 							if (parm == null)
 							{
 								out += "NULL";
@@ -1454,7 +1527,7 @@ public class XGStatement implements Statement
 		timeoutMillis = seconds * 1000;
 		LOGGER.log(Level.FINE, "Query timeout set to {} seconds", seconds);
 	}
-	
+
 	@Override
 	public <T> T unwrap(final Class<T> iface) throws SQLException {
 		throw new SQLFeatureNotSupportedException();
