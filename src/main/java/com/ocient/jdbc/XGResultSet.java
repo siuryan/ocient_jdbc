@@ -2,6 +2,7 @@ package com.ocient.jdbc;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
 import com.ocient.jdbc.proto.ClientWireProtocol;
@@ -67,8 +71,8 @@ public class XGResultSet implements ResultSet
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
 
-	//tell whether the resultset was constructed with a pre-defined dataset.    
-	private boolean immutable = false;	
+	//tell whether the resultset was constructed with a pre-defined dataset.
+	private boolean immutable = false;
 
 	private final XGStatement stmt;
 
@@ -81,7 +85,7 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		requestMetaData();
 	}
-	
+
 	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt)
 	{
 		this.conn = conn;
@@ -89,8 +93,8 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		this.rs.add(new DataEndMarker());
 		this.immutable = true;
-	}	
-	
+	}
+
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
 	final ClientWireProtocol.ResultSet re) throws Exception
 	{
@@ -155,6 +159,8 @@ public class XGResultSet implements ResultSet
 		{
 			return;
 		}
+
+		stmt.cancel();
 
 		try
 		{
@@ -780,6 +786,10 @@ public class XGResultSet implements ResultSet
 
 			throw SQLStates.newGenericException(e);
 		}
+		finally
+		{
+			stmt.passUpCancel(true);
+		}
 	}
 
 	/*
@@ -793,7 +803,9 @@ public class XGResultSet implements ResultSet
 		}
 
 		final Optional<String> queryId = getQueryId();
-		try { 
+		stmt.passUpCancel(false);
+		stmt.setRunningQueryThread(Thread.currentThread());
+		try {
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
 			builder.setFetchSize(fetchSize);
@@ -808,13 +820,14 @@ public class XGResultSet implements ResultSet
 
 			// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
 			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
+
 			stmt.startTask(() -> {
 				// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
 				final int length = getLength();
 				final byte[] data = new byte[length];
 				readBytes(data);
 				fdr.mergeFrom(data);
-			}, queryId, getTimeoutMillis());
+            }, queryId, getTimeoutMillis());
 
 			final ConfirmationResponse response = fdr.getResponse();
 			final ResponseType rType = response.getType();
@@ -829,6 +842,11 @@ public class XGResultSet implements ResultSet
 			}
 
 			throw SQLStates.newGenericException(e);
+		}
+		finally
+		{
+			stmt.setRunningQueryThread(null);
+			stmt.passUpCancel(true);
 		}
 	}
 
@@ -1345,7 +1363,7 @@ public class XGResultSet implements ResultSet
 	public boolean last() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
-	
+
 	private boolean isBufferDem(ByteBuffer bb)
 	{
 		return bb.limit() > 8 && bb.get(8) == 0;
@@ -1410,7 +1428,7 @@ public class XGResultSet implements ResultSet
 		// set scale now, right at the end
 		return ((new BigDecimal(formedDecimalString)).movePointLeft(scale));
 	}
-	
+
 	/*
 	 * Returns true if we actually received data, false if there was no data to merge
 	 */
@@ -1435,7 +1453,7 @@ public class XGResultSet implements ResultSet
 					int rowLength = bb.getInt(offset);
 					int end = offset + rowLength;
 					offset += 4;
-					
+
 					while (offset < end)
 					{
 						//Get type tag
@@ -1514,19 +1532,19 @@ public class XGResultSet implements ResultSet
 						{
 							int precision = bb.get(offset);
 							alo.add(getDecimalFromBuffer(bb, offset));
-							offset += (2 + bcdLength(precision)); 
+							offset += (2 + bcdLength(precision));
 						}
 						else
 						{
 							throw SQLStates.INVALID_COLUMN_TYPE.clone();
 						}
 					}
-					
+
 					rs.add(alo);
 				}
 			}
 		}
-		
+
 		return rs.size() > 0;
 	}
 
@@ -1633,33 +1651,41 @@ public class XGResultSet implements ResultSet
 	}
 
 	private void requestMetaData() throws Exception {
-		// send fetch metadata request
-		final ClientWireProtocol.FetchMetadata.Builder builder = ClientWireProtocol.FetchMetadata.newBuilder();
-		final FetchMetadata msg = builder.build();
-		final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
-		b2.setType(ClientWireProtocol.Request.RequestType.FETCH_METADATA);
-		b2.setFetchMetadata(msg);
-		final Request wrapper = b2.build();
-		conn.out.write(intToBytes(wrapper.getSerializedSize()));
-		wrapper.writeTo(conn.out);
-		conn.out.flush();
-
-		// receive response
-		final ClientWireProtocol.FetchMetadataResponse.Builder fmdr =
-				ClientWireProtocol.FetchMetadataResponse.newBuilder();
-		final int length = getLength();
-		final byte[] data = new byte[length];
-		readBytes(data);
-		fmdr.mergeFrom(data);
-		final ConfirmationResponse response = fmdr.getResponse();
-		final ResponseType rType = response.getType();
-		processResponseType(rType, response);
-		cols2Pos = fmdr.getCols2PosMap();
-		cols2Types = fmdr.getCols2TypesMap();
-		pos2Cols = new TreeMap<>();
-		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
+		stmt.passUpCancel(false);
+		try
 		{
-			pos2Cols.put(entry.getValue(), entry.getKey());
+			// send fetch metadata request
+			final ClientWireProtocol.FetchMetadata.Builder builder = ClientWireProtocol.FetchMetadata.newBuilder();
+			final FetchMetadata msg = builder.build();
+			final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
+			b2.setType(ClientWireProtocol.Request.RequestType.FETCH_METADATA);
+			b2.setFetchMetadata(msg);
+			final Request wrapper = b2.build();
+			conn.out.write(intToBytes(wrapper.getSerializedSize()));
+			wrapper.writeTo(conn.out);
+			conn.out.flush();
+
+			// receive response
+			final ClientWireProtocol.FetchMetadataResponse.Builder fmdr =
+					ClientWireProtocol.FetchMetadataResponse.newBuilder();
+			final int length = getLength();
+			final byte[] data = new byte[length];
+			readBytes(data);
+			fmdr.mergeFrom(data);
+			final ConfirmationResponse response = fmdr.getResponse();
+			final ResponseType rType = response.getType();
+			processResponseType(rType, response);
+			cols2Pos = fmdr.getCols2PosMap();
+			cols2Types = fmdr.getCols2TypesMap();
+			pos2Cols = new TreeMap<>();
+			for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
+			{
+				pos2Cols.put(entry.getValue(), entry.getKey());
+			}
+		}
+		finally
+		{
+			stmt.passUpCancel(false);
 		}
 	}
 

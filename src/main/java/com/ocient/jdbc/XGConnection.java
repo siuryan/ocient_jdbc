@@ -3,6 +3,8 @@ package com.ocient.jdbc;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +33,7 @@ import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.crypto.Cipher;
@@ -149,6 +152,7 @@ public class XGConnection implements Connection
 	protected String pwd;
 	private int retryCounter;
 
+
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
 			final String database, final String version, final String force) throws Exception
 	{
@@ -231,7 +235,7 @@ public class XGConnection implements Connection
 
 	/**
 	 * Schedules the task to run after the specified delay
-	 * 
+	 *
 	 * @param task the task to run
 	 * @param timeout delay in milliseconds
 	 */
@@ -241,8 +245,8 @@ public class XGConnection implements Connection
 
 	/**
 	 * Purges all canceled tasks from the timer.
-	 * 
-	 * Note: You should only call this if you've canceled a timer. This call may create a {@link Timer} 
+	 *
+	 * Note: You should only call this if you've canceled a timer. This call may create a {@link Timer}
 	 * object if one does not already exist
 	 */
 	protected void purgeTimeoutTasks() {
@@ -318,7 +322,7 @@ public class XGConnection implements Connection
             macKey = sha.digest(buffer);
 
             PublicKey clientPub = kp.getPublic();
-            myPubKey = "-----BEGIN PUBLIC KEY-----\n" + 
+            myPubKey = "-----BEGIN PUBLIC KEY-----\n" +
                Base64.getMimeEncoder().encodeToString(clientPub.getEncoded()) + "\n-----END PUBLIC KEY-----\n";
          }
          catch(Exception e) {
@@ -386,7 +390,7 @@ public class XGConnection implements Connection
 			ccr2.mergeFrom(data);
 			response = ccr2.getResponse();
 			rType = response.getType();
-			
+
 			SQLException state = new SQLException(response.getReason(), response.getSqlState(), response.getVendorCode());
 			//if we had a failed handshake, then something went wrong with verification on the server, just try again(up to 5 times)
 			if(SQLStates.FAILED_HANDSHAKE.equals(state) && retryCounter++ < 5) {
@@ -414,7 +418,7 @@ public class XGConnection implements Connection
 		catch (final Exception e)
 		{
 			e.printStackTrace();
-			
+
 			try
 			{
 				sock.close();
@@ -431,6 +435,11 @@ public class XGConnection implements Connection
 		if (closed)
 		{
 			return;
+		}
+
+		if (rs != null)
+		{
+			rs.getStatement().cancel();
 		}
 
 		closed = true;
@@ -1009,7 +1018,7 @@ public class XGConnection implements Connection
 		}
 		catch (final IOException e)
 		{}
-		
+
 		if (force)
 		{
 			sock = null;
@@ -1031,11 +1040,11 @@ public class XGConnection implements Connection
 
 				// reconnect failed so we are no longer connected
 				connected = false;
-				
+
 				if(e instanceof IOException) {
 					throw (IOException)e;
 				}
-				
+
 				throw new IOException();
 			}
 
@@ -1049,7 +1058,7 @@ public class XGConnection implements Connection
 				{
 					setSchema(setSchema);
 				}
-				
+
 				if (setPso == -1)
 				{
 					//We have to turn it off
@@ -1073,15 +1082,91 @@ public class XGConnection implements Connection
 				}
 				catch (final IOException f)
 				{}
-				
+
 				// reconnect failed so we are no longer connected
 				connected = false;
-				
+
 				// Failed on the client handshake, so capture exception
 				if(handshakeException instanceof SQLException) {
 					throw (SQLException) handshakeException;
 				}
-				
+
+				throw new IOException();
+			}
+		}
+
+		if (force)
+		{
+			sock = null;
+			try
+			{
+				sock = new Socket();
+				sock.setReceiveBufferSize(4194304);
+				sock.setSendBufferSize(4194304);
+				sock.connect(new InetSocketAddress(this.url, this.portNum));
+			}
+			catch (final Exception e)
+			{
+				try
+				{
+					sock.close();
+				}
+				catch (final IOException f)
+				{}
+
+				// reconnect failed so we are no longer connected
+				connected = false;
+
+				if(e instanceof IOException) {
+					throw (IOException)e;
+				}
+
+				throw new IOException();
+			}
+
+			try
+			{
+				in = new BufferedInputStream(sock.getInputStream());
+				out = new BufferedOutputStream(sock.getOutputStream());
+
+				clientHandshake(user, pwd, database);
+				if (!setSchema.equals(""))
+				{
+					setSchema(setSchema);
+				}
+
+				if (setPso == -1)
+				{
+					//We have to turn it off
+					setPSO(false);
+				}
+				else if (setPso > 0)
+				{
+					//Set non-default threshold
+					setPSO(setPso);
+				}
+
+				return;
+			}
+			catch (final Exception handshakeException)
+			{
+				try
+				{
+					in.close();
+					out.close();
+					sock.close();
+				}
+				catch (final IOException f)
+				{}
+
+				// reconnect failed so we are no longer connected
+				connected = false;
+
+				// Failed on the client handshake, so capture exception
+				if(handshakeException instanceof SQLException) {
+					throw (SQLException) handshakeException;
+				}
+
 				throw new IOException();
 			}
 		}
@@ -1128,7 +1213,18 @@ public class XGConnection implements Connection
 				{
 					setSchema(setSchema);
 				}
-				
+
+				if (setPso == -1)
+				{
+					//We have to turn it off
+					setPSO(false);
+				}
+				else if (setPso > 0)
+				{
+					//Set non-default threshold
+					setPSO(setPso);
+				}
+
 				if (setPso == -1)
 				{
 					//We have to turn it off
@@ -1219,7 +1315,18 @@ public class XGConnection implements Connection
 			{
 				setSchema(setSchema);
 			}
-			
+
+			if (setPso == -1)
+			{
+				//We have to turn it off
+				setPSO(false);
+			}
+			else if (setPso > 0)
+			{
+				//Set non-default threshold
+				setPSO(setPso);
+			}
+
 			if (setPso == -1)
 			{
 				//We have to turn it off
@@ -1309,13 +1416,13 @@ public class XGConnection implements Connection
 
 		setSchema = schema;
 	}
-	
+
 	public void forceExternal(boolean force) throws Exception {
 		if (closed)
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-		
+
 		//send request
 		final ClientWireProtocol.ForceExternal.Builder builder = ClientWireProtocol.ForceExternal.newBuilder();
 		builder.setForce(force);
@@ -1337,14 +1444,14 @@ public class XGConnection implements Connection
 			// Doesn't matter...
 		}
 	}
-	
+
 	//sets the pso threshold on this connection to threshold
 	public void setPSO(long threshold) throws Exception {
 		if (closed)
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-			
+
 		//send request
 		setPso = threshold;
 		final ClientWireProtocol.SetPSO.Builder builder = ClientWireProtocol.SetPSO.newBuilder();
@@ -1355,7 +1462,7 @@ public class XGConnection implements Connection
 		b2.setType(ClientWireProtocol.Request.RequestType.SET_PSO);
 		b2.setSetPso(msg);
 		final Request wrapper = b2.build();
-	
+
 		try
 		{
 			out.write(intToBytes(wrapper.getSerializedSize()));
@@ -1368,14 +1475,14 @@ public class XGConnection implements Connection
 			// Doesn't matter...
 		}
 	}
-	
+
 	//sets the pso threshold on this connection to be -1(meaning pso is turned off) or back to the default
 	public void setPSO(boolean on) throws Exception {
 		if (closed)
 		{
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-		
+
 		if (on)
 		{
 			setPso = 0;
@@ -1384,7 +1491,7 @@ public class XGConnection implements Connection
 		{
 			setPso = -1;
 		}
-		
+
 		//send request
 		final ClientWireProtocol.SetPSO.Builder builder = ClientWireProtocol.SetPSO.newBuilder();
 		builder.setThreshold(-1);
@@ -1394,7 +1501,7 @@ public class XGConnection implements Connection
 		b2.setType(ClientWireProtocol.Request.RequestType.SET_PSO);
 		b2.setSetPso(msg);
 		final Request wrapper = b2.build();
-	
+
 		try
 		{
 			out.write(intToBytes(wrapper.getSerializedSize()));

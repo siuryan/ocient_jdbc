@@ -327,7 +327,7 @@ public class CLI {
 	}
 
 	private static Pattern connectToSyntax = Pattern.compile(
-			"connect to (?<url>.+?)(?<up> user (" + userTk() + ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?",
+			"connect to (?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up> user (" + userTk() + ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void connectTo(final String cmd) {
@@ -346,12 +346,29 @@ public class CLI {
 				System.out.println("Syntax: connect to <jdbc url>( user <username> using <password>)?( force)?");
 				return;
 			}
-			if (m.group("up") == null) {
-				doConnect(user, pwd, (m.group("force") != null), m.group("url"));
-			} else {
-				doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), m.group("url"));
+			final String[] hosts = m.group("hosts").split(",");
+			final String preurl = m.group("preurl");
+			final String posturl = m.group("posturl");
+			Exception lastException = null;
+			for (String host : hosts) {
+				final String url = preurl + host + posturl;
+				try {
+					if (m.group("up") == null) {
+						doConnect(user, pwd, (m.group("force") != null), url);
+					} else {
+						doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
+					}
+					// No exception thrown means connection was successful, and connectTo may return
+					System.out.println("Connected to " + url);
+					return;
+				} catch (final Exception e) {
+					System.out.println("Failed to connect to " + host);
+					lastException = e;
+				}
 			}
-
+			if (lastException != null) {
+				throw lastException;
+			}
 		} catch (final Exception e) {
 			System.out.println("Error: " + e.getMessage());
 		}
