@@ -604,12 +604,12 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsAlterTableWithAddColumn() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean supportsAlterTableWithDropColumn() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -679,7 +679,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsCorrelatedSubqueries() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -699,7 +699,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsExpressionsInOrderBy() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -709,7 +709,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsFullOuterJoins() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -744,7 +744,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsLimitedOuterJoins() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -814,7 +814,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsOuterJoins() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -909,22 +909,22 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public boolean supportsSubqueriesInComparisons() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean supportsSubqueriesInExists() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean supportsSubqueriesInIns() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean supportsSubqueriesInQuantifieds() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
