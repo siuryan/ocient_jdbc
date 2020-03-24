@@ -21,8 +21,7 @@ import java.util.logging.Level;
 public class JDBCDriver implements Driver
 {
 
-	// FIXME - need to determine where this comes from
-	private static String version = "4.0.0";
+	private static String version = "5.0.0";
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 	private String logFileName;
 	private FileHandler logHandler;
