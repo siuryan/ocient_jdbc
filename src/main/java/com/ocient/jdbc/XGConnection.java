@@ -53,6 +53,8 @@ import java.security.KeyPairGenerator;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import java.util.Base64;
+import java.util.HashMap;
+
 import com.google.protobuf.ByteString;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.ClientConnection;
@@ -151,6 +153,8 @@ public class XGConnection implements Connection
 
 	protected String pwd;
 	private int retryCounter;
+	
+	protected Map<String, Class<?>> typeMap;
 
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
@@ -169,6 +173,7 @@ public class XGConnection implements Connection
 		this.database = database;
 		this.version = version;
 		this.retryCounter = 0;
+		this.typeMap = new HashMap<String, Class<?>>();
 		in = new BufferedInputStream(sock.getInputStream());
 		out = new BufferedOutputStream(sock.getOutputStream());
 		try
@@ -765,7 +770,7 @@ public class XGConnection implements Connection
 
 	@Override
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return typeMap;
 	}
 
 	public String getURL() {
@@ -1597,7 +1602,7 @@ public class XGConnection implements Connection
 
 	@Override
 	public void setTypeMap(final Map<String, Class<?>> arg0) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		typeMap = arg0;
 	}
 
 	private boolean testConnection(final int timeoutSecs) {

@@ -119,7 +119,14 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 			parms.add(null);
 		}
 
-		parms.add(parameterIndex - 1, x);
+		if (x.scale() >= 0)
+		{
+			parms.add(parameterIndex - 1, x);
+		}
+		else
+		{
+			parms.add(parameterIndex - 1,  x.setScale(0));
+		}
 	}
 
 	@Override

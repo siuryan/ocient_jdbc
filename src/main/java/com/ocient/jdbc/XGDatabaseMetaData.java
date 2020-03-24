@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayList;
+
 import com.ocient.jdbc.proto.ClientWireProtocol;
 
 public class XGDatabaseMetaData implements DatabaseMetaData
@@ -60,18 +62,18 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getAttributes(final String catalog, final String schemaPattern, final String typeNamePattern,
 			final String attributeNamePattern) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getBestRowIdentifier(final String catalog, final String schema, final String table,
 			final int scope, final boolean nullable) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -86,13 +88,13 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public ResultSet getClientInfoProperties() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getColumnPrivileges(final String catalog, final String schema, final String table,
 			final String columnNamePattern) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -111,7 +113,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getCrossReference(final String parentCatalog, final String parentSchema, final String parentTable,
 			final String foreignCatalog, final String foreignSchema, final String foreignTable) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -165,7 +167,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getExportedKeys(final String catalog, final String schema, final String table)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -176,13 +178,13 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getFunctionColumns(final String catalog, final String schemaPattern,
 			final String functionNamePattern, final String columnNamePattern) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getFunctions(final String catalog, final String schemaPattern, final String functionNamePattern)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -193,7 +195,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getImportedKeys(final String catalog, final String schema, final String table)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -330,19 +332,19 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 
 	@Override
 	public ResultSet getPrimaryKeys(final String catalog, final String schema, final String table) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getProcedureColumns(final String catalog, final String schemaPattern,
 			final String procedureNamePattern, final String columnNamePattern) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getProcedures(final String catalog, final String schemaPattern, final String procedureNamePattern)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -353,7 +355,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getPseudoColumns(final String catalog, final String schemaPattern, final String tableNamePattern,
 			final String columnNamePattern) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -408,13 +410,13 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getSuperTables(final String catalog, final String schemaPattern, final String tableNamePattern)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
 	public ResultSet getSuperTypes(final String catalog, final String schemaPattern, final String typeNamePattern)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -426,7 +428,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getTablePrivileges(final String catalog, final String schemaPattern, final String tableNamePattern)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -473,7 +475,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getUDTs(final String catalog, final String schemaPattern, final String typeNamePattern,
 			final int[] types) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override
@@ -489,7 +491,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public ResultSet getVersionColumns(final String catalog, final String schema, final String table)
 			throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return new XGResultSet((XGConnection)conn, new ArrayList<Object>(), (XGStatement)conn.createStatement());
 	}
 
 	@Override

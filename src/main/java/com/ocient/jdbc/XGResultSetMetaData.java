@@ -83,6 +83,22 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		{
 			return "[B";
 		}
+		else if (type.equals("ARRAY"))
+		{
+			return "com.ocient.jdbc.XGArray";
+		}
+		else if (type.equals("UUID"))
+		{
+			return "java.util.UUID";
+		}
+		else if (type.equals("ST_POINT"))
+		{
+			return "com.ocient.jdbc.StPoint";
+		}
+		else if (type.equals("IP") || type.equals("IPV4"))
+		{
+			return "java.net.InetAddress";
+		}
 		else
 		{
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
@@ -150,6 +166,26 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		else if (type.equals("DECIMAL"))
 		{
 			retval = 33; //max precision + '.' + "-"
+		}
+		else if (type.equals("ARRAY"))
+		{
+			retval = 80;
+		}
+		else if (type.equals("UUID"))
+		{
+			return 37;
+		}
+		else if (type.equals("ST_POINT"))
+		{
+			return 47;
+		}
+		else if (type.equals("IP"))
+		{
+			return 47;
+		}
+		else if (type.equals("IPV4"))
+		{
+			return 17;
 		}
 		else
 		{
@@ -231,6 +267,22 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		{
 			return java.sql.Types.DECIMAL;
 		}	
+		else if (type.equals("ARRAY"))
+		{
+			return java.sql.Types.ARRAY;
+		}
+		else if (type.equals("UUID"))
+		{
+			return java.sql.Types.OTHER;
+		}
+		else if (type.equals("ST_POINT"))
+		{
+			return java.sql.Types.OTHER;
+		}
+		else if (type.equals("IP") || type.equals("IPV4"))
+		{
+			return java.sql.Types.OTHER;
+		}
 		else
 		{
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
@@ -297,12 +349,32 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		}
 		else if (type.equals("BINARY"))
 		{
-			return 128 *  1024;
+			return 128 * 1024;
 		}
 		else if (type.equals("DECIMAL"))
 		{
 			return 31;
 		}	
+		else if (type.equals("ARRAY"))
+		{
+			return 128 * 1024;
+		}
+		else if (type.equals("UUID"))
+		{
+			return 16;
+		}
+		else if (type.equals("ST_POINT"))
+		{
+			return 32;
+		}
+		else if (type.equals("IP"))
+		{
+			return 16;
+		}
+		else if (type.equals("IPV4"))
+		{
+			return 12;
+		}
 		else
 		{
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
@@ -356,7 +428,7 @@ public class XGResultSetMetaData implements ResultSetMetaData
 
 	@Override
 	public boolean isSearchable(final int column) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return true;
 	}
 
 	@Override

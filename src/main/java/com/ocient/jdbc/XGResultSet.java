@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.Reader;
+import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -103,6 +106,21 @@ public class XGResultSet implements ResultSet
 		this.stmt = stmt;
 		requestMetaData();
 		mergeData(re);
+	}
+	
+	public void setCols2Pos(Map<String, Integer> cols2Pos)
+	{
+		this.cols2Pos = cols2Pos;
+	}
+	
+	public void setPos2Cols(TreeMap<Integer, String> pos2Cols)
+	{
+		this.pos2Cols = pos2Cols;
+	}
+	
+	public void setCols2Types(Map<String, String> cols2Types)
+	{
+		this.cols2Types = cols2Types;
 	}
 
 	private Optional<String> getQueryId() {
@@ -201,12 +219,45 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Array getArray(final int columnIndex) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		wasNull = false;
+
+		if (closed)
+		{
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+
+		if (col == null)
+		{
+			wasNull = true;
+			return null;
+		}
+
+		if (!(col instanceof XGArray))
+		{
+			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
+		}
+
+		return (XGArray)col;
 	}
 
 	@Override
 	public Array getArray(final String columnLabel) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return getArray(cols2Pos.get(columnLabel) + 1);
 	}
 
 	@Override
@@ -906,19 +957,134 @@ public class XGResultSet implements ResultSet
 		if (col == null)
 		{
 			wasNull = true;
+			return col;
 		}
+		
+		//Check type map
+		Class<?> clazz = conn.getTypeMap().get(cols2Types.get(pos2Cols.get(columnIndex - 1)));
 
-		return col;
+		if (clazz == null)
+		{
+			return col;
+		}
+		
+		if (clazz.getCanonicalName().equals("java.lang.String"))
+		{
+			return col.toString();
+		}
+		
+		try
+		{
+			Constructor<?> c = clazz.getConstructor(col.getClass());
+			return c.newInstance(col);
+		}
+		catch(Exception e)
+		{
+			throw SQLStates.newGenericException(e);
+		}
 	}
 
 	@Override
-	public <T> T getObject(final int columnIndex, final Class<T> type) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public <T> T getObject(final int columnIndex, final Class<T> clazz) throws SQLException {
+		wasNull = false;
+		
+		if (clazz == null)
+		{
+			throw new SQLException();
+		}
+
+		if (closed)
+		{
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+		if (col == null)
+		{
+			wasNull = true;
+			return  col;
+		}
+		
+		if (clazz.getCanonicalName().equals("java.lang.String"))
+		{
+			return (T) col.toString();
+		}
+		
+		try
+		{
+			Constructor<?> c = clazz.getConstructor(col.getClass());
+			return (T) c.newInstance(col);
+		}
+		catch(Exception e)
+		{
+			throw SQLStates.newGenericException(e);
+		}
 	}
 
 	@Override
 	public Object getObject(final int columnIndex, final Map<String, Class<?>> map) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		wasNull = false;
+
+		if (closed)
+		{
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+		if (col == null)
+		{
+			wasNull = true;
+			return col;
+		}
+		
+		//Check type map
+		Class<?> clazz = map.get(cols2Types.get(pos2Cols.get(columnIndex - 1)));
+
+		if (clazz == null)
+		{
+			return col;
+		}
+		
+		if (clazz.getCanonicalName().equals("java.lang.String"))
+		{
+			return col.toString();
+		}
+		
+		try
+		{
+			Constructor<?> c = clazz.getConstructor(col.getClass());
+			return c.newInstance(col);
+		}
+		catch(Exception e)
+		{
+			throw SQLStates.newGenericException(e);
+		}
 	}
 
 	@Override
@@ -928,12 +1094,12 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return getObject(cols2Pos.get(columnLabel) + 1, type);
 	}
 
 	@Override
 	public Object getObject(final String columnLabel, final Map<String, Class<?>> map) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		return getObject(cols2Pos.get(columnLabel) + 1, map);
 	}
 
 	@Override
@@ -1428,6 +1594,174 @@ public class XGResultSet implements ResultSet
 		// set scale now, right at the end
 		return ((new BigDecimal(formedDecimalString)).movePointLeft(scale));
 	}
+	
+	private XGArray getArrayFromBuffer(final ByteBuffer bb, Integer offset) throws SQLException
+	{
+		//Get the rest of the type info
+		int nestedLevel = 0;
+		byte type = 0;
+		
+		do
+		{
+			nestedLevel++;
+			type = bb.get(offset);
+			offset++;
+		} while (type == 14);
+		
+		return getArrayInternals(bb, offset, nestedLevel, type);
+	}
+	
+	private XGArray getArrayInternals(final ByteBuffer bb, Integer offset, int nestedLevel, byte type) throws SQLException
+	{
+		//Get number of elements in the array
+		int numElements = bb.getInt(offset);
+		offset += 4;
+		nestedLevel--;
+		
+		boolean isEntirelyNull = (bb.get() != 0);
+		if (isEntirelyNull)
+		{
+			assert(numElements == 0);
+			return null;
+		}
+		
+		//Make return value
+		XGArray retval = null;
+		offset++;
+		
+		//Recurse if needed
+		if (nestedLevel > 0)
+		{
+			retval = new XGArray(numElements, (byte)14, conn, stmt);
+			for (int i = 0; i < numElements; i++)
+			{
+				retval.add(getArrayInternals(bb, offset, nestedLevel, type), i);
+			}
+		}
+		else
+		{
+			retval = new XGArray(numElements, type, conn, stmt);
+			byte t = bb.get();
+			offset++;
+			assert(t == type || t == 7); //Array type or NULL
+			for (int i = 0; i < numElements; i++)
+			{
+				if (t == 1) //INT
+				{
+					retval.add(bb.getInt(offset), i);
+					offset += 4;
+				}
+				else if (t == 2) //LONG
+				{
+					retval.add(bb.getLong(offset), i);
+					offset += 8;
+				}
+				else if (t == 3) //FLOAT
+				{
+					retval.add(Float.intBitsToFloat(bb.getInt(offset)), i);
+					offset += 4;
+				}
+				else if (t == 4) //DOUBLE
+				{
+					retval.add(Double.longBitsToDouble(bb.getLong(offset)), i);
+					offset += 8;
+				}
+				else if (t == 5) //STRING
+				{
+					int stringLength = bb.getInt(offset);
+					offset += 4;
+					byte[] dst = new byte[stringLength];
+					((Buffer)bb).position(offset);
+					bb.get(dst);
+					retval.add(new String(dst, Charsets.UTF_8), i);
+					offset += stringLength;
+				}
+				else if (t == 6) //Timestamp
+				{
+					retval.add(new Date(bb.getLong(offset)), i);
+					offset += 8;
+				}
+				else if (t == 7) //Null
+				{
+					retval.add(null, i);
+				}
+				else if (t == 8) //BOOL
+				{
+					retval.add((bb.get(offset) != 0), i);
+					offset++;
+				}
+				else if (t == 9) //BINARY
+				{
+					int stringLength = bb.getInt(offset);
+					offset += 4;
+					byte[] dst = new byte[stringLength];
+					((Buffer)bb).position(offset);
+					bb.get(dst);
+					retval.add(dst, i);
+					offset += stringLength;
+				}
+				else if (t == 10) //BYTE
+				{
+					retval.add(bb.get(offset), i);
+					offset++;
+				}
+				else if (t == 11) //SHORT
+				{
+					retval.add(bb.getShort(offset), i);
+					offset += 2;
+				}
+		        else if (t == 12) //TIME
+		        {
+		         	retval.add(new Time(bb.getLong(offset)), i);
+		         	offset += 8;
+		        }
+				else if (t == 13) //DECIMAL
+				{
+					int precision = bb.get(offset);
+					retval.add(getDecimalFromBuffer(bb, offset), i);
+					offset += (2 + bcdLength(precision));
+				}
+				else if (t == 15) //UUID
+				{
+					long high = bb.getLong(offset);
+					offset  += 8;
+					long low = bb.getLong(offset);
+					offset += 8;
+					retval.add(new UUID(high, low), i);
+				}
+				else if (t == 16) //ST_POINT
+				{
+					double lon = bb.getDouble(offset);
+					offset += 8;
+					double lat = bb.getDouble(offset);
+					offset += 8;
+					retval.add(new StPoint(lon, lat), i);
+				}
+				else if (t == 17)  //IP
+				{
+					byte[] bytes = new byte[16];
+					((Buffer)bb).position(offset);
+					bb.get(bytes);
+					offset += 16;
+					retval.add(InetAddress.getByAddress(bytes), i);
+				}
+				else if (t == 18) //IPV4
+				{
+					byte[] bytes = new byte[4];
+					((Buffer)bb).position(offset);
+					bb.get(bytes);
+					offset += 4;
+					retval.add(InetAddress.getByAddress(bytes), i);
+				}
+				else
+				{
+					throw SQLStates.INVALID_COLUMN_TYPE.clone();
+				}
+			}
+		}
+		
+		return retval;
+	}
 
 	/*
 	 * Returns true if we actually received data, false if there was no data to merge
@@ -1533,6 +1867,45 @@ public class XGResultSet implements ResultSet
 							int precision = bb.get(offset);
 							alo.add(getDecimalFromBuffer(bb, offset));
 							offset += (2 + bcdLength(precision));
+						}
+						else if (type == 14) //ARRAY
+						{
+							Integer off = new Integer(offset);
+							XGArray array = getArrayFromBuffer(bb, off);
+							offset = off;
+							alo.add(array);
+						}
+						else if (type == 15) //UUID
+						{
+							long high = bb.getLong(offset);
+							offset  += 8;
+							long low = bb.getLong(offset);
+							offset += 8;
+							alo.add(new UUID(high, low));
+						}
+						else if (type == 16) //ST_POINT
+						{
+							double lon = bb.getDouble(offset);
+							offset += 8;
+							double lat = bb.getDouble(offset);
+							offset += 8;
+							alo.add(new StPoint(lon, lat));
+						}
+						else if (type == 17)  //IP
+						{
+							byte[] bytes = new byte[16];
+							((Buffer)bb).position(offset);
+							bb.get(bytes);
+							offset += 16;
+							alo.add(InetAddress.getByAddress(bytes));
+						}
+						else if (type == 18) //IPV4
+						{
+							byte[] bytes = new byte[4];
+							((Buffer)bb).position(offset);
+							bb.get(bytes);
+							offset += 4;
+							alo.add(InetAddress.getByAddress(bytes));
 						}
 						else
 						{

@@ -2,6 +2,8 @@ package com.ocient.jdbc;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -1322,7 +1324,15 @@ public class XGStatement implements Statement
 
 	@Override
 	public void setFetchDirection(final int direction) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		if (closed)
+		{
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		if (direction != ResultSet.FETCH_FORWARD)
+		{
+			throw new SQLFeatureNotSupportedException();
+		}
 	}
 
 	@Override
@@ -1420,12 +1430,35 @@ public class XGStatement implements Statement
                                 final TimeZone utc = TimeZone.getTimeZone("UTC");
                                 format.setTimeZone(utc);
                                 out += ("TIME('" + format.format((Time) parm) + "')");
+                            } 
+                            else if (parm instanceof Byte)
+                            {
+                            	out += ("BYTE(" + parm + ")");
                             }
-							else
+                            else if (parm instanceof Short)
+                            {
+                            	out += ("SMALLINT(" + parm + ")");
+                            }
+                            else if (parm instanceof Integer)
+                            {
+                            	out += ("INT(" + parm + ")");
+                            }
+                            else if (parm instanceof Float)
+                            {
+                            	out += ("FLOAT(" + parm + ")");
+                            }
+                            else if (parm instanceof Long || parm instanceof Double)
 							{
-								//System.out.println("inside set param default else case");
 								out += parm;
 							}
+                            else if (parm instanceof BigDecimal)
+                            {
+                            	out += ("DECIMAL(" + parm + ", " + ((BigDecimal)parm).precision() + ", " + ((BigDecimal)parm).scale() + ")");
+                            }
+                            else 
+                            {
+                            	throw new SQLFeatureNotSupportedException();
+                            }
 						}
 						catch (final IndexOutOfBoundsException e)
 						{

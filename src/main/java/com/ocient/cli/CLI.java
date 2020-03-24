@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -1973,6 +1974,8 @@ public class CLI {
 					Object o = (rs.getObject(i));
 					if (rs.wasNull()) {
 						o = "NULL";
+					} else if (o instanceof Array) {
+						o = arrayToString((Array)o);
 					} else if (meta.getColumnType(i) == java.sql.Types.TIME) {
 						SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 						final TimeZone utc = TimeZone.getTimeZone("UTC");
@@ -2016,6 +2019,79 @@ public class CLI {
 
 			System.out.println("Fetched " + rowCount + (rowCount == 1 ? " row" : " rows"));
 		}
+	}
+	
+	private static String arrayToString(Array a) throws SQLException
+	{
+		StringBuilder str = new StringBuilder();
+		str.append("[");
+		
+		Object[] arr = (Object[])a.getArray();
+		if (arr.length > 0)
+		{
+			Object o = arr[0];
+			if (o == null) {
+				str.append("NULL");
+			} else if (a.getBaseType() == java.sql.Types.ARRAY) {
+				str.append(arrayToString((Array)o));
+			} else if (a.getBaseType() == java.sql.Types.TIME) {
+				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.TIMESTAMP) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.DATE) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.BINARY || a.getBaseType() == java.sql.Types.VARBINARY) {
+				str.append("0x" + bytesToHex((byte[]) o));
+			}
+			else
+			{
+				str.append(o);
+			}
+		}
+		
+		for (int i = 1; i < arr.length; i++)
+		{
+			str.append(", ");
+			Object o = arr[i];
+			if (o == null) {
+				str.append("NULL");
+			} else if (a.getBaseType() == java.sql.Types.ARRAY) {
+				str.append(arrayToString((Array)o));
+			} else if (a.getBaseType() == java.sql.Types.TIME) {
+				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.TIMESTAMP) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.DATE) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				final TimeZone utc = TimeZone.getTimeZone("UTC");
+				sdf.setTimeZone(utc);
+				str.append(sdf.format(o));
+			} else if (a.getBaseType() == java.sql.Types.BINARY || a.getBaseType() == java.sql.Types.VARBINARY) {
+				str.append("0x" + bytesToHex((byte[]) o));
+			}
+			else
+			{
+				str.append(o);
+			}
+		}
+		
+		str.append("]");
+		return str.toString();
 	}
 
 	private static void outputResultSet(final ResultSet rs, final ResultSetMetaData meta) throws Exception {
