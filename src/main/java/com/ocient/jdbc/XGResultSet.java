@@ -1731,9 +1731,9 @@ public class XGResultSet implements ResultSet
 				}
 				else if (t == 16) //ST_POINT
 				{
-					double lon = bb.getDouble(offset);
+					double lon = Double.longBitsToDouble(bb.getLong(offset));
 					offset += 8;
-					double lat = bb.getDouble(offset);
+					double lat = Double.longBitsToDouble(bb.getLong(offset));
 					offset += 8;
 					retval.add(new StPoint(lon, lat), i);
 				}
@@ -1885,9 +1885,9 @@ public class XGResultSet implements ResultSet
 						}
 						else if (type == 16) //ST_POINT
 						{
-							double lon = bb.getDouble(offset);
+							double lon = Double.longBitsToDouble(bb.getLong(offset));
 							offset += 8;
-							double lat = bb.getDouble(offset);
+							double lat = Double.longBitsToDouble(bb.getLong(offset));
 							offset += 8;
 							alo.add(new StPoint(lon, lat));
 						}
