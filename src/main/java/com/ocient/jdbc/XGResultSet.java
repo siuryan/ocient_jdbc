@@ -1015,7 +1015,7 @@ public class XGResultSet implements ResultSet
 		if (col == null)
 		{
 			wasNull = true;
-			return  col;
+			return (T)col;
 		}
 		
 		if (clazz.getCanonicalName().equals("java.lang.String"))
