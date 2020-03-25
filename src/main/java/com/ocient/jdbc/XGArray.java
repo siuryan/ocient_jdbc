@@ -4,10 +4,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Types;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.TreeMap;
 
 public class XGArray implements java.sql.Array
@@ -88,6 +90,13 @@ public class XGArray implements java.sql.Array
 			return Types.DECIMAL;
 		case 14:
 			return Types.ARRAY;
+		case 15:
+		case 16:
+		case 17:
+		case 18:
+			return Types.OTHER;
+		case 19:
+			return Types.DATE;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
@@ -124,6 +133,16 @@ public class XGArray implements java.sql.Array
 			return "DECIMAL";
 		case 14:
 			return "ARRAY";
+		case 15:
+			return "UUID";
+		case 16:
+			return "ST_POINT";
+		case 17:
+			return "IP";
+		case 18:
+			return "IPV4";
+		case 19:
+			return "DATE";
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
@@ -193,6 +212,21 @@ public class XGArray implements java.sql.Array
 			break;
 		case 14:
 			cols2Types.put("array_value", "ARRAY");
+			break;
+		case 15:
+			cols2Types.put("array_value", "UUID");
+			break;
+		case 16:
+			cols2Types.put("array_value", "ST_POINT");
+			break;
+		case 17:
+			cols2Types.put("array_value", "IP");
+			break;
+		case 18:
+			cols2Types.put("array_value", "IPV4");
+			break;
+		case 19:
+			cols2Types.put("array_value", "DATE");
 			break;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
@@ -273,6 +307,21 @@ public class XGArray implements java.sql.Array
 		case 14:
 			cols2Types.put("array_value", "ARRAY");
 			break;
+		case 15:
+			cols2Types.put("array_value", "UUID");
+			break;
+		case 16:
+			cols2Types.put("array_value", "ST_POINT");
+			break;
+		case 17:
+			cols2Types.put("array_value", "IP");
+			break;
+		case 18:
+			cols2Types.put("array_value", "IPV4");
+			break;
+		case 19:
+			cols2Types.put("array_value", "DATE");
+			break;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
@@ -291,5 +340,96 @@ public class XGArray implements java.sql.Array
 	public void add(Object obj, int pos)
 	{
 		array[pos] = obj;
+	}
+	
+	public String toString()
+	{
+		try
+		{
+			StringBuilder str = new StringBuilder();
+			str.append("[");
+			
+			if (array.length > 0)
+			{
+				Object o = array[0];
+				if (o == null) {
+					str.append("NULL");
+				} else if (getBaseType() == java.sql.Types.ARRAY) {
+					str.append(((XGArray)o).toString());
+				} else if (getBaseType() == java.sql.Types.TIME) {
+					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.TIMESTAMP) {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.DATE) {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
+					str.append("0x" + bytesToHex((byte[]) o));
+				}
+				else
+				{
+					str.append(o);
+				}
+			}
+			
+			for (int i = 1; i < array.length; i++)
+			{
+				str.append(", ");
+				Object o = array[i];
+				if (o == null) {
+					str.append("NULL");
+				} else if (getBaseType() == java.sql.Types.ARRAY) {
+					str.append(((XGArray)o).toString());
+				} else if (getBaseType() == java.sql.Types.TIME) {
+					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.TIMESTAMP) {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.DATE) {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					final TimeZone utc = TimeZone.getTimeZone("UTC");
+					sdf.setTimeZone(utc);
+					str.append(sdf.format(o));
+				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
+					str.append("0x" + bytesToHex((byte[]) o));
+				}
+				else
+				{
+					str.append(o);
+				}
+			}
+			
+			str.append("]");
+			return str.toString();
+		}
+		catch(Exception e)
+		{
+			return "Exception occurred accessing Array";
+		}
+	}
+	
+	private final static char[] hexArray = "0123456789abcdef".toCharArray();
+	
+	private static String bytesToHex(byte[] bytes) {
+		char[] hexChars = new char[bytes.length * 2];
+		for (int j = 0; j < bytes.length; j++) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = hexArray[v >>> 4];
+			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
 	}
 }

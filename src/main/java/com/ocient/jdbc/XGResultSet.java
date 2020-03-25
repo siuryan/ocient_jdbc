@@ -1753,6 +1753,11 @@ public class XGResultSet implements ResultSet
 					offset += 4;
 					retval.add(InetAddress.getByAddress(bytes), i);
 				}
+				else if (t == 19) //Date
+				{
+					retval.add(new Date(bb.getLong(offset)), i);
+					offset += 8;
+				}
 				else
 				{
 					throw SQLStates.INVALID_COLUMN_TYPE.clone();
@@ -1906,6 +1911,11 @@ public class XGResultSet implements ResultSet
 							bb.get(bytes);
 							offset += 4;
 							alo.add(InetAddress.getByAddress(bytes));
+						}
+						else if (type == 19) //Date
+						{
+							alo.add(new Date(bb.getLong(offset)));
+							offset += 8;
 						}
 						else
 						{
