@@ -375,6 +375,7 @@ message Operator
     //For all the indexes listed in sortOrder (if any), there is a corresponding entry in sortDirections
     //Indicating whether data is sorted ascending (true) or descending (false) by that column
     repeated bool sortDirections = 11;
+    repeated bool sortNullsFirst = 29; //If there is a sort order are nulls first? (or last)
     //If there is a guarantee on how the data is partitioned (all rows with the same values in some cols
     //or set of cols are guaranteed to be on the same node) when it leaves this operator,
     //the indexes that define the partitioning are listed here
@@ -439,6 +440,7 @@ message Operator
     repeated string storage_space_uuids = 26;
 	bool upstream_partition_sensitive = 27;
 	// value 28 is used up above under outputTypeStrings
+	// value 29 is used above
 
     oneof request_oneof
     {
@@ -767,6 +769,7 @@ message OrderedGatherOperator
 	//The directions for each sort col - true = ascending
 	repeated bool directions = 2;
 	GatherLevel level = 3;
+	repeated bool nulls_first = 4;
 }
 
 //Discard some columns
@@ -833,6 +836,7 @@ message SortOperator
 	//these can be different from the regular sort keys
 	//if this isn't empty we do a hash based sort mutliplexing instead
 	repeated string hashSortKeys = 5;
+	repeated bool nulls_first = 6;
 }
 
 message RootOperator
@@ -1146,6 +1150,7 @@ message WindowOperator
 	//For functions that take a constant floating point argument - they are here - there's an entry for every op even if it isn't used
 	repeated double constFloatArgs = 10;
 	bool limit1 = 11; //Is there an immediate following limit 1?
+	repeated bool nulls_first = 12;
 }
 
 message ErrorOperator

@@ -1608,10 +1608,17 @@ public class XGResultSet implements ResultSet
 			offset++;
 		} while (type == 14);
 		
-		return getArrayInternals(bb, offset, nestedLevel, type);
+		try
+		{
+			return getArrayInternals(bb, offset, nestedLevel, type);
+		}
+		catch(java.net.UnknownHostException e)
+		{
+			throw SQLStates.newGenericException(e);
+		}
 	}
 	
-	private XGArray getArrayInternals(final ByteBuffer bb, Integer offset, int nestedLevel, byte type) throws SQLException
+	private XGArray getArrayInternals(final ByteBuffer bb, Integer offset, int nestedLevel, byte type) throws SQLException, java.net.UnknownHostException
 	{
 		//Get number of elements in the array
 		int numElements = bb.getInt(offset);
@@ -1771,7 +1778,7 @@ public class XGResultSet implements ResultSet
 	/*
 	 * Returns true if we actually received data, false if there was no data to merge
 	 */
-	private boolean mergeData(final ClientWireProtocol.ResultSet re) throws SQLException {
+	private boolean mergeData(final ClientWireProtocol.ResultSet re) throws SQLException, java.net.UnknownHostException {
 		final List<ByteString> buffers = re.getBlobsList();
 		this.rs.clear();
 		for (final ByteString buffer : buffers)

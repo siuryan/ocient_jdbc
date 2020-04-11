@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-  <version>1.13</version> <!--JDBC VERSION NUMBER HERE-->
+  <version>1.14</version> <!--JDBC VERSION NUMBER HERE-->
   <name>${project.groupId}:${project.artifactId}</name>
   <description>JDBC Driver for connecting to an Ocient Database</description>
   <url>http://www.ocient.com</url>
@@ -40,6 +40,16 @@
       <artifactId>jline</artifactId>
       <version>3.13.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.jline</groupId>
+      <artifactId>jline-terminal-jansi</artifactId>
+      <version>3.13.2</version>
+    </dependency>
+    <dependency>
+    <groupId>org.fusesource.jansi</groupId>
+    <artifactId>jansi</artifactId>
+    <version>1.18</version>
+</dependency>
   </dependencies>
   <developers>
     <developer>
