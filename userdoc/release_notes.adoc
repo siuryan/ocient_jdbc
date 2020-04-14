@@ -14,3 +14,23 @@ New Features::
   * https://jira.ocient.com:8443/browse/DB-10137[DB-10137] - Implement JDBC cancel query. Now it is possible to kill query in dbeaver.
   * https://jira.ocient.com:8443/browse/DB-10120[DB-10120] - JDBC driver support list of sql nodes to connect to
   * https://jira.ocient.com:8443/browse/DB-10119[DB-10119] - Support for multiple IPs under the same DNS address
+
+
+// tag::compact[]
+== 1.13 (2020-03-20) - @jason
+
+New Features::
+  * Binary support for the serialization of the following data types: ST_POINT, UUID, IP and IPV4
+  * Implementation of the Array SQL type 
+
+// tag::compact[]
+== 1.14 (2020-04-11) - @jason
+
+New Features::
+  * Protocol support for the NULLS FIRST in the ORDER BY clause
+
+// tag::compact[]
+== 1.15 (2020-04-14) - @leo
+
+New Features:
+  * https://jira.ocient.com:8443/browse/DB-9928[DB-9928] - Fixes for SQL Array type
