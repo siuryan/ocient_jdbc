@@ -1595,17 +1595,17 @@ public class XGResultSet implements ResultSet
 		return ((new BigDecimal(formedDecimalString)).movePointLeft(scale));
 	}
 	
-	private XGArray getArrayFromBuffer(final ByteBuffer bb, Integer offset) throws SQLException
+	private XGArray getArrayFromBuffer(final ByteBuffer bb, int[] offset) throws SQLException
 	{
 		//Get the rest of the type info
 		int nestedLevel = 0;
 		byte type = 0;
-		
+
 		do
 		{
 			nestedLevel++;
-			type = bb.get(offset);
-			offset++;
+			type = bb.get(offset[0]);
+			offset[0]++;
 		} while (type == 14);
 		
 		try
@@ -1618,14 +1618,18 @@ public class XGResultSet implements ResultSet
 		}
 	}
 	
-	private XGArray getArrayInternals(final ByteBuffer bb, Integer offset, int nestedLevel, byte type) throws SQLException, java.net.UnknownHostException
+	private XGArray getArrayInternals(final ByteBuffer bb, int[] offset, int nestedLevel, byte type) throws SQLException, java.net.UnknownHostException
 	{
 		//Get number of elements in the array
-		int numElements = bb.getInt(offset);
-		offset += 4;
+		int numElements = bb.getInt(offset[0]);
+		
+		offset[0] += 4;
 		nestedLevel--;
 		
-		boolean isEntirelyNull = (bb.get() != 0);
+		byte nullByte = bb.get(offset[0]);
+		offset[0]++;
+
+		boolean isEntirelyNull = (nullByte != 0);
 		if (isEntirelyNull)
 		{
 			assert(numElements == 0);
@@ -1634,8 +1638,7 @@ public class XGResultSet implements ResultSet
 		
 		//Make return value
 		XGArray retval = null;
-		offset++;
-		
+
 		//Recurse if needed
 		if (nestedLevel > 0)
 		{
@@ -1648,45 +1651,45 @@ public class XGResultSet implements ResultSet
 		else
 		{
 			retval = new XGArray(numElements, type, conn, stmt);
-			byte t = bb.get();
-			offset++;
-			assert(t == type || t == 7); //Array type or NULL
 			for (int i = 0; i < numElements; i++)
 			{
+				byte t = bb.get(offset[0]);
+				offset[0]++;
+				assert(t == type || t == 7); //Array type or NULL
 				if (t == 1) //INT
 				{
-					retval.add(bb.getInt(offset), i);
-					offset += 4;
+					retval.add(bb.getInt(offset[0]), i);
+					offset[0] += 4;
 				}
 				else if (t == 2) //LONG
 				{
-					retval.add(bb.getLong(offset), i);
-					offset += 8;
+					retval.add(bb.getLong(offset[0]), i);
+					offset[0] += 8;
 				}
 				else if (t == 3) //FLOAT
 				{
-					retval.add(Float.intBitsToFloat(bb.getInt(offset)), i);
-					offset += 4;
+					retval.add(Float.intBitsToFloat(bb.getInt(offset[0])), i);
+					offset[0] += 4;
 				}
 				else if (t == 4) //DOUBLE
 				{
-					retval.add(Double.longBitsToDouble(bb.getLong(offset)), i);
-					offset += 8;
+					retval.add(Double.longBitsToDouble(bb.getLong(offset[0])), i);
+					offset[0] += 8;
 				}
 				else if (t == 5) //STRING
 				{
-					int stringLength = bb.getInt(offset);
-					offset += 4;
+					int stringLength = bb.getInt(offset[0]);
+					offset[0] += 4;
 					byte[] dst = new byte[stringLength];
-					((Buffer)bb).position(offset);
+					((Buffer)bb).position(offset[0]);
 					bb.get(dst);
 					retval.add(new String(dst, Charsets.UTF_8), i);
-					offset += stringLength;
+					offset[0] += stringLength;
 				}
 				else if (t == 6) //Timestamp
 				{
-					retval.add(new Date(bb.getLong(offset)), i);
-					offset += 8;
+					retval.add(new Date(bb.getLong(offset[0])), i);
+					offset[0] += 8;
 				}
 				else if (t == 7) //Null
 				{
@@ -1694,76 +1697,76 @@ public class XGResultSet implements ResultSet
 				}
 				else if (t == 8) //BOOL
 				{
-					retval.add((bb.get(offset) != 0), i);
-					offset++;
+					retval.add((bb.get(offset[0]) != 0), i);
+					offset[0]++;
 				}
 				else if (t == 9) //BINARY
 				{
-					int stringLength = bb.getInt(offset);
-					offset += 4;
+					int stringLength = bb.getInt(offset[0]);
+					offset[0] += 4;
 					byte[] dst = new byte[stringLength];
-					((Buffer)bb).position(offset);
+					((Buffer)bb).position(offset[0]);
 					bb.get(dst);
 					retval.add(dst, i);
-					offset += stringLength;
+					offset[0] += stringLength;
 				}
 				else if (t == 10) //BYTE
 				{
-					retval.add(bb.get(offset), i);
-					offset++;
+					retval.add(bb.get(offset[0]), i);
+					offset[0]++;
 				}
 				else if (t == 11) //SHORT
 				{
-					retval.add(bb.getShort(offset), i);
-					offset += 2;
+					retval.add(bb.getShort(offset[0]), i);
+					offset[0] += 2;
 				}
 		        else if (t == 12) //TIME
 		        {
-		         	retval.add(new Time(bb.getLong(offset)), i);
-		         	offset += 8;
+		         	retval.add(new Time(bb.getLong(offset[0])), i);
+		         	offset[0] += 8;
 		        }
 				else if (t == 13) //DECIMAL
 				{
-					int precision = bb.get(offset);
-					retval.add(getDecimalFromBuffer(bb, offset), i);
-					offset += (2 + bcdLength(precision));
+					int precision = bb.get(offset[0]);
+					retval.add(getDecimalFromBuffer(bb, offset[0]), i);
+					offset[0] += (2 + bcdLength(precision));
 				}
 				else if (t == 15) //UUID
 				{
-					long high = bb.getLong(offset);
-					offset  += 8;
-					long low = bb.getLong(offset);
-					offset += 8;
+					long high = bb.getLong(offset[0]);
+					offset[0]  += 8;
+					long low = bb.getLong(offset[0]);
+					offset[0] += 8;
 					retval.add(new UUID(high, low), i);
 				}
 				else if (t == 16) //ST_POINT
 				{
-					double lon = Double.longBitsToDouble(bb.getLong(offset));
-					offset += 8;
-					double lat = Double.longBitsToDouble(bb.getLong(offset));
-					offset += 8;
+					double lon = Double.longBitsToDouble(bb.getLong(offset[0]));
+					offset[0] += 8;
+					double lat = Double.longBitsToDouble(bb.getLong(offset[0]));
+					offset[0] += 8;
 					retval.add(new StPoint(lon, lat), i);
 				}
 				else if (t == 17)  //IP
 				{
 					byte[] bytes = new byte[16];
-					((Buffer)bb).position(offset);
+					((Buffer)bb).position(offset[0]);
 					bb.get(bytes);
-					offset += 16;
+					offset[0] += 16;
 					retval.add(InetAddress.getByAddress(bytes), i);
 				}
 				else if (t == 18) //IPV4
 				{
 					byte[] bytes = new byte[4];
-					((Buffer)bb).position(offset);
+					((Buffer)bb).position(offset[0]);
 					bb.get(bytes);
-					offset += 4;
+					offset[0] += 4;
 					retval.add(InetAddress.getByAddress(bytes), i);
 				}
 				else if (t == 19) //Date
 				{
-					retval.add(new Date(bb.getLong(offset)), i);
-					offset += 8;
+					retval.add(new Date(bb.getLong(offset[0])), i);
+					offset[0] += 8;
 				}
 				else
 				{
@@ -1882,9 +1885,12 @@ public class XGResultSet implements ResultSet
 						}
 						else if (type == 14) //ARRAY
 						{
-							Integer off = new Integer(offset);
+							//Need to used int[] so we can pass an integer by reference.
+							//Cannot use 'new Integer'. It goes by value.
+							int[] off = new int[1];
+							off[0] = offset;
 							XGArray array = getArrayFromBuffer(bb, off);
-							offset = off;
+							offset = off[0];
 							alo.add(array);
 						}
 						else if (type == 15) //UUID
