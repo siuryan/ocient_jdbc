@@ -34,3 +34,9 @@ New Features::
 
 Bug Fixes::
   * https://jira.ocient.com:8443/browse/DB-9928[DB-9928] - Fixes for SQL Array type
+
+// tag::compact[]
+== 1.16 (2020-04-15) - @ssaha
+
+Bug Fixes::
+  * https://jira.ocient.com:8443/browse/DB-10687[DB-10687] - Fix for Kill/Cancel query  
