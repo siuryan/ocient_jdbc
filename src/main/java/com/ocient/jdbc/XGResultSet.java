@@ -178,7 +178,7 @@ public class XGResultSet implements ResultSet
 			return;
 		}
 
-		stmt.cancel();
+		//stmt.cancel();
 
 		try
 		{
