@@ -390,7 +390,14 @@ message CancelQueryResponse
 
 message LocalCancelQuery
 {
-	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+	//Same data as md::objectId object
+	//Ideally would like to import objectId proto object, but proto lives in libxgsysnconfig
+	int32 identity = 1;
+	oneof	one_identity_option {
+		bytes uuid_identity	= 2;
+	}
+	
+	string sql = 3; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
 }
 
 message LocalCancelQueryResponse
@@ -410,7 +417,14 @@ message KillQueryResponse
 
 message LocalKillQuery
 {
-	string sql = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+	//Same data as md::objectId object
+	//Ideally would like to import objectId proto object, but proto lives in libxgsysnconfig
+	int32 identity = 1;
+	oneof	one_identity_option {
+		bytes uuid_identity	= 2;
+	}
+	
+	string sql = 3; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
 }
 
 message LocalKillQueryResponse
