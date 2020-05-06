@@ -442,7 +442,7 @@ public class XGConnection implements Connection
 			return;
 		}
 
-		if (rs != null)
+		if (rs != null && !rs.isClosed())
 		{
 			rs.getStatement().cancel();
 		}
