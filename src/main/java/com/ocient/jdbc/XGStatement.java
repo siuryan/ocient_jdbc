@@ -745,6 +745,10 @@ public class XGStatement implements Statement
 			{
 				b1.setSchema(schema);
 			}
+			else
+			{
+				b1.setSchema("%");
+			}
 			if ((call == FetchSystemMetadata.SystemMetadataCall.GET_VIEWS) && (table != null) && (!table.equals("")))
 			{
 				b1.setView(table);
@@ -752,6 +756,10 @@ public class XGStatement implements Statement
 			else if ((table != null) && (!table.equals("")))
 			{
 				b1.setTable(table);
+			}
+			else
+			{
+				b1.setTable("%");
 			}
 			if ((col != null) && (!col.equals("")))
 			{
@@ -1430,7 +1438,7 @@ public class XGStatement implements Statement
                                 final TimeZone utc = TimeZone.getTimeZone("UTC");
                                 format.setTimeZone(utc);
                                 out += ("TIME('" + format.format((Time) parm) + "')");
-                            } 
+                            }
                             else if (parm instanceof Byte)
                             {
                             	out += ("BYTE(" + parm + ")");
@@ -1455,7 +1463,7 @@ public class XGStatement implements Statement
                             {
                             	out += ("DECIMAL(" + parm + ", " + ((BigDecimal)parm).precision() + ", " + ((BigDecimal)parm).scale() + ")");
                             }
-                            else 
+                            else
                             {
                             	throw new SQLFeatureNotSupportedException();
                             }
