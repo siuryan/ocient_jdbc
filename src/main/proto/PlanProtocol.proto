@@ -56,6 +56,8 @@ message FilterClause
 	SqlColType rhsType = 5;
 	bool lhsIsCol = 6;
 	bool rhsIsCol = 7;
+    string rhsTypeString = 8;
+    string lhsTypeString = 9;
 }
 
 //A disjunction is a list of filter clauses
