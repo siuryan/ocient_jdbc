@@ -1049,6 +1049,8 @@ message ShuffleOperator
 	//The keys we are hashing by (in order) to determine the destination
 	repeated string keys = 1;
 	uint64 shuffle_rotation = 2;
+    uint32 pfactor = 3;         // pfactor from the sql node is used for all shuffle operators to ensure uniformity
+                                // and prevent processing errors due to mis-configuration or h/w inconsistencies
 }
 
 message TeeOperator
