@@ -601,6 +601,7 @@ enum GatherLevel
 message GatherOperator
 {
 	GatherLevel level = 1;
+	bool zerocopy = 2;
 }
 
 message OrderedDistinctOperator
@@ -772,6 +773,7 @@ message OrderedGatherOperator
 	repeated bool directions = 2;
 	GatherLevel level = 3;
 	repeated bool nulls_first = 4;
+	bool zerocopy = 5;
 }
 
 //Discard some columns
