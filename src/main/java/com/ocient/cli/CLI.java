@@ -347,29 +347,26 @@ public class CLI {
 				System.out.println("Syntax: connect to <jdbc url>( user <username> using <password>)?( force)?");
 				return;
 			}
-			final String[] hosts = m.group("hosts").split(",");
+			final String hosts = m.group("hosts");
 			final String preurl = m.group("preurl");
 			final String posturl = m.group("posturl");
+
 			Exception lastException = null;
-			for (String host : hosts) {
-				final String url = preurl + host + posturl;
-				try {
-					if (m.group("up") == null) {
-						doConnect(user, pwd, (m.group("force") != null), url);
-					} else {
-						doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
-					}
-					// No exception thrown means connection was successful, and connectTo may return
-					System.out.println("Connected to " + url);
-					return;
-				} catch (final Exception e) {
-					System.out.println("Failed to connect to " + host);
-					lastException = e;
+
+			final String url = preurl + hosts + posturl;
+			try {
+				if (m.group("up") == null) {
+					doConnect(user, pwd, (m.group("force") != null), url);
+				} else {
+					doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
 				}
+				// No exception thrown means connection was successful, and connectTo may return
+				return;
+			} catch (final Exception e) {
+				System.out.println("Failed to connect to " + hosts);
+				throw e;
 			}
-			if (lastException != null) {
-				throw lastException;
-			}
+
 		} catch (final Exception e) {
 			System.out.println("Error: " + e.getMessage());
 		}
@@ -383,6 +380,8 @@ public class CLI {
 		prop.setProperty("force", force ? "true" : "false");
 		conn = DriverManager.getConnection(url, prop);
 		CLI.db = ((XGConnection) conn).getDB();
+
+		System.out.println("Connected to " + ((XGConnection) conn).getURL());
 	}
 
 	private static boolean isConnected() {

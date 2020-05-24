@@ -49,6 +49,64 @@ public class JDBCDriver implements Driver
 		return true;
 	}
 
+
+	private Connection createConnection(final String user, final String pwd, final String hostname, int portNum, final String database, final String force) throws SQLException {
+		Socket sock = null;
+		try
+		{
+			final InetAddress[] addrs = InetAddress.getAllByName(hostname);
+			boolean connected = false;
+			Throwable lastError = null;
+			for (InetAddress addr : addrs) {
+				try {
+					sock = new Socket();
+					sock.setReceiveBufferSize(4194304);
+					sock.setSendBufferSize(4194304);
+					sock.connect(new InetSocketAddress(addr, portNum), 10000);
+					connected = true;
+					break;
+				} catch (final Throwable e) {
+					lastError = e;
+				}
+			}
+			if (!connected && lastError != null) {
+				// Represents failure to connect.  Socket will be cleaned up in catch block.
+				throw lastError;
+			}
+		}
+		catch (final Throwable e)
+		{
+			try
+			{
+				sock.close();
+			}
+			catch (final IOException f)
+			{}
+
+			final SQLException g = SQLStates.FAILED_CONNECTION.clone();
+			final Exception connInfo = new Exception("Connection failed connecting to " + hostname + ":" + portNum);
+			g.initCause(connInfo);
+			connInfo.initCause(e);
+			throw g;
+		}
+
+		try {
+			final String url = "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
+
+			XGConnection conn = new XGConnection(sock, user, pwd, portNum, url, database, version, force);
+			return conn;
+		}
+		catch (final Exception e)
+		{
+			if (e instanceof SQLException)
+			{
+				throw (SQLException) e;
+			}
+
+			throw SQLStates.newGenericException(e);
+		}
+	}
+
 	@Override
 	public Connection connect(final String arg0, final Properties arg1) throws SQLException {
 		try
@@ -61,70 +119,45 @@ public class JDBCDriver implements Driver
 				return null;
 			}
 
-			final int portDelim = arg0.indexOf(":", "jdbc:ocient://".length());
-			if (portDelim < 0)
-			{
-				throw SQLStates.MALFORMED_URL.clone();
-			}
-			final int dbDelim = arg0.indexOf("/", portDelim);
+			final int dbDelim = arg0.indexOf("/", "jdbc:ocient://".length());
 			if (dbDelim < 0)
 			{
 				throw SQLStates.MALFORMED_URL.clone();
 			}
-			final String hostname = arg0.substring("jdbc:ocient://".length(), portDelim);
-			final String port = arg0.substring(portDelim + 1, dbDelim);
-			final String db = arg0.substring(dbDelim + 1);
-			int portNum = 0;
-			try
-			{
-				portNum = Integer.parseInt(port);
-			}
-			catch (final Exception e)
-			{
-				throw SQLStates.MALFORMED_URL.clone();
-			}
 
-			Socket sock = null;
-			try
-			{
-				final InetAddress[] addrs = InetAddress.getAllByName(hostname);
-				boolean connected = false;
-				Throwable lastError = null;
-				for (InetAddress addr : addrs) {
-					try {
-						sock = new Socket();
-						sock.setReceiveBufferSize(4194304);
-						sock.setSendBufferSize(4194304);
-						sock.connect(new InetSocketAddress(addr, portNum), 10000);
-						connected = true;
-						break;
-					} catch (final Throwable e) {
-						lastError = e;
-					}
-				}
-				if (!connected && lastError != null) {
-					// Represents failure to connect.  Socket will be cleaned up in catch block.
-					throw lastError;
-				}
-			}
-			catch (final Throwable e)
-			{
+			final String hosts = arg0.substring("jdbc:ocient://".length(), dbDelim);
+			final String db = arg0.substring(dbDelim + 1);
+			final String[] hostList = hosts.split(",");
+
+			Exception lastException = null;
+			for (String host : hostList) {
+				final String[] hostnameAndPort = host.split(":");
+				if(hostnameAndPort.length != 2) 
+				{
+					throw SQLStates.MALFORMED_URL.clone();
+				} 
+
+				int portNum = 0;
 				try
 				{
-					sock.close();
+					portNum = Integer.parseInt(hostnameAndPort[1]);
 				}
-				catch (final IOException f)
-				{}
+				catch (final Exception e)
+				{
+					throw SQLStates.MALFORMED_URL.clone();
+				}
 
-				final SQLException g = SQLStates.FAILED_CONNECTION.clone();
-				final Exception connInfo = new Exception("Connection failed connecting to " + hostname + ":" + portNum);
-				g.initCause(connInfo);
-				connInfo.initCause(e);
-				throw g;
+				try {
+					Connection conn = createConnection(arg1.getProperty("user"), arg1.getProperty("password"), hostnameAndPort[0], portNum, db, arg1.getProperty("force", "false"));
+					return conn;
+				} catch (final Exception e) {
+					lastException = e;
+				}
 			}
 
-			return new XGConnection(sock, arg1.getProperty("user"), arg1.getProperty("password"), portNum, arg0, db,
-					version, arg1.getProperty("force", "false"));
+			if (lastException != null) {
+				throw lastException;
+			}
 		}
 		catch (final Exception e)
 		{
@@ -135,6 +168,9 @@ public class JDBCDriver implements Driver
 
 			throw SQLStates.newGenericException(e);
 		}
+
+		//if we get it here, it is a malformed URL
+		throw SQLStates.MALFORMED_URL.clone();
 	}
 
 	public String getDriverVersion() {
