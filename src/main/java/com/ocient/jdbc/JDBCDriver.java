@@ -15,6 +15,7 @@ import java.util.Timer;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.Level;
 
@@ -50,11 +51,17 @@ public class JDBCDriver implements Driver
 	}
 
 
-	private Connection createConnection(final String user, final String pwd, final String hostname, int portNum, final String database, final String force) throws SQLException {
+	private Connection createConnection(final String hostname, int portNum, final String database, Properties properties) throws SQLException {
 		Socket sock = null;
+		String user = properties.getProperty("user");
+		String pwd = properties.getProperty("password");
+		String force = properties.getProperty("force");
+		
 		try
 		{
 			final InetAddress[] addrs = InetAddress.getAllByName(hostname);
+			LOGGER.log(Level.INFO, String.format(
+					"Received %d IP addresses for hostname %s", addrs.length, hostname));
 			boolean connected = false;
 			Throwable lastError = null;
 			for (InetAddress addr : addrs) {
@@ -67,6 +74,8 @@ public class JDBCDriver implements Driver
 					break;
 				} catch (final Throwable e) {
 					lastError = e;
+					LOGGER.log(Level.WARNING, String.format(
+							"Failed connecting to %s with exception %s with message %s", addr, e), e.getMessage());
 				}
 			}
 			if (!connected && lastError != null) {
@@ -108,11 +117,9 @@ public class JDBCDriver implements Driver
 	}
 
 	@Override
-	public Connection connect(final String arg0, final Properties arg1) throws SQLException {
+	public Connection connect(final String arg0, Properties arg1) throws SQLException {
 		try
 		{
-			configLogger(arg1);
-
 			final String protocol = arg0.substring(0, 14);
 			if (!protocol.equals("jdbc:ocient://"))
 			{
@@ -126,14 +133,63 @@ public class JDBCDriver implements Driver
 			}
 
 			final String hosts = arg0.substring("jdbc:ocient://".length(), dbDelim);
-			final String db = arg0.substring(dbDelim + 1);
 			final String[] hostList = hosts.split(",");
+			String db = "";
+			
+			//Check for properties
+			int propertyDelim = arg0.indexOf(";");
+			if (propertyDelim > 0)
+			{
+				db = arg0.substring(dbDelim + 1, propertyDelim);
+			}
+			else
+			{
+				db = arg0.substring(dbDelim + 1);
+			}
+			
+			while (propertyDelim > 0)
+			{
+				//Get the property name
+				int equalPos = arg0.indexOf("=", propertyDelim+1);
+				if (equalPos < 0)
+				{
+					throw SQLStates.MALFORMED_URL.clone();
+				}
+				
+				String key = arg0.substring(propertyDelim+1, equalPos);
+				
+				//Find the end of this property
+				int propertyEnd = arg0.indexOf(";", equalPos+1);
+				if (propertyEnd < 0)
+				{
+					propertyEnd = arg0.length();
+				}
+				
+				String value = arg0.substring(propertyDelim+1 + key.length() + 1, propertyEnd);
+				arg1.setProperty(key, value);
+				
+				if (propertyEnd == arg0.length())
+				{
+					propertyDelim = -1;
+				}
+				else
+				{
+					propertyDelim = propertyEnd;
+				}
+			}
+			
+			if (arg1.getProperty("force") == null)
+			{
+				arg1.setProperty("force", "false");
+			}
 
+			configLogger(arg1);
 			Exception lastException = null;
 			for (String host : hostList) {
 				final String[] hostnameAndPort = host.split(":");
 				if(hostnameAndPort.length != 2) 
 				{
+					LOGGER.log(Level.SEVERE, "Host list in URL is malformed");
 					throw SQLStates.MALFORMED_URL.clone();
 				} 
 
@@ -144,11 +200,12 @@ public class JDBCDriver implements Driver
 				}
 				catch (final Exception e)
 				{
+					LOGGER.log(Level.SEVERE, "Port number in URL was not an integer");
 					throw SQLStates.MALFORMED_URL.clone();
 				}
 
 				try {
-					Connection conn = createConnection(arg1.getProperty("user"), arg1.getProperty("password"), hostnameAndPort[0], portNum, db, arg1.getProperty("force", "false"));
+					Connection conn = createConnection(hostnameAndPort[0], portNum, db, arg1);
 					return conn;
 				} catch (final Exception e) {
 					lastException = e;
@@ -231,9 +288,17 @@ public class JDBCDriver implements Driver
 
 	private void configLogger(final Properties props) {
 		String loglevel = props.getProperty("loglevel");
+		String logfile = props.getProperty("logfile");
+		if (loglevel == null || logfile == null)
+		{
+			LOGGER.setLevel(Level.OFF);
+			return;
+		}
+		
 		if (loglevel != null) {
 			if (loglevel.equalsIgnoreCase("OFF")) {
 				LOGGER.setLevel(Level.OFF);
+				return;
 			} else if (loglevel.equalsIgnoreCase("DEBUG")) {
 				LOGGER.setLevel(Level.ALL);
 			} else if (loglevel.equalsIgnoreCase("ERROR")) {
@@ -241,24 +306,16 @@ public class JDBCDriver implements Driver
 			}
 		}
 
-		String logfile = props.getProperty("logfile");
-
 		/* If logfile hasn't changed, return */
-		if (((logfile == null) && (logFileName == null)) ||
-			logfile.equals(logFileName)) {
+		if (logfile.equals(logFileName)) {
 			return;
 		}
 
 		/* Clean up the old handler */
-		if (logHandler != null) {
-			LOGGER.removeHandler(logHandler);
-			logHandler = null;
-			logFileName = null;
-		}
-
-		/* If we don't have a new log file, we're done */
-		if (logfile == null) {
-			return;
+		LOGGER.setUseParentHandlers(false);
+		Handler[] handlers = LOGGER.getHandlers();
+		for(Handler handler : handlers) {
+		    LOGGER.removeHandler(handler);
 		}
 
 		try {

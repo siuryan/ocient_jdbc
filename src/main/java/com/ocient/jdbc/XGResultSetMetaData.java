@@ -5,10 +5,14 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.math.BigDecimal;
 
 public class XGResultSetMetaData implements ResultSetMetaData
 {
+	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
+	
 	public final Map<String, Integer> cols2Pos;
 	public final TreeMap<Integer, String> pos2Cols;
 	public final Map<String, String> cols2Types;
@@ -23,11 +27,13 @@ public class XGResultSetMetaData implements ResultSetMetaData
 
 	@Override
 	public String getCatalogName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getCatalogName()");
 		return "";
 	}
 
 	@Override
 	public String getColumnClassName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnClassName()");
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
@@ -101,17 +107,20 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		}
 		else
 		{
+			LOGGER.log(Level.WARNING, "getColumnClassName() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
 	}
 
 	@Override
 	public int getColumnCount() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnCount()");
 		return cols2Pos.size();
 	}
 
 	@Override
 	public int getColumnDisplaySize(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnDisplaySize()");
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 		int retval = 0;
@@ -189,6 +198,7 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		}
 		else
 		{
+			LOGGER.log(Level.WARNING, "getColumnDisplaySize() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
 
@@ -202,16 +212,19 @@ public class XGResultSetMetaData implements ResultSetMetaData
 
 	@Override
 	public String getColumnLabel(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnLabel()");
 		return pos2Cols.get(column - 1);
 	}
 
 	@Override
 	public String getColumnName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnName()");
 		return pos2Cols.get(column - 1);
 	}
 
 	@Override
 	public int getColumnType(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnType()");
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
@@ -285,21 +298,25 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		}
 		else
 		{
+			LOGGER.log(Level.WARNING, "getColumnType() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
 	}
 
 	@Override
 	public String getColumnTypeName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getColumnTypeName()");
 		return cols2Types.get(pos2Cols.get(column - 1));
 	}
 
 	public int getPosition(final String name) throws Exception {
+		LOGGER.log(Level.INFO, "Called getPosition()");
 		return cols2Pos.get(name);
 	}
 
 	@Override
 	public int getPrecision(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getPrecision()");
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
@@ -377,82 +394,98 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		}
 		else
 		{
+			LOGGER.log(Level.WARNING, "getPrecision() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
 	}
 
 	@Override
 	public int getScale(final int column) throws SQLException {
+		LOGGER.log(Level.WARNING, "Called getScale()");
 		return 0;
 	}
 
 	@Override
 	public String getSchemaName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getSchemaName()");
 		return "";
 	}
 
 	@Override
 	public String getTableName(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getTableName()");
 		return "";
 	}
 
 	@Override
 	public boolean isAutoIncrement(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isAutoIncrement()");
 		return false;
 	}
 
 	@Override
 	public boolean isCaseSensitive(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isCaseSensitive()");
 		return true;
 	}
 
 	@Override
 	public boolean isCurrency(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isCurrency()");
 		return false;
 	}
 
 	@Override
 	public boolean isDefinitelyWritable(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isDefinitelyWritable()");
 		return false;
 	}
 
 	@Override
 	public int isNullable(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isNullable()");
 		return ResultSetMetaData.columnNullableUnknown;
 	}
 
 	@Override
 	public boolean isReadOnly(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isReadOnly()");
 		return true;
 	}
 
 	@Override
 	public boolean isSearchable(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isSearchable()");
 		return true;
 	}
 
 	@Override
 	public boolean isSigned(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isSigned()");
 		return true;
 	}
 
 	@Override
 	public boolean isWrapperFor(final Class<?> iface) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isWrapperFor()");
 		return false;
 	}
 
 	@Override
 	public boolean isWritable(final int column) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isWritable()");
 		return false;
 	}
 
 	@Override
 	public String toString() {
+		LOGGER.log(Level.INFO, "Called toString()");
 		return "Position -> column = " + pos2Cols + "\nColumn -> type = " + cols2Types;
 	}
 
 	@Override
 	public <T> T unwrap(final Class<T> iface) throws SQLException {
+		LOGGER.log(Level.WARNING, "unwrap() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 

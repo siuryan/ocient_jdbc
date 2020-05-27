@@ -70,6 +70,8 @@ import com.ocient.jdbc.proto.ClientWireProtocol.TestConnection;
 
 public class XGConnection implements Connection
 {
+	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
+	
 	private class TestConnectionThread extends Thread
 	{
 		Exception e = null;
@@ -78,6 +80,8 @@ public class XGConnection implements Connection
 		public void run() {
 			try
 			{
+				LOGGER.log(Level.INFO, "Testing connection");
+				
 				// send request
 				final ClientWireProtocol.TestConnection.Builder builder =
 						ClientWireProtocol.TestConnection.newBuilder();
@@ -96,6 +100,7 @@ public class XGConnection implements Connection
 				}
 				catch (SQLException | IOException e)
 				{
+					LOGGER.log(Level.WARNING, String.format("Connection test failed with exception %s with message %s", e, e.getMessage()));
 					if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e))
 					{
 						throw e;
@@ -190,8 +195,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public void abort(final Executor executor) throws SQLException {
+		LOGGER.log(Level.INFO, "Called abort()");
 		if (executor == null)
 		{
+			LOGGER.log(Level.WARNING, "abort() is throwing INVALID_ARGUMENT");
 			throw SQLStates.INVALID_ARGUMENT.clone();
 		}
 
@@ -209,8 +216,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public void clearWarnings() throws SQLException {
+		LOGGER.log(Level.INFO, "Called clearWarnings()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "clearWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -222,8 +231,11 @@ public class XGConnection implements Connection
 	 */
 	public void setTimeout(final int seconds) throws SQLException {
 		if (seconds < 0) {
+			LOGGER.log(Level.WARNING, "Throwing because a negative value was passed to setTimeout()");
 			throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
 		}
+		
+		LOGGER.log(Level.INFO, String.format("Setting timeout to %d seconds", seconds));
 		this.timeoutMillis = seconds * 1000;
 	}
 
@@ -261,6 +273,7 @@ public class XGConnection implements Connection
 	private void clientHandshake(final String userid, final String pwd, final String db) throws Exception {
 		try
 		{
+			LOGGER.log(Level.INFO, "Beginning handshake");
 			// send first part of handshake - contains userid
 			final ClientWireProtocol.ClientConnection.Builder builder =
 					ClientWireProtocol.ClientConnection.newBuilder();
@@ -331,6 +344,7 @@ public class XGConnection implements Connection
                Base64.getMimeEncoder().encodeToString(clientPub.getEncoded()) + "\n-----END PUBLIC KEY-----\n";
          }
          catch(Exception e) {
+        	 LOGGER.log(Level.WARNING, String.format("Exception %s occurred during handshake with message %s", e, e.getMessage()));
             throw new Exception(e);
          }
 
@@ -399,6 +413,7 @@ public class XGConnection implements Connection
 			SQLException state = new SQLException(response.getReason(), response.getSqlState(), response.getVendorCode());
 			//if we had a failed handshake, then something went wrong with verification on the server, just try again(up to 5 times)
 			if(SQLStates.FAILED_HANDSHAKE.equals(state) && retryCounter++ < 5) {
+				LOGGER.log(Level.INFO, "Handshake failed, retrying");
 				clientHandshake(userid, pwd, db);
 				return;
 			}
@@ -422,6 +437,7 @@ public class XGConnection implements Connection
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during handshake with message %s", e, e.getMessage()));
 			e.printStackTrace();
 
 			try
@@ -437,6 +453,7 @@ public class XGConnection implements Connection
 
 	@Override
 	public void close() throws SQLException {
+		LOGGER.log(Level.INFO, "close() called on the connection");
 		if (closed)
 		{
 			return;
@@ -477,8 +494,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public void commit() throws SQLException {
+		LOGGER.log(Level.INFO, "Called commit()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "commit() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -487,33 +506,40 @@ public class XGConnection implements Connection
 
 	@Override
 	public Array createArrayOf(final String arg0, final Object[] arg1) throws SQLException {
+		LOGGER.log(Level.WARNING, "createArrayOf() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Blob createBlob() throws SQLException {
+		LOGGER.log(Level.WARNING, "createBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Clob createClob() throws SQLException {
+		LOGGER.log(Level.WARNING, "createClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public NClob createNClob() throws SQLException {
+		LOGGER.log(Level.WARNING, "createNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public SQLXML createSQLXML() throws SQLException {
+		LOGGER.log(Level.WARNING, "createSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Statement createStatement() throws SQLException {
+		LOGGER.log(Level.INFO, "Called createStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "createStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -530,8 +556,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public Statement createStatement(final int arg0, final int arg1) throws SQLException {
+		LOGGER.log(Level.INFO, "Called createStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "createStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -548,8 +576,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public Statement createStatement(final int arg0, final int arg1, final int arg2) throws SQLException {
+		LOGGER.log(Level.INFO, "Called createStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "createStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -566,13 +596,16 @@ public class XGConnection implements Connection
 
 	@Override
 	public Struct createStruct(final String arg0, final Object[] arg1) throws SQLException {
+		LOGGER.log(Level.WARNING, "createStruct() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public boolean getAutoCommit() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getAutoCommit()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getAutoCommit() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 		return true;
@@ -580,8 +613,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public String getCatalog() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getCatalog()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getCatalog() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 		return null;
@@ -589,8 +624,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public Properties getClientInfo() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getClientInfo()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getClientInfo() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -599,8 +636,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public String getClientInfo(final String arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called getClientInfo()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getClientInfo() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -613,8 +652,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public int getHoldability() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getHoldability()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getHoldability() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -645,8 +686,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getMetaData()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getMetaData() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -665,8 +708,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public String getSchema() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getSchema()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getSchema() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 		try
@@ -675,6 +720,7 @@ public class XGConnection implements Connection
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getSchema() with message %s", e, e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;
@@ -760,8 +806,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public int getTransactionIsolation() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getTransactionIsolation()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getTransactionIsolation() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -770,6 +818,7 @@ public class XGConnection implements Connection
 
 	@Override
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getTypeMap()");
 		return typeMap;
 	}
 
@@ -787,8 +836,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getWarnings()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -812,13 +863,16 @@ public class XGConnection implements Connection
 
 	@Override
 	public boolean isClosed() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isClosed()");
 		return closed;
 	}
 
 	@Override
 	public boolean isReadOnly() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isReadOnly()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "isReadOnly() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -827,8 +881,10 @@ public class XGConnection implements Connection
 
 	@Override
 	public boolean isValid(final int arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isValid()");
 		if (arg0 < 0)
 		{
+			LOGGER.log(Level.WARNING, "isValid() is throwing INVALID_ARGUMENT");
 			throw SQLStates.INVALID_ARGUMENT.clone();
 		}
 
@@ -842,13 +898,16 @@ public class XGConnection implements Connection
 
 	@Override
 	public boolean isWrapperFor(final Class<?> iface) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isWrapperFor()");
 		return false;
 	}
 
 	@Override
 	public String nativeSQL(final String arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called nativeSQL()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "nativeSQL() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -857,24 +916,29 @@ public class XGConnection implements Connection
 
 	@Override
 	public CallableStatement prepareCall(final String arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareCall() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public CallableStatement prepareCall(final String arg0, final int arg1, final int arg2) throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareCall() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public CallableStatement prepareCall(final String arg0, final int arg1, final int arg2, final int arg3)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareCall() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public PreparedStatement prepareStatement(final String arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called prepareStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "prepareStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -891,13 +955,16 @@ public class XGConnection implements Connection
 
 	@Override
 	public PreparedStatement prepareStatement(final String arg0, final int arg1) throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareStatement() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public PreparedStatement prepareStatement(final String arg0, final int arg1, final int arg2) throws SQLException {
+		LOGGER.log(Level.INFO, "Called prepareStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "prepareStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -915,8 +982,10 @@ public class XGConnection implements Connection
 	@Override
 	public PreparedStatement prepareStatement(final String arg0, final int arg1, final int arg2, final int arg3)
 			throws SQLException {
+		LOGGER.log(Level.INFO, "Called prepareStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "prepareStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -933,11 +1002,13 @@ public class XGConnection implements Connection
 
 	@Override
 	public PreparedStatement prepareStatement(final String arg0, final int[] arg1) throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareStatement() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public PreparedStatement prepareStatement(final String arg0, final String[] arg1) throws SQLException {
+		LOGGER.log(Level.WARNING, "prepareStatement() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1008,6 +1079,7 @@ public class XGConnection implements Connection
 
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
+		LOGGER.log(Level.INFO, "Enterred reconnect()");
 		try
 		{
 			Thread.sleep(250);
@@ -1045,7 +1117,8 @@ public class XGConnection implements Connection
 
 				// reconnect failed so we are no longer connected
 				connected = false;
-
+				
+				LOGGER.log(Level.WARNING, String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
 				if(e instanceof IOException) {
 					throw (IOException)e;
 				}
@@ -1121,6 +1194,7 @@ public class XGConnection implements Connection
 
 				// reconnect failed so we are no longer connected
 				connected = false;
+				LOGGER.log(Level.WARNING, String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
 
 				if(e instanceof IOException) {
 					throw (IOException)e;
@@ -1204,6 +1278,7 @@ public class XGConnection implements Connection
 				catch (final IOException f)
 				{}
 
+				LOGGER.log(Level.WARNING, String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
 				continue;
 			}
 
@@ -1273,6 +1348,7 @@ public class XGConnection implements Connection
 	 * We have to told to redirect our request elsewhere.
 	 */
 	public void redirect(final String host, final int port) throws IOException, SQLException {
+		LOGGER.log(Level.INFO, "Enterred redirect()");
 		oneShotForce = true;
 
 		// Close current connection
@@ -1303,7 +1379,8 @@ public class XGConnection implements Connection
 			}
 			catch (final IOException f)
 			{}
-
+			
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred in redirect() with message %s", e, e.getMessage()));
 			reconnect();
 			return;
 		}
@@ -1362,17 +1439,20 @@ public class XGConnection implements Connection
 
 	@Override
 	public void releaseSavepoint(final Savepoint arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "releaseAvepoint() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 
 	}
 
 	@Override
 	public void rollback() throws SQLException {
+		LOGGER.log(Level.WARNING, "rollback() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void rollback(final Savepoint arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "rollback() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1399,6 +1479,7 @@ public class XGConnection implements Connection
 
 	private void sendSetSchema(final String schema) throws Exception {
 		// send request
+		LOGGER.log(Level.INFO, "Sending set schema request to the server");
 		final ClientWireProtocol.SetSchema.Builder builder = ClientWireProtocol.SetSchema.newBuilder();
 		builder.setSchema(schema);
 		final SetSchema msg = builder.build();
@@ -1417,14 +1498,17 @@ public class XGConnection implements Connection
 		catch (final IOException e)
 		{
 			// Doesn't matter...
+			LOGGER.log(Level.WARNING, String.format("Failed sending set schema request to the server with exception %s with message %s", e, e.getMessage()));
 		}
 
 		setSchema = schema;
 	}
 
 	public void forceExternal(boolean force) throws Exception {
+		LOGGER.log(Level.INFO, "Sending force external request to the server");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "Force external request is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1447,13 +1531,16 @@ public class XGConnection implements Connection
 		catch (final IOException e)
 		{
 			// Doesn't matter...
+			LOGGER.log(Level.WARNING, String.format("Failed sending set schema request to the server with exception %s with message %s", e, e.getMessage()));
 		}
 	}
 
 	//sets the pso threshold on this connection to threshold
 	public void setPSO(long threshold) throws Exception {
+		LOGGER.log(Level.INFO, "Sending set pso request to the server");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "Set pso request is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1478,13 +1565,16 @@ public class XGConnection implements Connection
 		catch (final IOException e)
 		{
 			// Doesn't matter...
+			LOGGER.log(Level.WARNING, String.format("Failed sending set pso request to the server with exception %s with message %s", e, e.getMessage()));
 		}
 	}
 
 	//sets the pso threshold on this connection to be -1(meaning pso is turned off) or back to the default
 	public void setPSO(boolean on) throws Exception {
+		LOGGER.log(Level.INFO, "Sending set pso request to the server");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "Set pso request is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1517,56 +1607,74 @@ public class XGConnection implements Connection
 		catch (final IOException e)
 		{
 			// Doesn't matter...
+			LOGGER.log(Level.WARNING, String.format("Failed sending set pso request to the server with exception %s with message ", e, e.getMessage()));
 		}
 	}
 
 	@Override
-	public void setAutoCommit(final boolean arg0) throws SQLException {}
+	public void setAutoCommit(final boolean arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "Called setAutoCommit()");
+	}
 
 	@Override
-	public void setCatalog(final String arg0) throws SQLException {}
+	public void setCatalog(final String arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "Called setCatalog()");
+	}
 
 	@Override
-	public void setClientInfo(final Properties arg0) throws SQLClientInfoException {}
+	public void setClientInfo(final Properties arg0) throws SQLClientInfoException {
+		LOGGER.log(Level.WARNING, "Called setClientInfo()");
+	}
 
 	@Override
-	public void setClientInfo(final String arg0, final String arg1) throws SQLClientInfoException {}
+	public void setClientInfo(final String arg0, final String arg1) throws SQLClientInfoException {
+		LOGGER.log(Level.WARNING, "Called setClientInfo()");
+	}
 
 	@Override
 	public void setHoldability(final int arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setHoldability()");
 		if (arg0 != ResultSet.CLOSE_CURSORS_AT_COMMIT)
 		{
+			LOGGER.log(Level.WARNING, "setHoldability() is throwing SQLFeatureNotSupportedException");
 			throw new SQLFeatureNotSupportedException();
 		}
 	}
 
 	@Override
 	public void setNetworkTimeout(final Executor executor, final int milliseconds) throws SQLException {
+		LOGGER.log(Level.WARNING, "setNetworkTimeout() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void setReadOnly(final boolean arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "Called setReadOnly()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "setReadOnly() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 	}
 
 	@Override
 	public Savepoint setSavepoint() throws SQLException {
+		LOGGER.log(Level.WARNING, "setSavepoint() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Savepoint setSavepoint(final String arg0) throws SQLException {
+		LOGGER.log(Level.WARNING, "setSavepoint() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void setSchema(final String schema) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setSchema()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "setSchema() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1576,6 +1684,7 @@ public class XGConnection implements Connection
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during setSchema() with message %s", e, e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;
@@ -1589,19 +1698,23 @@ public class XGConnection implements Connection
 
 	@Override
 	public void setTransactionIsolation(final int arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setTransactionIsolation()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "setTransactionIsolation() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		if (arg0 != Connection.TRANSACTION_NONE)
 		{
+			LOGGER.log(Level.WARNING, "setTransactionIsolation() is throwing SQLFeatureNotSupportedException");
 			throw new SQLFeatureNotSupportedException();
 		}
 	}
 
 	@Override
 	public void setTypeMap(final Map<String, Class<?>> arg0) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setTypeMap()");
 		typeMap = arg0;
 	}
 
@@ -1630,6 +1743,7 @@ public class XGConnection implements Connection
 
 	@Override
 	public <T> T unwrap(final Class<T> iface) throws SQLException {
+		LOGGER.log(Level.WARNING, "setSavepoint() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 }

@@ -49,6 +49,8 @@ import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 
 public class XGResultSet implements ResultSet
 {
+	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
+	
 	private static int bytesToInt(final byte[] val) {
 		final int ret = java.nio.ByteBuffer.wrap(val).getInt();
 		return ret;
@@ -135,6 +137,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean absolute(final int row) throws SQLException {
+		LOGGER.log(Level.WARNING, "absolute() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -148,23 +151,28 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void afterLast() throws SQLException {
+		LOGGER.log(Level.WARNING, "afterLast() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void beforeFirst() throws SQLException {
+		LOGGER.log(Level.WARNING, "beforeFirst() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void cancelRowUpdates() throws SQLException {
+		LOGGER.log(Level.WARNING, "cancelRowUpdates() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void clearWarnings() throws SQLException {
+		LOGGER.log(Level.INFO, "Called clearWarnings()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "clearWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -173,6 +181,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void close() throws SQLException {
+		LOGGER.log(Level.INFO, "Called close()");
 		if (closed)
 		{
 			return;
@@ -187,12 +196,14 @@ public class XGResultSet implements ResultSet
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during close() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
 
 	@Override
 	public void deleteRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "cancelRowUpdates() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -200,12 +211,14 @@ public class XGResultSet implements ResultSet
 	public int findColumn(final String columnLabel) throws SQLException {
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "findColumn() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
+			LOGGER.log(Level.WARNING, String.format("findColumn() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -214,6 +227,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean first() throws SQLException {
+		LOGGER.log(Level.WARNING, "first() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -223,12 +237,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getArray() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getArray() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -236,6 +252,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getArray() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -249,6 +266,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof XGArray))
 		{
+			LOGGER.log(Level.WARNING, "getArray() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -257,16 +275,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Array getArray(final String columnLabel) throws SQLException {
-		return getArray(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getArray() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getArray(pos + 1);
 	}
 
 	@Override
 	public InputStream getAsciiStream(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public InputStream getAsciiStream(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -276,12 +303,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -289,6 +318,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -303,6 +333,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
 				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -320,7 +351,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public BigDecimal getBigDecimal(final String columnLabel) throws SQLException {
-		return getBigDecimal(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getBigDecimal() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getBigDecimal(pos + 1);
 	}
 
 	@Override
@@ -332,21 +370,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public InputStream getBinaryStream(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public InputStream getBinaryStream(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Blob getBlob(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Blob getBlob(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -356,12 +398,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -369,6 +413,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getBoolean() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -382,6 +427,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof Boolean))
 		{
+			LOGGER.log(Level.WARNING, "getBoolean() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -390,7 +436,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean getBoolean(final String columnLabel) throws SQLException {
-		return getBoolean(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getBoolean() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getBoolean(pos + 1);
 	}
 
 	@Override
@@ -399,12 +452,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getByte() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getByte() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -412,6 +467,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getByte() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -426,6 +482,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
 				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getByte() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -435,7 +492,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public byte getByte(final String columnLabel) throws SQLException {
-		return getByte(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getByte() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getByte(pos + 1);
 	}
 
 	@Override
@@ -444,12 +508,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getBytes() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getBytes() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -457,6 +523,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getBytes() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -470,6 +537,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof byte[]))
 		{
+			LOGGER.log(Level.WARNING, "getBytes() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -478,33 +546,46 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public byte[] getBytes(final String columnLabel) throws SQLException {
-		return getBytes(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getBytes() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getBytes(pos + 1);
 	}
 
 	@Override
 	public Reader getCharacterStream(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Reader getCharacterStream(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Clob getClob(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Clob getClob(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public int getConcurrency() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getConcurrency()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getConcurrency() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -513,6 +594,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public String getCursorName() throws SQLException {
+		LOGGER.log(Level.WARNING, "getCursorName() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -522,12 +604,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -535,6 +619,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -548,6 +633,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof Date))
 		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -556,16 +642,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Date getDate(final int columnIndex, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getDate() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Date getDate(final String columnLabel) throws SQLException {
-		return getDate(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getDate(pos + 1);
 	}
 
 	@Override
 	public Date getDate(final String columnLabel, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getDate() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -575,12 +670,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getDouble() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getDouble() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -588,6 +685,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getDouble() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -601,6 +699,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
 				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getDouble() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -610,18 +709,27 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public double getDouble(final String columnLabel) throws SQLException {
-		return getDouble(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getDouble() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getDouble(pos + 1);
 	}
 
 	public ArrayList<Object> getEntireRow() throws SQLException {
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -630,8 +738,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getFetchDirection() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getFetchDirection()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -640,8 +750,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getFetchSize() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getFetchSize()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -654,12 +766,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getFloat() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getFloat() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -667,6 +781,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getFloat() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -681,6 +796,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
 				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getFloat() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -690,13 +806,22 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public float getFloat(final String columnLabel) throws SQLException {
-		return getFloat(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getFloat() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getFloat(pos + 1);
 	}
 
 	@Override
 	public int getHoldability() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getHoldability()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getHoldability() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -709,12 +834,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getInt() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getInt() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -722,6 +849,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getInt() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -735,6 +863,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
 				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getInt() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -744,7 +873,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int getInt(final String columnLabel) throws SQLException {
-		return getInt(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getInt() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getInt(pos + 1);
 	}
 
 	private int getLength() throws Exception {
@@ -778,12 +914,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getLong() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getLong() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -791,6 +929,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getLong() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -805,6 +944,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
 				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getLong() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -814,13 +954,22 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public long getLong(final String columnLabel) throws SQLException {
-		return getLong(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getLong() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getLong(pos + 1);
 	}
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getMetaData()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getMetaData() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -830,6 +979,7 @@ public class XGResultSet implements ResultSet
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getMetaData() with message %s", e, e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;
@@ -853,6 +1003,7 @@ public class XGResultSet implements ResultSet
 			return false;
 		}
 
+		LOGGER.log(Level.INFO, "Fetching more data from the server");
 		final Optional<String> queryId = getQueryId();
 		stmt.passUpCancel(false);
 		stmt.setRunningQueryThread(Thread.currentThread());
@@ -887,6 +1038,7 @@ public class XGResultSet implements ResultSet
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred while fetching data with message %s", e, e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;
@@ -903,31 +1055,37 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Reader getNCharacterStream(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Reader getNCharacterStream(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public NClob getNClob(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public NClob getNClob(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public String getNString(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public String getNString(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getNString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -937,12 +1095,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -950,6 +1110,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -980,6 +1141,7 @@ public class XGResultSet implements ResultSet
 		}
 		catch(Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -995,12 +1157,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1008,6 +1172,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1030,6 +1195,7 @@ public class XGResultSet implements ResultSet
 		}
 		catch(Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1040,12 +1206,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1053,6 +1221,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1083,39 +1252,65 @@ public class XGResultSet implements ResultSet
 		}
 		catch(Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
 
 	@Override
 	public Object getObject(final String columnLabel) throws SQLException {
-		return getObject(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getObject(pos + 1);
 	}
 
 	@Override
 	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
-		return getObject(cols2Pos.get(columnLabel) + 1, type);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getObject(pos + 1, type);
 	}
 
 	@Override
 	public Object getObject(final String columnLabel, final Map<String, Class<?>> map) throws SQLException {
-		return getObject(cols2Pos.get(columnLabel) + 1, map);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getObject(pos + 1, map);
 	}
 
 	@Override
 	public Ref getRef(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getRef() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Ref getRef(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getRef() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public int getRow() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getRow()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getRow() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1135,11 +1330,13 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public RowId getRowId(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getRowId() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public RowId getRowId(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getRowId() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1149,12 +1346,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getShort() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getShort() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1162,6 +1361,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getShort() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1176,6 +1376,7 @@ public class XGResultSet implements ResultSet
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
 				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
 		{
+			LOGGER.log(Level.WARNING, "getShort() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -1185,16 +1386,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public short getShort(final String columnLabel) throws SQLException {
-		return getShort(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getShort() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getShort(pos + 1);
 	}
 
 	@Override
 	public SQLXML getSQLXML(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public SQLXML getSQLXML(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1210,8 +1420,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Statement getStatement() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getStatement()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1224,12 +1436,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getString() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getString() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1237,6 +1451,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getString() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1258,7 +1473,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public String getString(final String columnLabel) throws SQLException {
-		return getString(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getString() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getString(pos + 1);
 	}
 
 	@Override
@@ -1267,12 +1489,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1280,6 +1504,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1293,6 +1518,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof Time))
 		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -1301,16 +1527,25 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Time getTime(final int columnIndex, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getTime() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Time getTime(final String columnLabel) throws SQLException {
-        return getTime(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getTime(pos + 1);
 	}
 
 	@Override
 	public Time getTime(final String columnLabel, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getTime() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1320,12 +1555,14 @@ public class XGResultSet implements ResultSet
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
 		if (row instanceof DataEndMarker)
 		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
@@ -1333,6 +1570,7 @@ public class XGResultSet implements ResultSet
 
 		if (columnIndex < 1 || columnIndex > alo.size())
 		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
@@ -1346,6 +1584,7 @@ public class XGResultSet implements ResultSet
 
 		if (!(col instanceof Date))
 		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
@@ -1354,23 +1593,34 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Timestamp getTimestamp(final int columnIndex, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getTimestamp() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public Timestamp getTimestamp(final String columnLabel) throws SQLException {
-		return getTimestamp(cols2Pos.get(columnLabel) + 1);
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getTimestamp(pos + 1);
 	}
 
 	@Override
 	public Timestamp getTimestamp(final String columnLabel, final Calendar cal) throws SQLException {
+		LOGGER.log(Level.WARNING, "getTimestamp() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public int getType() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getType()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getType() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1379,28 +1629,34 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public InputStream getUnicodeStream(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getUnicodeStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public InputStream getUnicodeStream(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getUnicodeStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public URL getURL(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "getURL() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public URL getURL(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "getURL() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
+		LOGGER.log(Level.INFO, "Called getWarnings()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "getWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1424,13 +1680,16 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void insertRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "insertRow() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public boolean isAfterLast() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isAfterLast()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "isAfterLast() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1460,8 +1719,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isBeforeFirst()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "isBeforeFirst() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1486,13 +1747,16 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isClosed() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isClosed()");
 		return closed;
 	}
 
 	@Override
 	public boolean isFirst() throws SQLException {
+		LOGGER.log(Level.INFO, "Called isFirst()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "isFirst() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1517,16 +1781,19 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean isLast() throws SQLException {
+		LOGGER.log(Level.WARNING, "isLast() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public boolean isWrapperFor(final Class<?> iface) throws SQLException {
+		LOGGER.log(Level.INFO, "Called isWrapperFor()");
 		return false;
 	}
 
 	@Override
 	public boolean last() throws SQLException {
+		LOGGER.log(Level.WARNING, "last() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1946,11 +2213,13 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void moveToCurrentRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "moveToCurrentRow() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void moveToInsertRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "moveToInsertRow() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1958,6 +2227,7 @@ public class XGResultSet implements ResultSet
 	public boolean next() throws SQLException {
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "next() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -1992,6 +2262,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean previous() throws SQLException {
+		LOGGER.log(Level.WARNING, "previous() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -1999,10 +2270,12 @@ public class XGResultSet implements ResultSet
 			throws SQLException {
 		if (rType.equals(ResponseType.INVALID))
 		{
+			LOGGER.log(Level.WARNING, "Received an invalid response from the server");
 			throw SQLStates.INVALID_RESPONSE_TYPE.clone();
 		}
 		else if (rType.equals(ResponseType.RESPONSE_ERROR))
 		{
+			LOGGER.log(Level.WARNING, "Received an error response from the server");
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
@@ -2010,6 +2283,7 @@ public class XGResultSet implements ResultSet
 		}
 		else if (rType.equals(ResponseType.RESPONSE_WARN))
 		{
+			LOGGER.log(Level.WARNING, "Received a warning response from the server");
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
@@ -2038,11 +2312,13 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void refreshRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "refreshRow() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public boolean relative(final int rows) throws SQLException {
+		LOGGER.log(Level.WARNING, "relative() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -2087,8 +2363,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean rowDeleted() throws SQLException {
+		LOGGER.log(Level.INFO, "Called rowDeleted()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "rowDeleted() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -2097,8 +2375,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean rowInserted() throws SQLException {
+		LOGGER.log(Level.INFO, "Called rowInserted()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "rowInserted() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -2107,8 +2387,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean rowUpdated() throws SQLException {
+		LOGGER.log(Level.INFO, "Called rowUpdated()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "rowUpdated() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -2134,13 +2416,16 @@ public class XGResultSet implements ResultSet
 		catch (final IOException e)
 		{
 			// Doesn't matter...
+			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during sendCloseRs() with message %s", e, e.getMessage()));
 		}
 	}
 
 	@Override
 	public void setFetchDirection(final int direction) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setFetchDirection()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "setFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -2152,8 +2437,10 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public void setFetchSize(final int rows) throws SQLException {
+		LOGGER.log(Level.INFO, "Called setFetchSize()");
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "setFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
@@ -2167,430 +2454,514 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public <T> T unwrap(final Class<T> iface) throws SQLException {
+		LOGGER.log(Level.WARNING, "unwrap() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateArray(final int columnIndex, final Array x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateArray() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateArray(final String columnLabel, final Array x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateArray() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final int columnIndex, final InputStream x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final int columnIndex, final InputStream x, final int length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final int columnIndex, final InputStream x, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final String columnLabel, final InputStream x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final String columnLabel, final InputStream x, final int length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateAsciiStream(final String columnLabel, final InputStream x, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateAsciiStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBigDecimal(final int columnIndex, final BigDecimal x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBigDecimal() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBigDecimal(final String columnLabel, final BigDecimal x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBigDecimal() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final int columnIndex, final InputStream x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final int columnIndex, final InputStream x, final int length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final int columnIndex, final InputStream x, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final String columnLabel, final InputStream x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final String columnLabel, final InputStream x, final int length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBinaryStream(final String columnLabel, final InputStream x, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBinaryStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final int columnIndex, final Blob x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final int columnIndex, final InputStream inputStream) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final int columnIndex, final InputStream inputStream, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final String columnLabel, final Blob x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final String columnLabel, final InputStream inputStream) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBlob(final String columnLabel, final InputStream inputStream, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBlob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBoolean(final int columnIndex, final boolean x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBoolean() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBoolean(final String columnLabel, final boolean x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBoolean() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateByte(final int columnIndex, final byte x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateByte() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateByte(final String columnLabel, final byte x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateByte() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBytes(final int columnIndex, final byte[] x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBytes() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateBytes(final String columnLabel, final byte[] x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateBytes() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final int columnIndex, final Reader x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final int columnIndex, final Reader x, final int length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final int columnIndex, final Reader x, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final String columnLabel, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final String columnLabel, final Reader reader, final int length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateCharacterStream(final String columnLabel, final Reader reader, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final int columnIndex, final Clob x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final int columnIndex, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final int columnIndex, final Reader reader, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final String columnLabel, final Clob x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final String columnLabel, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateClob(final String columnLabel, final Reader reader, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateDate(final int columnIndex, final Date x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateDate() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateDate(final String columnLabel, final Date x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateDate() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateDouble(final int columnIndex, final double x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateDouble() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateDouble(final String columnLabel, final double x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateDouble() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateFloat(final int columnIndex, final float x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateFloat() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateFloat(final String columnLabel, final float x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateFloat() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateInt(final int columnIndex, final int x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateInt() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateInt(final String columnLabel, final int x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateInt() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateLong(final int columnIndex, final long x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateLong() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateLong(final String columnLabel, final long x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateLong() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNCharacterStream(final int columnIndex, final Reader x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNCharacterStream(final int columnIndex, final Reader x, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNCharacterStream(final String columnLabel, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNCharacterStream(final String columnLabel, final Reader reader, final long length)
 			throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNCharacterStream() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final int columnIndex, final NClob nClob) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final int columnIndex, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final int columnIndex, final Reader reader, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final String columnLabel, final NClob nClob) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final String columnLabel, final Reader reader) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNClob(final String columnLabel, final Reader reader, final long length) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNClob() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNString(final int columnIndex, final String nString) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNString(final String columnLabel, final String nString) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNull(final int columnIndex) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNull() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateNull(final String columnLabel) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateNull() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateObject(final int columnIndex, final Object x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateObject() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateObject(final int columnIndex, final Object x, final int scaleOrLength) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateObject() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateObject(final String columnLabel, final Object x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateObject() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateObject(final String columnLabel, final Object x, final int scaleOrLength) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateObject() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateRef(final int columnIndex, final Ref x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateRef() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 
 	}
 
 	@Override
 	public void updateRef(final String columnLabel, final Ref x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateRef() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateRow() throws SQLException {
+		LOGGER.log(Level.WARNING, "updateRow() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateRowId(final int columnIndex, final RowId x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateRowId() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateRowId(final String columnLabel, final RowId x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateRowId() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateShort(final int columnIndex, final short x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateShort() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateShort(final String columnLabel, final short x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateShort() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateSQLXML(final int columnIndex, final SQLXML xmlObject) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateSQLXML(final String columnLabel, final SQLXML xmlObject) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateString(final int columnIndex, final String x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateString(final String columnLabel, final String x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateString() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateTime(final int columnIndex, final Time x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateTime() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateTime(final String columnLabel, final Time x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateTime() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateTimestamp(final int columnIndex, final Timestamp x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateTimestamp() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public void updateTimestamp(final String columnLabel, final Timestamp x) throws SQLException {
+		LOGGER.log(Level.WARNING, "updateTimestamp() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
 
@@ -2598,6 +2969,7 @@ public class XGResultSet implements ResultSet
 	public boolean wasNull() throws SQLException {
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "wasNull() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
