@@ -180,6 +180,7 @@ public class SQLStates
 	// table related issues
 	private static int TABLE_NOT_FOUND_CODE = -600;
         private static int TRANSLATION_NOT_FOUND_CODE = -609;
+        private static int TRANSLATION_ALREADY_EXISTS_CODE = -610;
 
 	// security related issues
 	private static int READ_TABLE_AUTH_FAILURE = -700;
@@ -290,7 +291,8 @@ public class SQLStates
 			new SQLStates("The referenced table does not exist", OBJECT_NOT_FOUND_STATE, TABLE_NOT_FOUND_CODE);
         public static SQLStates TRANSLATION_NOT_FOUND =
                         new SQLStates("The referenced translation does not exist", OBJECT_NOT_FOUND_STATE, TRANSLATION_NOT_FOUND_CODE);
-
+        public static SQLStates TRANSLATION_ALREADY_EXISTS =
+                        new SQLStates("The referenced translation does not exist", DUPLICATE_OBJECT, TRANSLATION_ALREADY_EXISTS_CODE);
 
 	public static SQLStates INVALID_ORDER_BY = new SQLStates("Invalid ORDER BY clause",
 			INVALID_ORDER_BY_STATE, INVALID_ORDER_BY_CODE);
