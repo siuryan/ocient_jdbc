@@ -99,7 +99,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public String getCatalogTerm() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getCatalogTerm()");
-		return "system";
+		return "database";
 	}
 
 	@Override
@@ -266,7 +266,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public int getMaxBinaryLiteralLength() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getMaxBinaryLiteralLength()");
-		return 0;
+		return 124 * 1024;
 	}
 
 	@Override
@@ -278,7 +278,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public int getMaxCharLiteralLength() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getMaxCharLiteralLength()");
-		return 0;
+		return 124 * 1024;
 	}
 
 	@Override
@@ -879,7 +879,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	@Override
 	public boolean supportsLikeEscapeClause() throws SQLException {
 		LOGGER.log(Level.INFO, "Called supportsLikeEscapeClause()");
-		return false;
+		return true;
 	}
 
 	@Override
