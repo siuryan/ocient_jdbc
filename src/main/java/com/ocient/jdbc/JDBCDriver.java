@@ -313,7 +313,7 @@ public class JDBCDriver implements Driver
 
 		/* Clean up the old handler */
 		LOGGER.setUseParentHandlers(false);
-		LOGGER.log(Level.INFO, "Disabling logger");
+		LOGGER.log(Level.INFO, "Resetting logger");
 		Handler[] handlers = LOGGER.getHandlers();
 		for(Handler handler : handlers) {
 		    LOGGER.removeHandler(handler);
