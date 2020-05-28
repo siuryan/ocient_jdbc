@@ -313,16 +313,18 @@ public class JDBCDriver implements Driver
 
 		/* Clean up the old handler */
 		LOGGER.setUseParentHandlers(false);
+		LOGGER.log(Level.INFO, "Disabling logger");
 		Handler[] handlers = LOGGER.getHandlers();
 		for(Handler handler : handlers) {
 		    LOGGER.removeHandler(handler);
 		}
 
 		try {
-			logHandler = new FileHandler(logfile);
+			logHandler = new FileHandler(logfile, true);
 			logHandler.setFormatter(new SimpleFormatter());
 			logFileName = logfile;
 			LOGGER.addHandler(logHandler);
+			LOGGER.log(Level.INFO, "Enabling logger");
 		} catch (final IOException e) {
 			e.printStackTrace(System.err);
 		}
