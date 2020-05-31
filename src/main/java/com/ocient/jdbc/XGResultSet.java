@@ -679,7 +679,7 @@ public class XGResultSet implements ResultSet
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Date(cal.getTimeZone().getOffset(((Date)col).getTime()) + ((Date)col).getTime());
+		return (Date) col;
 	}
 
 	@Override
