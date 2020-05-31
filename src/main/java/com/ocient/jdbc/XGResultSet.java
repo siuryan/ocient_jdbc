@@ -642,8 +642,44 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Date getDate(final int columnIndex, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getDate() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		wasNull = false;
+
+		if (closed)
+		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing COLUMN_NOT_FOUND");
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+
+		if (col == null)
+		{
+			wasNull = true;
+			return null;
+		}
+
+		if (!(col instanceof Date))
+		{
+			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
+			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
+		}
+
+		return new Date(cal.getTimeZone().getOffset(((Date)col).getTime()) + ((Date)col).getTime());
 	}
 
 	@Override
@@ -660,8 +696,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Date getDate(final String columnLabel, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getDate() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getDate(pos + 1, cal);
 	}
 
 	@Override
@@ -1527,8 +1569,44 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Time getTime(final int columnIndex, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getTime() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		wasNull = false;
+
+		if (closed)
+		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing COLUMN_NOT_FOUND");
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+
+		if (col == null)
+		{
+			wasNull = true;
+			return null;
+		}
+
+		if (!(col instanceof Time))
+		{
+			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
+			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
+		}
+
+		return new Time(cal.getTimeZone().getRawOffset() + ((Time)col).getTime());
 	}
 
 	@Override
@@ -1545,8 +1623,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Time getTime(final String columnLabel, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getTime() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getTime(pos + 1, cal);
 	}
 
 	@Override
@@ -1593,8 +1677,44 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Timestamp getTimestamp(final int columnIndex, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getTimestamp() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		wasNull = false;
+
+		if (closed)
+		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		final Object row = rs.get((int) (position - firstRowIs));
+		if (row instanceof DataEndMarker)
+		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
+			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
+		}
+
+		final ArrayList<Object> alo = (ArrayList<Object>) row;
+
+		if (columnIndex < 1 || columnIndex > alo.size())
+		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing COLUMN_NOT_FOUND");
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+
+		final Object col = alo.get(columnIndex - 1);
+
+		if (col == null)
+		{
+			wasNull = true;
+			return null;
+		}
+
+		if (!(col instanceof Date))
+		{
+			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
+			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
+		}
+
+		return new Timestamp(cal.getTimeZone().getOffset(((Date)col).getTime()) + ((Date)col).getTime());
 	}
 
 	@Override
@@ -1611,8 +1731,14 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public Timestamp getTimestamp(final String columnLabel, final Calendar cal) throws SQLException {
-		LOGGER.log(Level.WARNING, "getTimestamp() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		Integer pos = cols2Pos.get(columnLabel);
+		if (pos == null)
+		{
+			LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			throw SQLStates.COLUMN_NOT_FOUND.clone();
+		}
+		
+		return getTimestamp(pos + 1, cal);
 	}
 
 	@Override

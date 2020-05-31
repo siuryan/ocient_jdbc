@@ -53,3 +53,15 @@ Bug Fixes::
 Bug Fixes::
   * https://jira.ocient.com:8443/browse/DB-11119[DB-11119] - JDBC multi-host support was not implemented correctly
 
+// tag::compact[]
+== 1.21 (2020-05-26)
+
+New Features::
+  * Add tracing support
+
+// tag::compact[]
+== 1.22 (2020-05-31)
+
+New Features::
+  * Add calendar support
+
