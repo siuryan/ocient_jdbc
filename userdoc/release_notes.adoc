@@ -65,3 +65,7 @@ New Features::
 New Features::
   * Add calendar support
 
+Bug Fixes::
+  * Properly handle case-insensitivity of column names on result set
+s
+

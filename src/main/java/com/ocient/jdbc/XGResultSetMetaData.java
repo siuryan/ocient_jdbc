@@ -14,6 +14,7 @@ public class XGResultSetMetaData implements ResultSetMetaData
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 	
 	public final Map<String, Integer> cols2Pos;
+	private Map<String, Integer> caseInsensitiveCols2Pos;
 	public final TreeMap<Integer, String> pos2Cols;
 	public final Map<String, String> cols2Types;
 
@@ -23,6 +24,15 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		this.cols2Pos = cols2Pos2;
 		this.pos2Cols = pos2Cols;
 		this.cols2Types = cols2Types2;
+		setCaseInsensitiveCols2Pos();
+	}
+	
+	private void setCaseInsensitiveCols2Pos()
+	{
+		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
+		{
+			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
+		}
 	}
 
 	@Override
@@ -311,7 +321,13 @@ public class XGResultSetMetaData implements ResultSetMetaData
 
 	public int getPosition(final String name) throws Exception {
 		LOGGER.log(Level.INFO, "Called getPosition()");
-		return cols2Pos.get(name);
+		Integer retval = cols2Pos.get(name);
+		if (retval == null)
+		{
+			retval = caseInsensitiveCols2Pos.get(name.toLowerCase());
+		}
+		
+		return retval;
 	}
 
 	@Override

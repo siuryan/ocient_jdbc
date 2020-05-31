@@ -73,6 +73,7 @@ public class XGResultSet implements ResultSet
 	private int fetchSize;
 	private boolean wasNull = false;
 	private Map<String, Integer> cols2Pos;
+	private Map<String, Integer> caseInsensitiveCols2Pos;
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
 
@@ -113,6 +114,7 @@ public class XGResultSet implements ResultSet
 	public void setCols2Pos(Map<String, Integer> cols2Pos)
 	{
 		this.cols2Pos = cols2Pos;
+		setCaseInsensitiveCols2Pos();
 	}
 	
 	public void setPos2Cols(TreeMap<Integer, String> pos2Cols)
@@ -123,6 +125,14 @@ public class XGResultSet implements ResultSet
 	public void setCols2Types(Map<String, String> cols2Types)
 	{
 		this.cols2Types = cols2Types;
+	}
+	
+	private void setCaseInsensitiveCols2Pos()
+	{
+		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
+		{
+			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
+		}
 	}
 
 	private Optional<String> getQueryId() {
@@ -215,11 +225,15 @@ public class XGResultSet implements ResultSet
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		final Integer pos = cols2Pos.get(columnLabel);
+		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("findColumn() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("findColumn() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 
 		return pos + 1;
@@ -278,8 +292,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getArray() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getArray() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getArray(pos + 1);
@@ -354,8 +372,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getBigDecimal() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getBigDecimal() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getBigDecimal(pos + 1);
@@ -439,8 +461,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getBoolean() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getBoolean() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getBoolean(pos + 1);
@@ -495,8 +521,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getByte() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getByte() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getByte(pos + 1);
@@ -549,8 +579,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getBytes() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getBytes() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getBytes(pos + 1);
@@ -687,8 +721,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getDate(pos + 1);
@@ -699,8 +737,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getDate(pos + 1, cal);
@@ -754,8 +796,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getDouble() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getDouble() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getDouble(pos + 1);
@@ -851,8 +897,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getFloat() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getFloat() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getFloat(pos + 1);
@@ -918,8 +968,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getInt() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getInt() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getInt(pos + 1);
@@ -999,8 +1053,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getLong() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getLong() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getLong(pos + 1);
@@ -1304,8 +1362,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getObject(pos + 1);
@@ -1316,8 +1378,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getObject(pos + 1, type);
@@ -1328,8 +1394,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getObject(pos + 1, map);
@@ -1431,8 +1501,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getShort() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getShort() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getShort(pos + 1);
@@ -1518,8 +1592,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getString() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getString() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getString(pos + 1);
@@ -1614,8 +1692,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getTime(pos + 1);
@@ -1626,8 +1708,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getTime(pos + 1, cal);
@@ -1722,8 +1808,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getTimestamp(pos + 1);
@@ -1734,8 +1824,12 @@ public class XGResultSet implements ResultSet
 		Integer pos = cols2Pos.get(columnLabel);
 		if (pos == null)
 		{
-			LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
-			throw SQLStates.COLUMN_NOT_FOUND.clone();
+			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
+			if (pos == null)
+			{
+				LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+				throw SQLStates.COLUMN_NOT_FOUND.clone();
+			}
 		}
 		
 		return getTimestamp(pos + 1, cal);
@@ -2474,6 +2568,7 @@ public class XGResultSet implements ResultSet
 			final ResponseType rType = response.getType();
 			processResponseType(rType, response);
 			cols2Pos = fmdr.getCols2PosMap();
+			setCaseInsensitiveCols2Pos();
 			cols2Types = fmdr.getCols2TypesMap();
 			pos2Cols = new TreeMap<>();
 			for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
