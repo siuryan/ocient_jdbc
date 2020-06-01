@@ -3,6 +3,7 @@ package com.ocient.jdbc;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -29,6 +30,8 @@ public class XGResultSetMetaData implements ResultSetMetaData
 	
 	private void setCaseInsensitiveCols2Pos()
 	{
+		caseInsensitiveCols2Pos = new HashMap<String, Integer>();
+		
 		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
 		{
 			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());

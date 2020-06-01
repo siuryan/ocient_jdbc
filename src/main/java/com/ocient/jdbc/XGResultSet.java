@@ -29,6 +29,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -129,6 +130,7 @@ public class XGResultSet implements ResultSet
 	
 	private void setCaseInsensitiveCols2Pos()
 	{
+		caseInsensitiveCols2Pos = new HashMap<String, Integer>();
 		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
 		{
 			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
