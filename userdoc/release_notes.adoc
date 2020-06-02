@@ -66,6 +66,10 @@ New Features::
   * Add calendar support
 
 Bug Fixes::
-  * Properly handle case-insensitivity of column names on result set
-s
+  * Properly handle case-insensitivity of column names on result sets
 
+// tag::compact[]
+== 1.23 (2020-06-02)
+
+New Features::
+  * Add new error code: Value too large, which indicates that a column value is larger than internal limits

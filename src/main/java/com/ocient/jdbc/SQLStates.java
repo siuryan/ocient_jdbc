@@ -25,6 +25,7 @@ public class SQLStates
 	private static String INVALID_FLOATING_POINT_OPERATION_STATE = "2268E";
 	private static String INVALID_CURSOR = "24000";
 	private static String CURSOR_ALREADY_ASSIGNED_TO_RS = "24516";
+	private static String VALUE_TOO_LARGE_STATE = "24920";
 	private static String ST_POINT_INVALID_CONVERSION_FROM_NULL_STATE = "38SUP";
 	private static String AUTH_FAILURE = "42502";
 	private static String SYNTAX_ERROR_STATE = "42601";
@@ -135,6 +136,7 @@ public class SQLStates
 	private static int INCOMPATIBLE_TYPES_IN_CASE_CODE = -404;
 	private static int JOIN_LEADS_TO_DUPLICATE_COL_NAME_CODE = -405;
 	private static int ST_POINT_INVALID_CONVERSION_FROM_NULL_CODE = -406;
+	private static int VALUE_TOO_LARGE_CODE = -407;
 
 	// syntax issues
 	private static int SYNTAX_ERROR_CODE = -500;
@@ -399,6 +401,7 @@ public class SQLStates
     public static SQLStates SYSTEM_INITIALIZING = new SQLStates("The system is initializing", STORAGE_OR_DATABASE_RESOURCE_NOT_AVAILABLE_STATE, SYSTEM_INITIALIZING_CODE);
 	public static SQLStates INVALID_AGGREGATION = new SQLStates("Invalid aggregation", INVALID_AGGREGATION_STATE, INVALID_AGGREGATION_CODE);
     public static SQLStates ST_POINT_INVALID_CONVERSION_FROM_NULL = new SQLStates("Invalid st_point conversion from NULL", ST_POINT_INVALID_CONVERSION_FROM_NULL_STATE, ST_POINT_INVALID_CONVERSION_FROM_NULL_CODE);
+	public static SQLStates VALUE_TOO_LARGE = new SQLStates("Value larger than internal limits", VALUE_TOO_LARGE_STATE, VALUE_TOO_LARGE_CODE);
     public static SQLStates CASE_WITHIN_CASE = new SQLStates("A CASE expression within a CASE expression is not allowed", INVALID_CASE_CONDITION_STATE, CASE_WITHIN_CASE_CODE);
 	public static SQLStates OUT_OF_TEMP_DISK_SPACE = new SQLStates("Out of temporary disk space", STORAGE_OR_DATABASE_RESOURCE_NOT_AVAILABLE_STATE, OUT_OF_TEMP_DISK_SPACE_CODE);
 
