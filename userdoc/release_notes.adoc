@@ -79,3 +79,10 @@ New Features::
 
 New Features::
   * Protobuf message changes for Add Column feature
+
+// tag::compact[]
+== 1.25 (2020-06-05)
+
+New Features::
+  * Support for getTableTypes()
+
