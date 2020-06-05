@@ -73,3 +73,9 @@ Bug Fixes::
 
 New Features::
   * Add new error code: Value too large, which indicates that a column value is larger than internal limits
+
+// tag::compact[]
+== 1.24 (2020-06-05)
+
+New Features::
+  * Protobuf message changes for Add Column feature
