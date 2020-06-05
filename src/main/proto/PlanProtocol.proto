@@ -100,24 +100,24 @@ message ComputeConfiguration
 	map<uint32, ExecutionClusters> compute_configuration = 1;
 }
 
-//Information about a column
-message ColumnInfo
+// Information about a column
+message ColumnInfo 
 {
-	message DecimalInfo {
-		uint32 decimal_precision = 1;
-		uint32 decimal_scale = 2;
-	}
-	
-	bool is_compressed = 1;
-	uint32 ordinal = 2;
+  bool is_compressed = 1;
+  uint32 ordinal = 2;
+  bytes column_uuid = 3;
 
-	oneof extraMetadata {
-		DecimalInfo decimal_info = 20;
-	}
+  message DefaultExpression { bytes value = 1; }
 
-	oneof defaultExpr {
-		string default_expression = 40;
-	}
+  DefaultExpression default_expression = 4;
+  message DecimalInfo {
+    uint32 decimal_precision = 1;
+    uint32 decimal_scale = 2;
+  }
+
+  oneof extraMetadata {
+    DecimalInfo decimal_info = 20;
+  }
 }
 
 //Header that starts of the plan message
@@ -1179,26 +1179,23 @@ message SystemConfigurationVirtualOperator
 	securityToken security_token = 1;
 }
 
-//Column info used for stats requests 
-message StatsColInfo 
-{
-	string col_uuid = 1;
-	uint64 index = 2;
-	int32 derived_type = 3;
+// Column info used for stats requests
+message StatsColumnInfo {
+  string col_type = 1;
+  ColumnInfo column_info = 2;
 }
 
-//Table info used for stats requests
-message StatsTableInfo 
-{
-	string table_uuid = 1;
-	string storage_space_uuid = 2;
-	repeated StatsColInfo columns = 3;
+// Table info used for stats requests
+message StatsTableInfo {
+  bytes table_uuid = 1;
+  bytes storage_space_uuid = 2;
+  bytes table_version_uuid = 3;
+  repeated StatsColumnInfo columns = 4;
 }
 
-//Info used for stats requests
-message StatsRequestInfo 
-{
-	repeated StatsTableInfo stats_tables_info = 1;
+// Info used for stats requests
+message StatsRequestInfo { 
+  repeated StatsTableInfo tables = 1; 
 }
 
 message TableCardVirtualOperator
