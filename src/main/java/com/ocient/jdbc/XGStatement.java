@@ -1139,7 +1139,7 @@ public class XGStatement implements Statement
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
-			LOGGER.log(Level.WARNING, String.format("Server returned an error response [%s] %s", sqlState, reason);
+			LOGGER.log(Level.WARNING, String.format("Server returned an error response [%s] %s", sqlState, reason));
 			throw new SQLException(reason, sqlState, code);
 		}
 		else if (rType.equals(ResponseType.RESPONSE_WARN))
