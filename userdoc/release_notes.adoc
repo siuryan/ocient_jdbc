@@ -86,3 +86,8 @@ New Features::
 New Features::
   * Support for getTableTypes()
 
+// tag::compact[]
+== 1.26 (2020-06-09)
+
+New Features::
+  * Add weeks as new sql type in protobuf
