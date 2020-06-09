@@ -627,7 +627,17 @@ public class CLI {
 				while (rs.next()) {
 					line.append(rs.getString("COLUMN_NAME"));
 					line.append(" (");
-					line.append(rs.getString("TYPE_NAME"));
+					String type = rs.getString("TYPE_NAME");
+					if (type.equals("SHORT"))
+					{
+						type = "SMALLINT";
+					}
+					else if (type.equals("LONG"))
+					{
+						type = "BIGINT";
+					}
+					
+					line.append(type);
 					// TODO: figure out precision stuff
 					if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
 						line.append("(");
