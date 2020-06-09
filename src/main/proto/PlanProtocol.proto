@@ -225,6 +225,7 @@ enum SqlColType
 	TYPE_NANOSECONDS = 29;
 	TYPE_ARRAY = 30;
     TYPE_TUPLE = 31;
+    TYPE_WEEKS = 32;
 }
 
 //Represents equivalent partitioning, meaning we are partitioned on at least one of these columns and they are identical
