@@ -5,59 +5,28 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
-== 1.12 (2020-03-01) - @leo
-
-Bug Fixes::
-  * https://jira.ocient.com:8443/browse/DB-10155[DB-10155] - Broadcast kill query and cancel query requests to all sql nodes.
+== 1.26 (2020-06-09)
 
 New Features::
-  * https://jira.ocient.com:8443/browse/DB-10137[DB-10137] - Implement JDBC cancel query. Now it is possible to kill query in dbeaver.
-  * https://jira.ocient.com:8443/browse/DB-10120[DB-10120] - JDBC driver support list of sql nodes to connect to
-  * https://jira.ocient.com:8443/browse/DB-10119[DB-10119] - Support for multiple IPs under the same DNS address
-
+  * Add weeks as new sql type in protobuf
 
 // tag::compact[]
-== 1.13 (2020-03-20) - @jason
+== 1.25 (2020-06-05)
 
 New Features::
-  * Binary support for the serialization of the following data types: ST_POINT, UUID, IP and IPV4
-  * Implementation of the Array SQL type 
+  * Support for getTableTypes()
 
 // tag::compact[]
-== 1.14 (2020-04-11) - @jason
+== 1.24 (2020-06-05)
 
 New Features::
-  * Protocol support for the NULLS FIRST in the ORDER BY clause
+  * Protobuf message changes for Add Column feature
 
 // tag::compact[]
-== 1.15 (2020-04-14) - @leo
-
-Bug Fixes::
-  * https://jira.ocient.com:8443/browse/DB-9928[DB-9928] - Fixes for SQL Array type
-
-// tag::compact[]
-== 1.16 (2020-04-15) - @ssaha
-
-Bug Fixes::
-  * https://jira.ocient.com:8443/browse/DB-10687[DB-10687] - Fix for Kill/Cancel query  
-
-// tag::compact[]
-== 1.18 (2020-05-11) - @ssaha
-
-// tag::compact[]
-== 1.19 (2020-05-13) - @ssaha
-
-// tag::compact[]
-== 1.20 (2020-05-19) - @leo
-
-Bug Fixes::
-  * https://jira.ocient.com:8443/browse/DB-11119[DB-11119] - JDBC multi-host support was not implemented correctly
-
-// tag::compact[]
-== 1.21 (2020-05-26)
+== 1.23 (2020-06-02)
 
 New Features::
-  * Add tracing support
+  * Add new error code: Value too large, which indicates that a column value is larger than internal limits
 
 // tag::compact[]
 == 1.22 (2020-05-31)
@@ -69,25 +38,56 @@ Bug Fixes::
   * Properly handle case-insensitivity of column names on result sets
 
 // tag::compact[]
-== 1.23 (2020-06-02)
+== 1.21 (2020-05-26)
 
 New Features::
-  * Add new error code: Value too large, which indicates that a column value is larger than internal limits
+  * Add tracing support
 
 // tag::compact[]
-== 1.24 (2020-06-05)
+== 1.20 (2020-05-19) - @leo
 
-New Features::
-  * Protobuf message changes for Add Column feature
+Bug Fixes::
+  * https://jira.ocient.com:8443/browse/DB-11119[DB-11119] - JDBC multi-host support was not implemented correctly
+ 
+// tag::compact[]
+== 1.19 (2020-05-13) - @ssaha
 
 // tag::compact[]
-== 1.25 (2020-06-05)
-
-New Features::
-  * Support for getTableTypes()
+== 1.18 (2020-05-11) - @ssaha
 
 // tag::compact[]
-== 1.26 (2020-06-09)
+== 1.16 (2020-04-15) - @ssaha
+
+Bug Fixes::
+  * https://jira.ocient.com:8443/browse/DB-10687[DB-10687] - Fix for Kill/Cancel query  
+
+// tag::compact[]
+== 1.15 (2020-04-14) - @leo
+
+Bug Fixes::
+  * https://jira.ocient.com:8443/browse/DB-9928[DB-9928] - Fixes for SQL Array type
+
+// tag::compact[]
+== 1.14 (2020-04-11) - @jason
 
 New Features::
-  * Add weeks as new sql type in protobuf
+  * Protocol support for the NULLS FIRST in the ORDER BY clause
+
+// tag::compact[]
+== 1.13 (2020-03-20) - @jason
+
+New Features::
+  * Binary support for the serialization of the following data types: ST_POINT, UUID, IP and IPV4
+  * Implementation of the Array SQL type 
+
+// tag::compact[]
+== 1.12 (2020-03-01) - @leo
+
+Bug Fixes::
+  * https://jira.ocient.com:8443/browse/DB-10155[DB-10155] - Broadcast kill query and cancel query requests to all sql nodes.
+
+New Features::
+  * https://jira.ocient.com:8443/browse/DB-10137[DB-10137] - Implement JDBC cancel query. Now it is possible to kill query in dbeaver.
+  * https://jira.ocient.com:8443/browse/DB-10120[DB-10120] - JDBC driver support list of sql nodes to connect to
+  * https://jira.ocient.com:8443/browse/DB-10119[DB-10119] - Support for multiple IPs under the same DNS address
+
