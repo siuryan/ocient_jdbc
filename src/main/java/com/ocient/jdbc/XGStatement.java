@@ -126,7 +126,7 @@ public class XGStatement implements Statement
 
 	public XGStatement(final XGConnection conn, final boolean force, final boolean oneShotForce)
 	{
-		this.conn = conn;
+		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;
 		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
@@ -135,7 +135,7 @@ public class XGStatement implements Statement
 	public XGStatement(final XGConnection conn, final int type, final int concur, final boolean force,
 			final boolean oneShotForce) throws SQLFeatureNotSupportedException
 	{
-		this.conn = conn;
+		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;
 		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
@@ -155,7 +155,7 @@ public class XGStatement implements Statement
 	public XGStatement(final XGConnection conn, final int type, final int concur, final int hold, final boolean force,
 			final boolean oneShotForce) throws SQLFeatureNotSupportedException
 	{
-		this.conn = conn;
+		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;
 		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
@@ -326,6 +326,7 @@ public class XGStatement implements Statement
 			// No need to cancel queries twice
 			if (queryId == null || queryCancelled.get())
 			{
+				LOGGER.log(Level.INFO, "Cancel complete");
 				return;
 			}
 			setQueryCancelled(true);
@@ -337,10 +338,11 @@ public class XGStatement implements Statement
 			}
 		}
         
-        LOGGER.log(Level.INFO, "Cancel complete,");
+        LOGGER.log(Level.INFO, "Cancel complete");
         
         if (needsReconnect)
         {
+        	LOGGER.log(Level.INFO, "Cancel is initiating reconnect");
 	        try
 			{
 				conn.reconnect();
@@ -384,6 +386,7 @@ public class XGStatement implements Statement
 		dissociateQuery();
 		result = null;
 		closed = true;
+		conn.close(); //Since it's a clone, close this too.
 	}
 
 	@Override

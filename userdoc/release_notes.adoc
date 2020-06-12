@@ -5,6 +5,12 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.28 (2020-06-11)
+
+New Features::
+  * Allow one connection to be shared by multiple threads, as long as each thread uses its own Statement object
+
+// tag::compact[]
 == 1.27 (2020-06-11)
 
 New Features::

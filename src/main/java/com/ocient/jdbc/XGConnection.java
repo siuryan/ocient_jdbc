@@ -192,6 +192,49 @@ public class XGConnection implements Connection
 			throw e;
 		}
 	}
+	
+	public XGConnection(final String user, final String pwd, final int portNum, final String url,
+			final String database, final String version, final boolean force)
+	{
+		this.force = force;
+		this.url = url;
+		this.user = user;
+		this.pwd = pwd;
+		this.sock = null;
+		this.portNum = portNum;
+		this.database = database;
+		this.version = version;
+		this.retryCounter = 0;
+		this.typeMap = new HashMap<String, Class<?>>();
+		in = null;
+		out = null;
+	}
+	
+	public XGConnection copy() 
+	{
+		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, version, force);
+		try
+		{
+			retval.connected = false;
+			retval.setSchema = setSchema;
+			retval.setPso = setPso;
+			retval.timeoutMillis = timeoutMillis; 
+			retval.cmdcomps = (ArrayList<String>)cmdcomps.clone();
+			retval.reconnect();
+		}
+		catch(Exception e)
+		{
+			LOGGER.log(Level.SEVERE, String.format("Copying the connection for a new statement failed with exception %s with message %", e, e.getMessage()));
+			try
+			{
+				retval.close();
+			}
+			catch(Exception f)
+			{}
+		}
+		
+		return retval;
+	}
 
 	@Override
 	public void abort(final Executor executor) throws SQLException {
@@ -467,18 +510,33 @@ public class XGConnection implements Connection
 		}
 
 		closed = true;
-		try
+		
+		if (sock != null)
 		{
-			sendClose();
+			try
+			{
+				sendClose();
+			}
+			catch (final Exception e)
+			{}
 		}
-		catch (final Exception e)
-		{}
 
 		try
 		{
-			in.close();
-			out.close();
-			sock.close();
+			if (in != null)
+			{
+				in.close();
+			}
+			
+			if (out != null)
+			{
+				out.close();
+			}
+			
+			if (sock != null)
+			{
+				sock.close();
+			}
 		}
 		catch (final Exception e)
 		{}
@@ -1093,9 +1151,20 @@ public class XGConnection implements Connection
 
 		try
 		{
-			in.close();
-			out.close();
-			sock.close();
+			if (in != null)
+			{
+				in.close();
+			}
+			
+			if (out != null)
+			{
+				out.close();
+			}
+			
+			if (sock != null)
+			{
+				sock.close();
+			}
 		}
 		catch (final IOException e)
 		{}
@@ -1123,83 +1192,6 @@ public class XGConnection implements Connection
 				connected = false;
 				
 				LOGGER.log(Level.WARNING, String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
-				if(e instanceof IOException) {
-					throw (IOException)e;
-				}
-
-				throw new IOException();
-			}
-
-			try
-			{
-				in = new BufferedInputStream(sock.getInputStream());
-				out = new BufferedOutputStream(sock.getOutputStream());
-
-				clientHandshake(user, pwd, database);
-				if (!setSchema.equals(""))
-				{
-					setSchema(setSchema);
-				}
-
-				if (setPso == -1)
-				{
-					//We have to turn it off
-					setPSO(false);
-				}
-				else if (setPso > 0)
-				{
-					//Set non-default threshold
-					setPSO(setPso);
-				}
-
-				return;
-			}
-			catch (final Exception handshakeException)
-			{
-				try
-				{
-					in.close();
-					out.close();
-					sock.close();
-				}
-				catch (final IOException f)
-				{}
-
-				// reconnect failed so we are no longer connected
-				connected = false;
-
-				// Failed on the client handshake, so capture exception
-				if(handshakeException instanceof SQLException) {
-					throw (SQLException) handshakeException;
-				}
-
-				throw new IOException();
-			}
-		}
-
-		if (force)
-		{
-			sock = null;
-			try
-			{
-				sock = new Socket();
-				sock.setReceiveBufferSize(4194304);
-				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.url, this.portNum));
-			}
-			catch (final Exception e)
-			{
-				try
-				{
-					sock.close();
-				}
-				catch (final IOException f)
-				{}
-
-				// reconnect failed so we are no longer connected
-				connected = false;
-				LOGGER.log(Level.WARNING, String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
-
 				if(e instanceof IOException) {
 					throw (IOException)e;
 				}
