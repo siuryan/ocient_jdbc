@@ -373,6 +373,7 @@ public class XGConnection implements Connection
          final byte[] calculatedMac = hmac.doFinal(ciphertext);
 
 			// send handshake part2
+         LOGGER.log(Level.INFO, "Beginning handshake part 2");
 			final ClientWireProtocol.ClientConnection2.Builder hand2 =
 					ClientWireProtocol.ClientConnection2.newBuilder();
 			hand2.setCipher(ByteString.copyFrom(ciphertext));
@@ -410,6 +411,7 @@ public class XGConnection implements Connection
 			response = ccr2.getResponse();
 			rType = response.getType();
 
+			LOGGER.log(Level.INFO, "Handshake response received");
 			SQLException state = new SQLException(response.getReason(), response.getSqlState(), response.getVendorCode());
 			//if we had a failed handshake, then something went wrong with verification on the server, just try again(up to 5 times)
 			if(SQLStates.FAILED_HANDSHAKE.equals(state) && retryCounter++ < 5) {
@@ -1016,6 +1018,7 @@ public class XGConnection implements Connection
 			throws SQLException {
 		if (rType.equals(ResponseType.INVALID))
 		{
+			LOGGER.log(Level.WARNING, "Server returned an invalid response");
 			throw SQLStates.INVALID_RESPONSE_TYPE.clone();
 		}
 		else if (rType.equals(ResponseType.RESPONSE_ERROR))
@@ -1023,6 +1026,7 @@ public class XGConnection implements Connection
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
+			LOGGER.log(Level.WARNING, String.format("Server returned an error response [%s] %s", sqlState, reason));
 			throw new SQLException(reason, sqlState, code);
 		}
 		else if (rType.equals(ResponseType.RESPONSE_WARN))

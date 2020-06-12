@@ -317,6 +317,7 @@ public class XGStatement implements Statement
 	@Override
 	public void cancel() throws SQLException {
 		LOGGER.log(Level.INFO, "Called cancel()");
+		boolean needsReconnect = false;
 		// TODO: Fail gracefully upon cancel
 		// See startTask
         synchronized (this)
@@ -330,21 +331,28 @@ public class XGStatement implements Statement
 			setQueryCancelled(true);
 			if (runningQueryThread.get() != null && runningQueryThread.get() != Thread.currentThread())
 			{
+				LOGGER.log(Level.WARNING, "Calling interrupt() on the running thread due to cancel()");
 				runningQueryThread.get().interrupt();
+				needsReconnect = true;
 			}
-
-			try
+		}
+        
+        LOGGER.log(Level.INFO, "Cancel complete,");
+        
+        if (needsReconnect)
+        {
+	        try
 			{
 				conn.reconnect();
 				conn.rs = null;
-
+	
 				killQuery(queryId);
 			}
 			catch (IOException | SQLException e)
 			{
 				LOGGER.log(Level.SEVERE, "Error cancelling query: " + e.getMessage(), e);
 			}
-		}
+        }
 	}
 
 	@Override

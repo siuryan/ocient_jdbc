@@ -5,10 +5,16 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.27 (2020-06-11)
+
+New Features::
+  * Improve trace log formatting, including adding thread id
+
+// tag::compact[]
 == 1.26 (2020-06-09)
 
 New Features::
-  * Add weeks as new sql type in protobuf
+  * Add support for weeks interval type
 
 // tag::compact[]
 == 1.25 (2020-06-05)

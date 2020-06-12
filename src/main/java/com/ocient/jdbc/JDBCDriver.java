@@ -321,7 +321,7 @@ public class JDBCDriver implements Driver
 
 		try {
 			logHandler = new FileHandler(logfile, true);
-			logHandler.setFormatter(new SimpleFormatter());
+			logHandler.setFormatter(new ThreadFormatter());
 			logFileName = logfile;
 			LOGGER.addHandler(logHandler);
 			LOGGER.log(Level.INFO, "Enabling logger");
