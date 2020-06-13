@@ -924,6 +924,15 @@ public class XGConnection implements Connection
 	@Override
 	public boolean isClosed() throws SQLException {
 		LOGGER.log(Level.INFO, "Called isClosed()");
+		if (closed)
+		{
+			LOGGER.log(Level.INFO, "Returning true from isClosed()");
+		}
+		else
+		{
+			LOGGER.log(Level.INFO, "Returning false from isClosed()");
+		}
+		
 		return closed;
 	}
 
@@ -950,10 +959,26 @@ public class XGConnection implements Connection
 
 		if (closed)
 		{
+			LOGGER.log(Level.WARNING, "Returning false from isValid() because connection is closed");
 			return false;
 		}
 
-		return testConnection(arg0);
+		boolean retval = false;
+		try
+		{
+			XGConnection clone = copy();
+			retval = copy().testConnection(arg0);
+			clone.close();
+		}
+		catch(Exception e)
+		{}
+		
+		if (!retval)
+		{
+			LOGGER.log(Level.SEVERE, "Returning false from isValid() because connection test failed");
+		}
+		
+		return retval;
 	}
 
 	@Override

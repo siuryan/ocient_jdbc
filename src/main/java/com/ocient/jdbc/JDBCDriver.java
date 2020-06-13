@@ -24,8 +24,9 @@ public class JDBCDriver implements Driver
 
 	private static String version = "5.0.0";
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
-	private String logFileName;
-	private FileHandler logHandler;
+	private static String logFileName;
+	private static FileHandler logHandler;
+	private static final Boolean logMonitor = false;
 
 	static
 	{
@@ -107,6 +108,8 @@ public class JDBCDriver implements Driver
 		}
 		catch (final Exception e)
 		{
+			LOGGER.log(Level.WARNING, String.format(
+					"After connecting, failed creating connection object with exception %s with message %s", e, e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;
@@ -287,46 +290,49 @@ public class JDBCDriver implements Driver
 	}
 
 	private void configLogger(final Properties props) {
-		String loglevel = props.getProperty("loglevel");
-		String logfile = props.getProperty("logfile");
-		if (loglevel == null || logfile == null)
+		synchronized(logMonitor)
 		{
-			LOGGER.setLevel(Level.OFF);
-			return;
-		}
-		
-		if (loglevel != null) {
-			if (loglevel.equalsIgnoreCase("OFF")) {
+			String loglevel = props.getProperty("loglevel");
+			String logfile = props.getProperty("logfile");
+			if (loglevel == null || logfile == null)
+			{
 				LOGGER.setLevel(Level.OFF);
 				return;
-			} else if (loglevel.equalsIgnoreCase("DEBUG")) {
-				LOGGER.setLevel(Level.ALL);
-			} else if (loglevel.equalsIgnoreCase("ERROR")) {
-				LOGGER.setLevel(Level.WARNING);
 			}
-		}
-
-		/* If logfile hasn't changed, return */
-		if (logfile.equals(logFileName)) {
-			return;
-		}
-
-		/* Clean up the old handler */
-		LOGGER.setUseParentHandlers(false);
-		LOGGER.log(Level.INFO, "Resetting logger");
-		Handler[] handlers = LOGGER.getHandlers();
-		for(Handler handler : handlers) {
-		    LOGGER.removeHandler(handler);
-		}
-
-		try {
-			logHandler = new FileHandler(logfile, true);
-			logHandler.setFormatter(new ThreadFormatter());
-			logFileName = logfile;
-			LOGGER.addHandler(logHandler);
-			LOGGER.log(Level.INFO, "Enabling logger");
-		} catch (final IOException e) {
-			e.printStackTrace(System.err);
+			
+			if (loglevel != null) {
+				if (loglevel.equalsIgnoreCase("OFF")) {
+					LOGGER.setLevel(Level.OFF);
+					return;
+				} else if (loglevel.equalsIgnoreCase("DEBUG")) {
+					LOGGER.setLevel(Level.ALL);
+				} else if (loglevel.equalsIgnoreCase("ERROR")) {
+					LOGGER.setLevel(Level.WARNING);
+				}
+			}
+	
+			/* If logfile hasn't changed, return */
+			if (logfile.equals(logFileName)) {
+				return;
+			}
+	
+			/* Clean up the old handler */
+			LOGGER.setUseParentHandlers(false);
+			LOGGER.log(Level.INFO, "Resetting logger");
+			Handler[] handlers = LOGGER.getHandlers();
+			for(Handler handler : handlers) {
+			    LOGGER.removeHandler(handler);
+			}
+	
+			try {
+				logHandler = new FileHandler(logfile, true);
+				logHandler.setFormatter(new ThreadFormatter());
+				logFileName = logfile;
+				LOGGER.addHandler(logHandler);
+				LOGGER.log(Level.INFO, "Enabling logger");
+			} catch (final IOException e) {
+				e.printStackTrace(System.err);
+			}
 		}
 	}
 }
