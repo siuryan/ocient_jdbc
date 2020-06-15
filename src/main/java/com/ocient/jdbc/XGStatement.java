@@ -352,7 +352,7 @@ public class XGStatement implements Statement
 			}
 			catch (IOException | SQLException e)
 			{
-				LOGGER.log(Level.SEVERE, "Error cancelling query: " + e.getMessage(), e);
+				LOGGER.log(Level.SEVERE, String.format("Error cancelling query with exception %s with message %s" + e, e.getMessage()));
 			}
         }
 	}

@@ -76,7 +76,7 @@ public class JDBCDriver implements Driver
 				} catch (final Throwable e) {
 					lastError = e;
 					LOGGER.log(Level.WARNING, String.format(
-							"Failed connecting to %s with exception %s with message %s", addr, e), e.getMessage());
+							"Failed connecting to %s with exception %s with message %s", addr, e, e.getMessage()));
 				}
 			}
 			if (!connected && lastError != null) {
