@@ -33,7 +33,7 @@ public class TraceProcessor {
 				int end = line.indexOf(']');
 				int threadId = 0;
 				
-				if (line.charAt(start-1) != '[' || end == -1)
+				if (line.length() < start || line.charAt(start-1) != '[' || end == -1)
 				{
 					threadId = lastThreadId;
 				}
