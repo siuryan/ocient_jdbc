@@ -572,6 +572,7 @@ message ExtendOperator
 	repeated string postfixExpressionTokens = 2;
 	//The type of the new column
 	string type = 3;
+	string exceptionCol = 4;
 }
 
 message PostfixExpression
@@ -754,6 +755,7 @@ message LimitOperator
 	bool exactlyOne = 2;
 	bool grouped = 3; //If true, this is a grouped limit as is used by correlated subqueries
 	repeated string groupingKeys = 4; //And these are the grouping keys
+	repeated string checkedExceptionCols = 5;
 }
 
 //Skip the first n rows
@@ -762,6 +764,7 @@ message OffsetOperator
 	uint64 offsetVal = 1;
 	bool grouped = 2; //If true, this is a grouped limit as is used by correlated subqueries
 	repeated string groupingKeys = 3; //And these are the grouping keys
+	repeated string checkedExceptionCols = 4;
 }
 
 //Same as gather operator except that the streams received from each
@@ -807,6 +810,7 @@ message SuperSelectOperator
 {
 	//Filter conditions to apply
 	repeated Disjunction filters = 1;
+	repeated string checkedExceptionCols = 2;
 }
 
 message SortPartition
@@ -874,6 +878,7 @@ message MatrixExtendOperator
 	repeated string postfixExpressionTokens = 2;
 	//The type of the new column
 	string type = 3;
+	string exceptionCol = 4;
 }
 
 
@@ -973,18 +978,23 @@ message UnionOperator
     bool is_switch_union = 2; //Is this the top of a switch block
 	bool not_needed = 3; //If true, this doesn't have to be an exact distinct
 	bool use_vector = 4; //If distinct can be computed with vectors instead of maps
+	repeated string ignoredCols = 5;
 }
 
 message IntersectOperator
 {
     //this flag differentiates INTERSECT from INTERSECT ALL
     bool all = 1;
+    repeated string checkedExceptionCols = 2;
+    repeated string ignoredCols = 3;
 }
 
 message ExceptOperator
 {
     //this flag differentiates EXCEPT from EXCEPT ALL
     bool all = 1;
+    repeated string checkedExceptionCols = 2;
+    repeated string ignoredCols = 3;
 }
 
 message SwitchOperator
@@ -1009,6 +1019,7 @@ message ProductOperator
 	//Represents a cartesian product or, if there is a filter, a nested loop join
 	repeated Disjunction filters = 1;
 	JoinType type = 2;
+	repeated string checkedExceptionCols = 3;
 }
 
 message JoinCols
@@ -1039,6 +1050,7 @@ message HashJoinOperator
 	repeated uint64 matchNullKeysIdxes = 10;
 	//Should we use a product multiplexer instead of a hash join multiplexer?
 	bool productMultiplex = 11;
+	repeated string checkedExceptionCols = 12;
 }
 
 message EosOperator
