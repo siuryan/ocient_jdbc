@@ -588,6 +588,7 @@ message ModifySchemaOperator
 	repeated bool expressionNullable = 4; //Whether or not the expressions are nullable
 	repeated uint64 getRidOfInputs = 5; //the input columns being projected out
 	repeated uint64 getRidOfExtends = 6; //the extendedt columns being projected out
+	repeated string exceptionColumns = 7;
 }
 
 //TODO(N_LEVELS): This will need to be changed, probabaly from an enum to an int when we generify the concept of levels
