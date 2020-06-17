@@ -998,11 +998,18 @@ message ExceptOperator
     repeated string ignoredCols = 3;
 }
 
+message CheckedExceptionCols
+{
+	repeated string cols = 1;
+}
+
 message SwitchOperator
 {
 	//the cnf representing each case, the final "else" case is implicit, and if none of these evaluate to true then the implicit else is used
 	//always evaluate the cases in order, ie. check case 0, if thats true then done, if not check case 1, etc
 	repeated CNF filters = 1;
+	repeated CheckedExceptionCols preFilterCheckedCols = 2;
+	repeated CheckedExceptionCols postFilterCheckedCols = 3;
 }
 
 enum JoinType
