@@ -187,12 +187,12 @@ public class SQLStates {
 	private static int READ_TABLE_AUTH_FAILURE = -700;
 
 	// MLMODEL related issues
-	private static int ML_MODEL_ON_EMPTY_SET_CODE = 800;
 	private static int ML_MODEL_NOT_FOUND_CODE = -800;
 	private static int ML_MODEL_ALREADY_EXISTS_CODE = -801;
 	private static int NO_CREATE_MLMODEL_AUTH_CODE = -802;
 	private static int NO_DROP_MLMODEL_AUTH_CODE = -803;
-	private static int UNABLE_TO_CREATE_MLMODEL_SINGULAR_MATRIX_CODE = -804;
+	private static int UNABLE_TO_INVERT_SINGULAR_MATRIX_CODE = -804;
+	private static int ML_MODEL_ON_EMPTY_SET_CODE = -805;
 
 	// runtime related issues
 	private static int NO_ROW_DATA_CODE = 900;
@@ -454,8 +454,8 @@ public class SQLStates {
 			MISSING_ORDER_BY_CODE);
 	public static SQLStates PLAN_COMPILATION_ERROR = new SQLStates("Plan Compilation Error",
 			PLAN_COMPILATION_ERROR_STATE, PLAN_COMPILATION_ERROR_CODE);
-	public static SQLStates UNABLE_TO_CREATE_MLMODEL_SINGULAR_MATRIX = new SQLStates("Unable to invert singular matrix",
-			SYSTEM_ERROR, UNABLE_TO_CREATE_MLMODEL_SINGULAR_MATRIX_CODE);
+	public static SQLStates UNABLE_TO_INVERT_SINGULAR_MATRIX = new SQLStates("Unable to invert singular matrix",
+			SYSTEM_ERROR, UNABLE_TO_INVERT_SINGULAR_MATRIX_CODE);
 	public static SQLStates TKT_LIMIT_REACHED = new SQLStates("TKT Operator reached limit", SYSTEM_ERROR,
 			TKT_LIMIT_REACHED_CODE);
 	public static SQLStates OUT_OF_MEMORY = new SQLStates("Out of memory", OUT_OF_MEMORY_STATE, OUT_OF_MEMORY_CODE);
