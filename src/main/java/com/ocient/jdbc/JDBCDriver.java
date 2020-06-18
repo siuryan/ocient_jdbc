@@ -42,6 +42,11 @@ public class JDBCDriver implements Driver
 
 	@Override
 	public boolean acceptsURL(final String arg0) throws SQLException {
+		if (arg0.length() < 14)
+		{
+			return false;
+		}
+		
 		final String protocol = arg0.substring(0, 14);
 		if (!protocol.equals("jdbc:ocient://"))
 		{
