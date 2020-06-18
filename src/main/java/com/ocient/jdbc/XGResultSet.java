@@ -48,10 +48,9 @@ import com.ocient.jdbc.proto.ClientWireProtocol.FetchData;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 
-public class XGResultSet implements ResultSet
-{
-	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
-	
+public class XGResultSet implements ResultSet {
+	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
+
 	private static int bytesToInt(final byte[] val) {
 		final int ret = java.nio.ByteBuffer.wrap(val).getInt();
 		return ret;
@@ -78,23 +77,21 @@ public class XGResultSet implements ResultSet
 	private TreeMap<Integer, String> pos2Cols;
 	private Map<String, String> cols2Types;
 
-	//tell whether the resultset was constructed with a pre-defined dataset.
+	// tell whether the resultset was constructed with a pre-defined dataset.
 	private boolean immutable = false;
 
 	private final XGStatement stmt;
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
 
-	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception
-	{
+	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
 	}
 
-	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt)
-	{
+	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt) {
 		this.conn = conn;
 		this.rs = rs;
 		this.stmt = stmt;
@@ -103,43 +100,39 @@ public class XGResultSet implements ResultSet
 	}
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
-	final ClientWireProtocol.ResultSet re) throws Exception
-	{
+			final ClientWireProtocol.ResultSet re) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
 		mergeData(re);
 	}
-	
-	public void setCols2Pos(Map<String, Integer> cols2Pos)
-	{
+
+	public void setCols2Pos(Map<String, Integer> cols2Pos) {
 		this.cols2Pos = cols2Pos;
 		setCaseInsensitiveCols2Pos();
 	}
-	
-	public void setPos2Cols(TreeMap<Integer, String> pos2Cols)
-	{
+
+	public void setPos2Cols(TreeMap<Integer, String> pos2Cols) {
 		this.pos2Cols = pos2Cols;
 	}
-	
-	public void setCols2Types(Map<String, String> cols2Types)
-	{
+
+	public void setCols2Types(Map<String, String> cols2Types) {
 		this.cols2Types = cols2Types;
 	}
-	
-	private void setCaseInsensitiveCols2Pos()
-	{
+
+	private void setCaseInsensitiveCols2Pos() {
 		caseInsensitiveCols2Pos = new HashMap<String, Integer>();
-		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
-		{
+		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet()) {
 			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
 		}
 	}
 
 	private Optional<String> getQueryId() {
-		// TODO The query id should be known when the result set is created (on executeQuery())
-		// but this would require some additional server side work, so we'll do this hac for now
+		// TODO The query id should be known when the result set is created (on
+		// executeQuery())
+		// but this would require some additional server side work, so we'll do this hac
+		// for now
 		return stmt.getQueryId();
 	}
 
@@ -182,8 +175,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public void clearWarnings() throws SQLException {
 		LOGGER.log(Level.INFO, "Called clearWarnings()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "clearWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -194,21 +186,18 @@ public class XGResultSet implements ResultSet
 	@Override
 	public void close() throws SQLException {
 		LOGGER.log(Level.INFO, "Called close()");
-		if (closed)
-		{
+		if (closed) {
 			return;
 		}
 
 		stmt.cancel();
 
-		try
-		{
+		try {
 			closed = true;
 			sendCloseRS();
-		}
-		catch (final Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during close() with message %s", e, e.getMessage()));
+		} catch (final Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during close() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -221,19 +210,17 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public int findColumn(final String columnLabel) throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "findColumn() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("findColumn() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("findColumn() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
@@ -251,57 +238,51 @@ public class XGResultSet implements ResultSet
 	public Array getArray(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getArray() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getArray() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getArray() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof XGArray))
-		{
+		if (!(col instanceof XGArray)) {
 			LOGGER.log(Level.WARNING, "getArray() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (XGArray)col;
+		return (XGArray) col;
 	}
 
 	@Override
 	public Array getArray(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getArray() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getArray() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getArray(pos + 1);
 	}
 
@@ -321,38 +302,33 @@ public class XGResultSet implements ResultSet
 	public BigDecimal getBigDecimal(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -372,16 +348,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public BigDecimal getBigDecimal(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getBigDecimal() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getBigDecimal() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getBigDecimal(pos + 1);
 	}
 
@@ -420,37 +395,32 @@ public class XGResultSet implements ResultSet
 	public boolean getBoolean(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getBoolean() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return false;
 		}
 
-		if (!(col instanceof Boolean))
-		{
+		if (!(col instanceof Boolean)) {
 			LOGGER.log(Level.WARNING, "getBoolean() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -461,16 +431,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean getBoolean(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getBoolean() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getBoolean() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getBoolean(pos + 1);
 	}
 
@@ -478,38 +447,33 @@ public class XGResultSet implements ResultSet
 	public byte getByte(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getByte() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getByte() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getByte() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
-				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
-		{
+				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getByte() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -521,16 +485,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public byte getByte(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getByte() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getByte() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getByte(pos + 1);
 	}
 
@@ -538,37 +501,32 @@ public class XGResultSet implements ResultSet
 	public byte[] getBytes(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getBytes() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getBytes() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getBytes() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof byte[]))
-		{
+		if (!(col instanceof byte[])) {
 			LOGGER.log(Level.WARNING, "getBytes() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -579,16 +537,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public byte[] getBytes(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getBytes() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getBytes() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getBytes(pos + 1);
 	}
 
@@ -619,8 +576,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public int getConcurrency() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getConcurrency()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getConcurrency() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -638,37 +594,32 @@ public class XGResultSet implements ResultSet
 	public Date getDate(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -680,37 +631,32 @@ public class XGResultSet implements ResultSet
 	public Date getDate(final int columnIndex, final Calendar cal) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -721,32 +667,30 @@ public class XGResultSet implements ResultSet
 	@Override
 	public Date getDate(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getDate(pos + 1);
 	}
 
 	@Override
 	public Date getDate(final String columnLabel, final Calendar cal) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getDate() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getDate(pos + 1, cal);
 	}
 
@@ -754,37 +698,32 @@ public class XGResultSet implements ResultSet
 	public double getDouble(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getDouble() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getDouble() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getDouble() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getDouble() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -796,29 +735,26 @@ public class XGResultSet implements ResultSet
 	@Override
 	public double getDouble(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getDouble() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getDouble() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getDouble(pos + 1);
 	}
 
 	public ArrayList<Object> getEntireRow() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
@@ -829,8 +765,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public int getFetchDirection() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getFetchDirection()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -841,8 +776,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public int getFetchSize() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getFetchSize()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -854,38 +788,33 @@ public class XGResultSet implements ResultSet
 	public float getFloat(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getFloat() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getFloat() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getFloat() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getFloat() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -897,24 +826,22 @@ public class XGResultSet implements ResultSet
 	@Override
 	public float getFloat(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getFloat() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getFloat() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getFloat(pos + 1);
 	}
 
 	@Override
 	public int getHoldability() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getHoldability()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getHoldability() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -926,37 +853,32 @@ public class XGResultSet implements ResultSet
 	public int getInt(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getInt() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getInt() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getInt() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getInt() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -968,16 +890,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public int getInt(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getInt() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getInt() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getInt(pos + 1);
 	}
 
@@ -985,20 +906,15 @@ public class XGResultSet implements ResultSet
 		final byte[] inMsg = new byte[4];
 
 		int count = 0;
-		while (count < 4)
-		{
-			try
-			{
+		while (count < 4) {
+			try {
 				final int temp = conn.in.read(inMsg, count, 4 - count);
-				if (temp == -1)
-				{
+				if (temp == -1) {
 					throw SQLStates.UNEXPECTED_EOF.clone();
 				}
 
 				count += temp;
-			}
-			catch (final Exception e)
-			{
+			} catch (final Exception e) {
 				throw SQLStates.NETWORK_COMMS_ERROR.clone();
 			}
 		}
@@ -1010,38 +926,33 @@ public class XGResultSet implements ResultSet
 	public long getLong(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getLong() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getLong() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getLong() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte || col instanceof Integer || col instanceof Short || col instanceof Long
-				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal))
-		{
+				|| col instanceof Float || col instanceof Double || col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getLong() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -1053,55 +964,48 @@ public class XGResultSet implements ResultSet
 	@Override
 	public long getLong(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getLong() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getLong() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getLong(pos + 1);
 	}
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getMetaData()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getMetaData() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		try
-		{
+		try {
 			return new XGResultSetMetaData(cols2Pos, pos2Cols, cols2Types);
-		}
-		catch (final Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getMetaData() with message %s", e, e.getMessage()));
-			if (e instanceof SQLException)
-			{
+		} catch (final Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during getMetaData() with message %s", e, e.getMessage()));
+			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
 
 			throw SQLStates.newGenericException(e);
-		}
-		finally
-		{
+		} finally {
 			stmt.passUpCancel(true);
 		}
 	}
 
 	/*
-	 * Returns true if it actually got data, false if it just received a zero size (ping) block of data
+	 * Returns true if it actually got data, false if it just received a zero size
+	 * (ping) block of data
 	 */
 	private boolean getMoreData() throws SQLException {
-		if(immutable)
-		{
-			//no data to get as the resultset was prepopulate at construction time.
+		if (immutable) {
+			// no data to get as the resultset was prepopulate at construction time.
 			return false;
 		}
 
@@ -1126,30 +1030,27 @@ public class XGResultSet implements ResultSet
 			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
 
 			stmt.startTask(() -> {
-				// get confirmation and data (fetchSize rows or zero size result set or terminated early with a DataEndMarker)
+				// get confirmation and data (fetchSize rows or zero size result set or
+				// terminated early with a DataEndMarker)
 				final int length = getLength();
 				final byte[] data = new byte[length];
 				readBytes(data);
 				fdr.mergeFrom(data);
-            }, queryId, getTimeoutMillis());
+			}, queryId, getTimeoutMillis());
 
 			final ConfirmationResponse response = fdr.getResponse();
 			final ResponseType rType = response.getType();
 			processResponseType(rType, response);
 			return mergeData(fdr.getResultSet());
-		}
-		catch (final Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred while fetching data with message %s", e, e.getMessage()));
-			if (e instanceof SQLException)
-			{
+		} catch (final Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred while fetching data with message %s", e, e.getMessage()));
+			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
 
 			throw SQLStates.newGenericException(e);
-		}
-		finally
-		{
+		} finally {
 			stmt.setRunningQueryThread(null);
 			stmt.passUpCancel(true);
 		}
@@ -1195,55 +1096,47 @@ public class XGResultSet implements ResultSet
 	public Object getObject(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return col;
 		}
-		
-		//Check type map
+
+		// Check type map
 		Class<?> clazz = conn.getTypeMap().get(cols2Types.get(pos2Cols.get(columnIndex - 1)));
 
-		if (clazz == null)
-		{
+		if (clazz == null) {
 			return col;
 		}
-		
-		if (clazz.getCanonicalName().equals("java.lang.String"))
-		{
+
+		if (clazz.getCanonicalName().equals("java.lang.String")) {
 			return col.toString();
 		}
-		
-		try
-		{
+
+		try {
 			Constructor<?> c = clazz.getConstructor(col.getClass());
 			return c.newInstance(col);
-		}
-		catch(Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1251,53 +1144,45 @@ public class XGResultSet implements ResultSet
 	@Override
 	public <T> T getObject(final int columnIndex, final Class<T> clazz) throws SQLException {
 		wasNull = false;
-		
-		if (clazz == null)
-		{
+
+		if (clazz == null) {
 			throw new SQLException();
 		}
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
-			return (T)col;
+			return (T) col;
 		}
-		
-		if (clazz.getCanonicalName().equals("java.lang.String"))
-		{
+
+		if (clazz.getCanonicalName().equals("java.lang.String")) {
 			return (T) col.toString();
 		}
-		
-		try
-		{
+
+		try {
 			Constructor<?> c = clazz.getConstructor(col.getClass());
 			return (T) c.newInstance(col);
-		}
-		catch(Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1306,55 +1191,47 @@ public class XGResultSet implements ResultSet
 	public Object getObject(final int columnIndex, final Map<String, Class<?>> map) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getObject() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return col;
 		}
-		
-		//Check type map
+
+		// Check type map
 		Class<?> clazz = map.get(cols2Types.get(pos2Cols.get(columnIndex - 1)));
 
-		if (clazz == null)
-		{
+		if (clazz == null) {
 			return col;
 		}
-		
-		if (clazz.getCanonicalName().equals("java.lang.String"))
-		{
+
+		if (clazz.getCanonicalName().equals("java.lang.String")) {
 			return col.toString();
 		}
-		
-		try
-		{
+
+		try {
 			Constructor<?> c = clazz.getConstructor(col.getClass());
 			return c.newInstance(col);
-		}
-		catch(Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1362,48 +1239,45 @@ public class XGResultSet implements ResultSet
 	@Override
 	public Object getObject(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getObject(pos + 1);
 	}
 
 	@Override
 	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getObject(pos + 1, type);
 	}
 
 	@Override
 	public Object getObject(final String columnLabel, final Map<String, Class<?>> map) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getObject() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getObject(pos + 1, map);
 	}
 
@@ -1422,20 +1296,17 @@ public class XGResultSet implements ResultSet
 	@Override
 	public int getRow() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getRow()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getRow() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1)
-		{
+		if (position == -1) {
 			return 0;
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return 0;
 		}
 
@@ -1458,38 +1329,33 @@ public class XGResultSet implements ResultSet
 	public short getShort(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getShort() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getShort() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getShort() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return 0;
 		}
 
 		if (!(col instanceof Byte) && !(col instanceof Short) && !(col instanceof Integer) && !(col instanceof Long)
-				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal))
-		{
+				&& !(col instanceof Float) && !(col instanceof Double) && !(col instanceof BigDecimal)) {
 			LOGGER.log(Level.WARNING, "getShort() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -1501,16 +1367,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public short getShort(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getShort() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getShort() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getShort(pos + 1);
 	}
 
@@ -1539,8 +1404,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public Statement getStatement() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getStatement()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getStatement() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -1552,37 +1416,32 @@ public class XGResultSet implements ResultSet
 	public String getString(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getString() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getString() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getString() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof String))
-		{
+		if (!(col instanceof String)) {
 			col = col.toString();
 		}
 
@@ -1592,16 +1451,15 @@ public class XGResultSet implements ResultSet
 	@Override
 	public String getString(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getString() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getString() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getString(pos + 1);
 	}
 
@@ -1609,115 +1467,103 @@ public class XGResultSet implements ResultSet
 	public Time getTime(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Time))
-		{
+		if (!(col instanceof Time)) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (Time)col;
+		return (Time) col;
 	}
 
 	@Override
 	public Time getTime(final int columnIndex, final Calendar cal) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Time))
-		{
+		if (!(col instanceof Time)) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Time(cal.getTimeZone().getRawOffset() + ((Time)col).getTime());
+		return new Time(cal.getTimeZone().getRawOffset() + ((Time) col).getTime());
 	}
 
 	@Override
 	public Time getTime(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getTime(pos + 1);
 	}
 
 	@Override
 	public Time getTime(final String columnLabel, final Calendar cal) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getTime() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getTime(pos + 1, cal);
 	}
 
@@ -1725,37 +1571,32 @@ public class XGResultSet implements ResultSet
 	public Timestamp getTimestamp(final int columnIndex) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
@@ -1767,81 +1608,73 @@ public class XGResultSet implements ResultSet
 	public Timestamp getTimestamp(final int columnIndex, final Calendar cal) throws SQLException {
 		wasNull = false;
 
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
-		if (columnIndex < 1 || columnIndex > alo.size())
-		{
+		if (columnIndex < 1 || columnIndex > alo.size()) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing COLUMN_NOT_FOUND");
 			throw SQLStates.COLUMN_NOT_FOUND.clone();
 		}
 
 		final Object col = alo.get(columnIndex - 1);
 
-		if (col == null)
-		{
+		if (col == null) {
 			wasNull = true;
 			return null;
 		}
 
-		if (!(col instanceof Date))
-		{
+		if (!(col instanceof Date)) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Timestamp(cal.getTimeZone().getOffset(((Date)col).getTime()) + ((Date)col).getTime());
+		return new Timestamp(cal.getTimeZone().getOffset(((Date) col).getTime()) + ((Date) col).getTime());
 	}
 
 	@Override
 	public Timestamp getTimestamp(final String columnLabel) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getTimestamp(pos + 1);
 	}
 
 	@Override
 	public Timestamp getTimestamp(final String columnLabel, final Calendar cal) throws SQLException {
 		Integer pos = cols2Pos.get(columnLabel);
-		if (pos == null)
-		{
+		if (pos == null) {
 			pos = caseInsensitiveCols2Pos.get(columnLabel.toLowerCase());
-			if (pos == null)
-			{
-				LOGGER.log(Level.WARNING, String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
+			if (pos == null) {
+				LOGGER.log(Level.WARNING,
+						String.format("getTimestamp() is throwing COLUMN_NOT_FOUND, looking for %s", columnLabel));
 				throw SQLStates.COLUMN_NOT_FOUND.clone();
 			}
 		}
-		
+
 		return getTimestamp(pos + 1, cal);
 	}
 
 	@Override
 	public int getType() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getType()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getType() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -1876,22 +1709,19 @@ public class XGResultSet implements ResultSet
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
 		LOGGER.log(Level.INFO, "Called getWarnings()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "getWarnings() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (warnings.size() == 0)
-		{
+		if (warnings.size() == 0) {
 			return null;
 		}
 
 		final SQLWarning retval = warnings.get(0);
 		SQLWarning current = retval;
 		int i = 1;
-		while (i < warnings.size())
-		{
+		while (i < warnings.size()) {
 			current.setNextWarning(warnings.get(i));
 			current = warnings.get(i);
 			i++;
@@ -1909,30 +1739,26 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean isAfterLast() throws SQLException {
 		LOGGER.log(Level.INFO, "Called isAfterLast()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "isAfterLast() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1 && rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (position == -1 && rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(rs.size() - 1);
-		if (!(row instanceof DataEndMarker))
-		{
+		if (!(row instanceof DataEndMarker)) {
 			return false;
 		}
 
-		if (position < firstRowIs + rs.size() - 1)
-		{
+		if (position < firstRowIs + rs.size() - 1) {
 			return false;
 		}
 
-		if (position > 0)
-		{
+		if (position > 0) {
 			return true;
 		}
 
@@ -1942,25 +1768,22 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
 		LOGGER.log(Level.INFO, "Called isBeforeFirst()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "isBeforeFirst() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position != -1)
-		{
+		if (position != -1) {
 			return false;
 		}
 
-		if (rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(0);
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
 		}
 
@@ -1970,40 +1793,34 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean isClosed() throws SQLException {
 		LOGGER.log(Level.INFO, "Called isClosed()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.INFO, "Returning true from isClosed()");
-		}
-		else
-		{
+		} else {
 			LOGGER.log(Level.INFO, "Returning false from isClosed()");
 		}
-		
+
 		return closed;
 	}
 
 	@Override
 	public boolean isFirst() throws SQLException {
 		LOGGER.log(Level.INFO, "Called isFirst()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "isFirst() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position != 0)
-		{
+		if (position != 0) {
 			return false;
 		}
 
-		if (rs.size() == 0)
-		{
-			while (!getMoreData()) {}
+		if (rs.size() == 0) {
+			while (!getMoreData()) {
+			}
 		}
 
 		final Object row = rs.get(0);
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
 		}
 
@@ -2028,8 +1845,7 @@ public class XGResultSet implements ResultSet
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	private boolean isBufferDem(ByteBuffer bb)
-	{
+	private boolean isBufferDem(ByteBuffer bb) {
 		return bb.limit() > 8 && bb.get(8) == 0;
 	}
 
@@ -2054,15 +1870,16 @@ public class XGResultSet implements ResultSet
 		// read raw data
 		int bytesNeeded = bcdLength(precision);
 		byte[] rawPackedBcdData = new byte[bytesNeeded];
-		((Buffer)bb).position(offset);
+		((Buffer) bb).position(offset);
 		bb.get(rawPackedBcdData);
 
 		// translate BCD -> character array of numerals
-		// leave room for the sign character, but don't bother dealing with scale and decimal point here
+		// leave room for the sign character, but don't bother dealing with scale and
+		// decimal point here
 		char[] formedDecimalString = new char[precision + 1];
 
 		// sign character
-		boolean isPositive = ((rawPackedBcdData[bytesNeeded-1] & 0x0f) == 0x0c);
+		boolean isPositive = ((rawPackedBcdData[bytesNeeded - 1] & 0x0f) == 0x0c);
 		formedDecimalString[0] = isPositive ? '+' : '-';
 
 		// set up starting indices for reading digits out
@@ -2092,344 +1909,290 @@ public class XGResultSet implements ResultSet
 		// set scale now, right at the end
 		return ((new BigDecimal(formedDecimalString)).movePointLeft(scale));
 	}
-	
-	private XGArray getArrayFromBuffer(final ByteBuffer bb, int[] offset) throws SQLException
-	{
-		//Get the rest of the type info
+
+	private XGArray getArrayFromBuffer(final ByteBuffer bb, int[] offset) throws SQLException {
+		// Get the rest of the type info
 		int nestedLevel = 0;
 		byte type = 0;
 
-		do
-		{
+		do {
 			nestedLevel++;
 			type = bb.get(offset[0]);
 			offset[0]++;
 		} while (type == 14);
-		
-		try
-		{
+
+		try {
 			return getArrayInternals(bb, offset, nestedLevel, type);
-		}
-		catch(java.net.UnknownHostException e)
-		{
+		} catch (java.net.UnknownHostException e) {
 			throw SQLStates.newGenericException(e);
 		}
 	}
-	
-	private XGArray getArrayInternals(final ByteBuffer bb, int[] offset, int nestedLevel, byte type) throws SQLException, java.net.UnknownHostException
-	{
-		//Get number of elements in the array
+
+	private XGArray getArrayInternals(final ByteBuffer bb, int[] offset, int nestedLevel, byte type)
+			throws SQLException, java.net.UnknownHostException {
+		// Get number of elements in the array
 		int numElements = bb.getInt(offset[0]);
-		
+
 		offset[0] += 4;
 		nestedLevel--;
-		
+
 		byte nullByte = bb.get(offset[0]);
 		offset[0]++;
 
 		boolean isEntirelyNull = (nullByte != 0);
-		if (isEntirelyNull)
-		{
-			assert(numElements == 0);
+		if (isEntirelyNull) {
+			assert (numElements == 0);
 			return null;
 		}
-		
-		//Make return value
+
+		// Make return value
 		XGArray retval = null;
 
-		//Recurse if needed
-		if (nestedLevel > 0)
-		{
-			retval = new XGArray(numElements, (byte)14, conn, stmt);
-			for (int i = 0; i < numElements; i++)
-			{
+		// Recurse if needed
+		if (nestedLevel > 0) {
+			retval = new XGArray(numElements, (byte) 14, conn, stmt);
+			for (int i = 0; i < numElements; i++) {
 				retval.add(getArrayInternals(bb, offset, nestedLevel, type), i);
 			}
-		}
-		else
-		{
+		} else {
 			retval = new XGArray(numElements, type, conn, stmt);
-			for (int i = 0; i < numElements; i++)
-			{
+			for (int i = 0; i < numElements; i++) {
 				byte t = bb.get(offset[0]);
 				offset[0]++;
-				assert(t == type || t == 7); //Array type or NULL
-				if (t == 1) //INT
+				assert (t == type || t == 7); // Array type or NULL
+				if (t == 1) // INT
 				{
 					retval.add(bb.getInt(offset[0]), i);
 					offset[0] += 4;
-				}
-				else if (t == 2) //LONG
+				} else if (t == 2) // LONG
 				{
 					retval.add(bb.getLong(offset[0]), i);
 					offset[0] += 8;
-				}
-				else if (t == 3) //FLOAT
+				} else if (t == 3) // FLOAT
 				{
 					retval.add(Float.intBitsToFloat(bb.getInt(offset[0])), i);
 					offset[0] += 4;
-				}
-				else if (t == 4) //DOUBLE
+				} else if (t == 4) // DOUBLE
 				{
 					retval.add(Double.longBitsToDouble(bb.getLong(offset[0])), i);
 					offset[0] += 8;
-				}
-				else if (t == 5) //STRING
+				} else if (t == 5) // STRING
 				{
 					int stringLength = bb.getInt(offset[0]);
 					offset[0] += 4;
 					byte[] dst = new byte[stringLength];
-					((Buffer)bb).position(offset[0]);
+					((Buffer) bb).position(offset[0]);
 					bb.get(dst);
 					retval.add(new String(dst, Charsets.UTF_8), i);
 					offset[0] += stringLength;
-				}
-				else if (t == 6) //Timestamp
+				} else if (t == 6) // Timestamp
 				{
 					retval.add(new Date(bb.getLong(offset[0])), i);
 					offset[0] += 8;
-				}
-				else if (t == 7) //Null
+				} else if (t == 7) // Null
 				{
 					retval.add(null, i);
-				}
-				else if (t == 8) //BOOL
+				} else if (t == 8) // BOOL
 				{
 					retval.add((bb.get(offset[0]) != 0), i);
 					offset[0]++;
-				}
-				else if (t == 9) //BINARY
+				} else if (t == 9) // BINARY
 				{
 					int stringLength = bb.getInt(offset[0]);
 					offset[0] += 4;
 					byte[] dst = new byte[stringLength];
-					((Buffer)bb).position(offset[0]);
+					((Buffer) bb).position(offset[0]);
 					bb.get(dst);
 					retval.add(dst, i);
 					offset[0] += stringLength;
-				}
-				else if (t == 10) //BYTE
+				} else if (t == 10) // BYTE
 				{
 					retval.add(bb.get(offset[0]), i);
 					offset[0]++;
-				}
-				else if (t == 11) //SHORT
+				} else if (t == 11) // SHORT
 				{
 					retval.add(bb.getShort(offset[0]), i);
 					offset[0] += 2;
-				}
-		        else if (t == 12) //TIME
-		        {
-		         	retval.add(new Time(bb.getLong(offset[0])), i);
-		         	offset[0] += 8;
-		        }
-				else if (t == 13) //DECIMAL
+				} else if (t == 12) // TIME
+				{
+					retval.add(new Time(bb.getLong(offset[0])), i);
+					offset[0] += 8;
+				} else if (t == 13) // DECIMAL
 				{
 					int precision = bb.get(offset[0]);
 					retval.add(getDecimalFromBuffer(bb, offset[0]), i);
 					offset[0] += (2 + bcdLength(precision));
-				}
-				else if (t == 15) //UUID
+				} else if (t == 15) // UUID
 				{
 					long high = bb.getLong(offset[0]);
-					offset[0]  += 8;
+					offset[0] += 8;
 					long low = bb.getLong(offset[0]);
 					offset[0] += 8;
 					retval.add(new UUID(high, low), i);
-				}
-				else if (t == 16) //ST_POINT
+				} else if (t == 16) // ST_POINT
 				{
 					double lon = Double.longBitsToDouble(bb.getLong(offset[0]));
 					offset[0] += 8;
 					double lat = Double.longBitsToDouble(bb.getLong(offset[0]));
 					offset[0] += 8;
 					retval.add(new StPoint(lon, lat), i);
-				}
-				else if (t == 17)  //IP
+				} else if (t == 17) // IP
 				{
 					byte[] bytes = new byte[16];
-					((Buffer)bb).position(offset[0]);
+					((Buffer) bb).position(offset[0]);
 					bb.get(bytes);
 					offset[0] += 16;
 					retval.add(InetAddress.getByAddress(bytes), i);
-				}
-				else if (t == 18) //IPV4
+				} else if (t == 18) // IPV4
 				{
 					byte[] bytes = new byte[4];
-					((Buffer)bb).position(offset[0]);
+					((Buffer) bb).position(offset[0]);
 					bb.get(bytes);
 					offset[0] += 4;
 					retval.add(InetAddress.getByAddress(bytes), i);
-				}
-				else if (t == 19) //Date
+				} else if (t == 19) // Date
 				{
 					retval.add(new Date(bb.getLong(offset[0])), i);
 					offset[0] += 8;
-				}
-				else
-				{
+				} else {
 					throw SQLStates.INVALID_COLUMN_TYPE.clone();
 				}
 			}
 		}
-		
+
 		return retval;
 	}
 
 	/*
-	 * Returns true if we actually received data, false if there was no data to merge
+	 * Returns true if we actually received data, false if there was no data to
+	 * merge
 	 */
-	private boolean mergeData(final ClientWireProtocol.ResultSet re) throws SQLException, java.net.UnknownHostException {
+	private boolean mergeData(final ClientWireProtocol.ResultSet re)
+			throws SQLException, java.net.UnknownHostException {
 		final List<ByteString> buffers = re.getBlobsList();
 		this.rs.clear();
-		for (final ByteString buffer : buffers)
-		{
+		for (final ByteString buffer : buffers) {
 			ByteBuffer bb = buffer.asReadOnlyByteBuffer();
-			if (isBufferDem(bb))
-			{
+			if (isBufferDem(bb)) {
 				rs.add(new DataEndMarker());
-			}
-			else
-			{
+			} else {
 				int numRows = bb.getInt(0);
 				int offset = 4;
-				for (int i = 0; i < numRows; i++)
-				{
-					//Process this row
+				for (int i = 0; i < numRows; i++) {
+					// Process this row
 					final ArrayList<Object> alo = new ArrayList<>();
 					int rowLength = bb.getInt(offset);
 					int end = offset + rowLength;
 					offset += 4;
 
-					while (offset < end)
-					{
-						//Get type tag
+					while (offset < end) {
+						// Get type tag
 						byte type = bb.get(offset);
 						offset++;
-						if (type == 1) //INT
+						if (type == 1) // INT
 						{
 							alo.add(bb.getInt(offset));
 							offset += 4;
-						}
-						else if (type == 2) //LONG
+						} else if (type == 2) // LONG
 						{
 							alo.add(bb.getLong(offset));
 							offset += 8;
-						}
-						else if (type == 3) //FLOAT
+						} else if (type == 3) // FLOAT
 						{
 							alo.add(Float.intBitsToFloat(bb.getInt(offset)));
 							offset += 4;
-						}
-						else if (type == 4) //DOUBLE
+						} else if (type == 4) // DOUBLE
 						{
 							alo.add(Double.longBitsToDouble(bb.getLong(offset)));
 							offset += 8;
-						}
-						else if (type == 5) //STRING
+						} else if (type == 5) // STRING
 						{
 							int stringLength = bb.getInt(offset);
 							offset += 4;
 							byte[] dst = new byte[stringLength];
-							((Buffer)bb).position(offset);
+							((Buffer) bb).position(offset);
 							bb.get(dst);
 							alo.add(new String(dst, Charsets.UTF_8));
 							offset += stringLength;
-						}
-						else if (type == 6) //Timestamp
+						} else if (type == 6) // Timestamp
 						{
 							alo.add(new Date(bb.getLong(offset)));
 							offset += 8;
-						}
-						else if (type == 7) //Null
+						} else if (type == 7) // Null
 						{
 							alo.add(null);
-						}
-						else if (type == 8) //BOOL
+						} else if (type == 8) // BOOL
 						{
 							alo.add((bb.get(offset) != 0));
 							offset++;
-						}
-						else if (type == 9) //BINARY
+						} else if (type == 9) // BINARY
 						{
 							int stringLength = bb.getInt(offset);
 							offset += 4;
 							byte[] dst = new byte[stringLength];
-							((Buffer)bb).position(offset);
+							((Buffer) bb).position(offset);
 							bb.get(dst);
 							alo.add(dst);
 							offset += stringLength;
-						}
-						else if (type == 10) //BYTE
+						} else if (type == 10) // BYTE
 						{
 							alo.add(bb.get(offset));
 							offset++;
-						}
-						else if (type == 11) //SHORT
+						} else if (type == 11) // SHORT
 						{
 							alo.add(bb.getShort(offset));
 							offset += 2;
-						}
-                        else if (type == 12) //TIME
-                        {
-                         	alo.add(new Time(bb.getLong(offset)));
-                         	offset += 8;
-                        }
-						else if (type == 13) //DECIMAL
+						} else if (type == 12) // TIME
+						{
+							alo.add(new Time(bb.getLong(offset)));
+							offset += 8;
+						} else if (type == 13) // DECIMAL
 						{
 							int precision = bb.get(offset);
 							alo.add(getDecimalFromBuffer(bb, offset));
 							offset += (2 + bcdLength(precision));
-						}
-						else if (type == 14) //ARRAY
+						} else if (type == 14) // ARRAY
 						{
-							//Need to used int[] so we can pass an integer by reference.
-							//Cannot use 'new Integer'. It goes by value.
+							// Need to used int[] so we can pass an integer by reference.
+							// Cannot use 'new Integer'. It goes by value.
 							int[] off = new int[1];
 							off[0] = offset;
 							XGArray array = getArrayFromBuffer(bb, off);
 							offset = off[0];
 							alo.add(array);
-						}
-						else if (type == 15) //UUID
+						} else if (type == 15) // UUID
 						{
 							long high = bb.getLong(offset);
-							offset  += 8;
+							offset += 8;
 							long low = bb.getLong(offset);
 							offset += 8;
 							alo.add(new UUID(high, low));
-						}
-						else if (type == 16) //ST_POINT
+						} else if (type == 16) // ST_POINT
 						{
 							double lon = Double.longBitsToDouble(bb.getLong(offset));
 							offset += 8;
 							double lat = Double.longBitsToDouble(bb.getLong(offset));
 							offset += 8;
 							alo.add(new StPoint(lon, lat));
-						}
-						else if (type == 17)  //IP
+						} else if (type == 17) // IP
 						{
 							byte[] bytes = new byte[16];
-							((Buffer)bb).position(offset);
+							((Buffer) bb).position(offset);
 							bb.get(bytes);
 							offset += 16;
 							alo.add(InetAddress.getByAddress(bytes));
-						}
-						else if (type == 18) //IPV4
+						} else if (type == 18) // IPV4
 						{
 							byte[] bytes = new byte[4];
-							((Buffer)bb).position(offset);
+							((Buffer) bb).position(offset);
 							bb.get(bytes);
 							offset += 4;
 							alo.add(InetAddress.getByAddress(bytes));
-						}
-						else if (type == 19) //Date
+						} else if (type == 19) // Date
 						{
 							alo.add(new Date(bb.getLong(offset)));
 							offset += 8;
-						}
-						else
-						{
+						} else {
 							throw SQLStates.INVALID_COLUMN_TYPE.clone();
 						}
 					}
@@ -2456,37 +2219,31 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean next() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "next() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
 		position++;
 
-		if (firstRowIs - 1 + rs.size() < position)
-		{
-			if (rs.size() > 0)
-			{
+		if (firstRowIs - 1 + rs.size() < position) {
+			if (rs.size() > 0) {
 				final Object row = rs.get(rs.size() - 1);
-				if (row instanceof DataEndMarker)
-				{
+				if (row instanceof DataEndMarker) {
 					return false;
 				}
 			}
 
 			// call to get more data
-			while (!getMoreData()) {}
+			while (!getMoreData()) {
+			}
 			firstRowIs = position;
 		}
 
 		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker)
-		{
+		if (row instanceof DataEndMarker) {
 			return false;
-		}
-		else
-		{
+		} else {
 			return true;
 		}
 	}
@@ -2499,21 +2256,16 @@ public class XGResultSet implements ResultSet
 
 	private void processResponseType(final ResponseType rType, final ConfirmationResponse response)
 			throws SQLException {
-		if (rType.equals(ResponseType.INVALID))
-		{
+		if (rType.equals(ResponseType.INVALID)) {
 			LOGGER.log(Level.WARNING, "Received an invalid response from the server");
 			throw SQLStates.INVALID_RESPONSE_TYPE.clone();
-		}
-		else if (rType.equals(ResponseType.RESPONSE_ERROR))
-		{
+		} else if (rType.equals(ResponseType.RESPONSE_ERROR)) {
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
 			final int code = response.getVendorCode();
 			LOGGER.log(Level.WARNING, String.format("Server returned an error response [%s] %s", sqlState, reason));
 			throw new SQLException(reason, sqlState, code);
-		}
-		else if (rType.equals(ResponseType.RESPONSE_WARN))
-		{
+		} else if (rType.equals(ResponseType.RESPONSE_WARN)) {
 			LOGGER.log(Level.WARNING, "Received a warning response from the server");
 			final String reason = response.getReason();
 			final String sqlState = response.getSqlState();
@@ -2525,15 +2277,11 @@ public class XGResultSet implements ResultSet
 	private void readBytes(final byte[] bytes) throws Exception {
 		int count = 0;
 		final int size = bytes.length;
-		while (count < size)
-		{
+		while (count < size) {
 			final int temp = conn.in.read(bytes, count, bytes.length - count);
-			if (temp == -1)
-			{
+			if (temp == -1) {
 				throw SQLStates.UNEXPECTED_EOF.clone();
-			}
-			else
-			{
+			} else {
 				count += temp;
 			}
 		}
@@ -2555,8 +2303,7 @@ public class XGResultSet implements ResultSet
 
 	private void requestMetaData() throws Exception {
 		stmt.passUpCancel(false);
-		try
-		{
+		try {
 			// send fetch metadata request
 			final ClientWireProtocol.FetchMetadata.Builder builder = ClientWireProtocol.FetchMetadata.newBuilder();
 			final FetchMetadata msg = builder.build();
@@ -2569,8 +2316,8 @@ public class XGResultSet implements ResultSet
 			conn.out.flush();
 
 			// receive response
-			final ClientWireProtocol.FetchMetadataResponse.Builder fmdr =
-					ClientWireProtocol.FetchMetadataResponse.newBuilder();
+			final ClientWireProtocol.FetchMetadataResponse.Builder fmdr = ClientWireProtocol.FetchMetadataResponse
+					.newBuilder();
 			final int length = getLength();
 			final byte[] data = new byte[length];
 			readBytes(data);
@@ -2582,13 +2329,10 @@ public class XGResultSet implements ResultSet
 			setCaseInsensitiveCols2Pos();
 			cols2Types = fmdr.getCols2TypesMap();
 			pos2Cols = new TreeMap<>();
-			for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
-			{
+			for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet()) {
 				pos2Cols.put(entry.getValue(), entry.getKey());
 			}
-		}
-		finally
-		{
+		} finally {
 			stmt.passUpCancel(false);
 		}
 	}
@@ -2596,8 +2340,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean rowDeleted() throws SQLException {
 		LOGGER.log(Level.INFO, "Called rowDeleted()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "rowDeleted() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -2608,8 +2351,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean rowInserted() throws SQLException {
 		LOGGER.log(Level.INFO, "Called rowInserted()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "rowInserted() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -2620,8 +2362,7 @@ public class XGResultSet implements ResultSet
 	@Override
 	public boolean rowUpdated() throws SQLException {
 		LOGGER.log(Level.INFO, "Called rowUpdated()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "rowUpdated() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
@@ -2638,31 +2379,27 @@ public class XGResultSet implements ResultSet
 		b2.setCloseResultSet(msg);
 		final Request wrapper = b2.build();
 
-		try
-		{
+		try {
 			conn.out.write(intToBytes(wrapper.getSerializedSize()));
 			wrapper.writeTo(conn.out);
 			conn.out.flush();
 			getStandardResponse();
-		}
-		catch (final IOException e)
-		{
+		} catch (final IOException e) {
 			// Doesn't matter...
-			LOGGER.log(Level.WARNING, String.format("Exception %s occurred during sendCloseRs() with message %s", e, e.getMessage()));
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred during sendCloseRs() with message %s", e, e.getMessage()));
 		}
 	}
 
 	@Override
 	public void setFetchDirection(final int direction) throws SQLException {
 		LOGGER.log(Level.INFO, "Called setFetchDirection()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "setFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (direction != ResultSet.FETCH_FORWARD)
-		{
+		if (direction != ResultSet.FETCH_FORWARD) {
 			throw new SQLFeatureNotSupportedException();
 		}
 	}
@@ -2670,14 +2407,12 @@ public class XGResultSet implements ResultSet
 	@Override
 	public void setFetchSize(final int rows) throws SQLException {
 		LOGGER.log(Level.INFO, "Called setFetchSize()");
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "setFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (rows <= 0)
-		{
+		if (rows <= 0) {
 			throw SQLStates.INVALID_ARGUMENT.clone();
 		}
 
@@ -3199,8 +2934,7 @@ public class XGResultSet implements ResultSet
 
 	@Override
 	public boolean wasNull() throws SQLException {
-		if (closed)
-		{
+		if (closed) {
 			LOGGER.log(Level.WARNING, "wasNull() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}

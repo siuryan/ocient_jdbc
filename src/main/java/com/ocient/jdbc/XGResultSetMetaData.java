@@ -10,30 +10,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.math.BigDecimal;
 
-public class XGResultSetMetaData implements ResultSetMetaData
-{
-	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
-	
+public class XGResultSetMetaData implements ResultSetMetaData {
+	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
+
 	public final Map<String, Integer> cols2Pos;
 	private Map<String, Integer> caseInsensitiveCols2Pos;
 	public final TreeMap<Integer, String> pos2Cols;
 	public final Map<String, String> cols2Types;
 
 	public XGResultSetMetaData(final Map<String, Integer> cols2Pos2, final TreeMap<Integer, String> pos2Cols,
-			final Map<String, String> cols2Types2)
-	{
+			final Map<String, String> cols2Types2) {
 		this.cols2Pos = cols2Pos2;
 		this.pos2Cols = pos2Cols;
 		this.cols2Types = cols2Types2;
 		setCaseInsensitiveCols2Pos();
 	}
-	
-	private void setCaseInsensitiveCols2Pos()
-	{
+
+	private void setCaseInsensitiveCols2Pos() {
 		caseInsensitiveCols2Pos = new HashMap<String, Integer>();
-		
-		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet())
-		{
+
+		for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet()) {
 			caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
 		}
 	}
@@ -50,76 +46,41 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
-		if (type.equals("CHAR"))
-		{
+		if (type.equals("CHAR")) {
 			return "java.lang.String";
-		}
-		else if (type.equals("BYTE"))
-		{
+		} else if (type.equals("BYTE")) {
 			return "java.lang.Byte";
-		}
-		else if (type.equals("SHORT"))
-		{
+		} else if (type.equals("SHORT")) {
 			return "java.lang.Short";
-		}
-		else if (type.equals("INT"))
-		{
+		} else if (type.equals("INT")) {
 			return "java.lang.Integer";
-		}
-		else if (type.equals("FLOAT"))
-		{
+		} else if (type.equals("FLOAT")) {
 			return "java.lang.Float";
-		}
-		else if (type.equals("DOUBLE"))
-		{
+		} else if (type.equals("DOUBLE")) {
 			return "java.lang.Double";
-		}
-		else if (type.equals("LONG"))
-		{
+		} else if (type.equals("LONG")) {
 			return "java.lang.Long";
-		}
-		else if (type.equals("TIMESTAMP"))
-		{
+		} else if (type.equals("TIMESTAMP")) {
 			return "java.sql.Timestamp";
-		}
-        else if (type.equals("TIME"))
-        {
-            return "java.sql.Time";
-        }
-		else if (type.equals("DATE"))
-		{
+		} else if (type.equals("TIME")) {
+			return "java.sql.Time";
+		} else if (type.equals("DATE")) {
 			return "java.util.Date";
-		}
-		else if (type.equals("BOOLEAN"))
-		{
+		} else if (type.equals("BOOLEAN")) {
 			return "java.lang.Boolean";
-		}
-		else if (type.equals("DECIMAL"))
-		{
+		} else if (type.equals("DECIMAL")) {
 			return "java.math.BigDecimal";
-		}	
-		else if (type.equals("BINARY"))
-		{
+		} else if (type.equals("BINARY")) {
 			return "[B";
-		}
-		else if (type.equals("ARRAY"))
-		{
+		} else if (type.equals("ARRAY")) {
 			return "com.ocient.jdbc.XGArray";
-		}
-		else if (type.equals("UUID"))
-		{
+		} else if (type.equals("UUID")) {
 			return "java.util.UUID";
-		}
-		else if (type.equals("ST_POINT"))
-		{
+		} else if (type.equals("ST_POINT")) {
 			return "com.ocient.jdbc.StPoint";
-		}
-		else if (type.equals("IP") || type.equals("IPV4"))
-		{
+		} else if (type.equals("IP") || type.equals("IPV4")) {
 			return "java.net.InetAddress";
-		}
-		else
-		{
+		} else {
 			LOGGER.log(Level.WARNING, "getColumnClassName() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
@@ -138,85 +99,48 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		final String type = cols2Types.get(name);
 		int retval = 0;
 
-		if (type.equals("BYTE"))
-		{
+		if (type.equals("BYTE")) {
 			retval = 4;
-		}
-		else if (type.equals("SHORT"))
-		{
+		} else if (type.equals("SHORT")) {
 			retval = 6;
-		}
-		else if (type.equals("INT"))
-		{
+		} else if (type.equals("INT")) {
 			retval = 11;
-		}
-		else if (type.equals("LONG"))
-		{
+		} else if (type.equals("LONG")) {
 			retval = 20;
-		}
-		else if (type.equals("FLOAT"))
-		{
+		} else if (type.equals("FLOAT")) {
 			retval = 14;
-		}
-		else if (type.equals("DOUBLE"))
-		{
+		} else if (type.equals("DOUBLE")) {
 			retval = 22;
-		}
-		else if (type.equals("TIMESTAMP"))
-		{
+		} else if (type.equals("TIMESTAMP")) {
 			retval = 29;
-		}
-        else if (type.equals("TIME"))
-        {
-            retval = 13; //HH:MM:SS.mmm
-        }
-		else if(type.equals("DATE")) {
+		} else if (type.equals("TIME")) {
+			retval = 13; // HH:MM:SS.mmm
+		} else if (type.equals("DATE")) {
 			retval = 11;
-		}
-		else if (type.equals("CHAR"))
-		{
+		} else if (type.equals("CHAR")) {
 			retval = 45;
-		}
-		else if (type.equals("BOOLEAN"))
-		{
+		} else if (type.equals("BOOLEAN")) {
 			retval = 6;
-		}
-		else if (type.equals("BINARY"))
-		{
+		} else if (type.equals("BINARY")) {
 			retval = 33;
-		}
-		else if (type.equals("DECIMAL"))
-		{
-			retval = 33; //max precision + '.' + "-"
-		}
-		else if (type.equals("ARRAY"))
-		{
+		} else if (type.equals("DECIMAL")) {
+			retval = 33; // max precision + '.' + "-"
+		} else if (type.equals("ARRAY")) {
 			retval = 80;
-		}
-		else if (type.equals("UUID"))
-		{
+		} else if (type.equals("UUID")) {
 			return 37;
-		}
-		else if (type.equals("ST_POINT"))
-		{
+		} else if (type.equals("ST_POINT")) {
 			return 47;
-		}
-		else if (type.equals("IP"))
-		{
+		} else if (type.equals("IP")) {
 			return 47;
-		}
-		else if (type.equals("IPV4"))
-		{
+		} else if (type.equals("IPV4")) {
 			return 17;
-		}
-		else
-		{
+		} else {
 			LOGGER.log(Level.WARNING, "getColumnDisplaySize() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
 
-		if (retval < name.length())
-		{
+		if (retval < name.length()) {
 			retval = name.length();
 		}
 
@@ -241,76 +165,41 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
-		if (type.equals("CHAR"))
-		{
+		if (type.equals("CHAR")) {
 			return java.sql.Types.VARCHAR;
-		}
-		else if (type.equals("BYTE"))
-		{
+		} else if (type.equals("BYTE")) {
 			return java.sql.Types.TINYINT;
-		}
-		else if (type.equals("SHORT"))
-		{
+		} else if (type.equals("SHORT")) {
 			return java.sql.Types.SMALLINT;
-		}
-		else if (type.equals("INT"))
-		{
+		} else if (type.equals("INT")) {
 			return java.sql.Types.INTEGER;
-		}
-		else if (type.equals("FLOAT"))
-		{
+		} else if (type.equals("FLOAT")) {
 			return java.sql.Types.FLOAT;
-		}
-		else if (type.equals("DOUBLE"))
-		{
+		} else if (type.equals("DOUBLE")) {
 			return java.sql.Types.DOUBLE;
-		}
-		else if (type.equals("LONG"))
-		{
+		} else if (type.equals("LONG")) {
 			return java.sql.Types.BIGINT;
-		}
-		else if (type.equals("TIMESTAMP"))
-		{
+		} else if (type.equals("TIMESTAMP")) {
 			return java.sql.Types.TIMESTAMP;
-		}
-		else if (type.equals("TIME"))
-		{
+		} else if (type.equals("TIME")) {
 			return java.sql.Types.TIME;
-		}
-		else if (type.equals("DATE"))
-		{
+		} else if (type.equals("DATE")) {
 			return java.sql.Types.DATE;
-		}
-		else if (type.equals("BOOLEAN"))
-		{
+		} else if (type.equals("BOOLEAN")) {
 			return java.sql.Types.BOOLEAN;
-		}
-		else if (type.equals("BINARY"))
-		{
+		} else if (type.equals("BINARY")) {
 			return java.sql.Types.BINARY;
-		}
-		else if (type.equals("DECIMAL"))
-		{
+		} else if (type.equals("DECIMAL")) {
 			return java.sql.Types.DECIMAL;
-		}	
-		else if (type.equals("ARRAY"))
-		{
+		} else if (type.equals("ARRAY")) {
 			return java.sql.Types.ARRAY;
-		}
-		else if (type.equals("UUID"))
-		{
+		} else if (type.equals("UUID")) {
 			return java.sql.Types.OTHER;
-		}
-		else if (type.equals("ST_POINT"))
-		{
+		} else if (type.equals("ST_POINT")) {
 			return java.sql.Types.OTHER;
-		}
-		else if (type.equals("IP") || type.equals("IPV4"))
-		{
+		} else if (type.equals("IP") || type.equals("IPV4")) {
 			return java.sql.Types.OTHER;
-		}
-		else
-		{
+		} else {
 			LOGGER.log(Level.WARNING, "getColumnType() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}
@@ -325,11 +214,10 @@ public class XGResultSetMetaData implements ResultSetMetaData
 	public int getPosition(final String name) throws Exception {
 		LOGGER.log(Level.INFO, "Called getPosition()");
 		Integer retval = cols2Pos.get(name);
-		if (retval == null)
-		{
+		if (retval == null) {
 			retval = caseInsensitiveCols2Pos.get(name.toLowerCase());
 		}
-		
+
 		return retval;
 	}
 
@@ -339,80 +227,43 @@ public class XGResultSetMetaData implements ResultSetMetaData
 		final String name = pos2Cols.get(column - 1);
 		final String type = cols2Types.get(name);
 
-		if (type.equals("CHAR"))
-		{
+		if (type.equals("CHAR")) {
 			return 128 * 1024;
-		}
-		else if (type.equals("BYTE"))
-		{
+		} else if (type.equals("BYTE")) {
 			return 3;
-		}
-		else if (type.equals("SHORT"))
-		{
+		} else if (type.equals("SHORT")) {
 			return 5;
-		}
-		else if (type.equals("INT"))
-		{
+		} else if (type.equals("INT")) {
 			return 10;
-		}
-		else if (type.equals("FLOAT"))
-		{
+		} else if (type.equals("FLOAT")) {
 			return 7;
-		}
-		else if (type.equals("DOUBLE"))
-		{
+		} else if (type.equals("DOUBLE")) {
 			return 16;
-		}
-		else if (type.equals("LONG"))
-		{
+		} else if (type.equals("LONG")) {
 			return 20;
-		}
-		else if (type.equals("TIMESTAMP"))
-		{
+		} else if (type.equals("TIMESTAMP")) {
 			return 23;
-		}
-		else if (type.equals("TIME"))
-		{
+		} else if (type.equals("TIME")) {
 			return 12;
-		}
-		else if (type.equals("DATE"))
-		{
+		} else if (type.equals("DATE")) {
 			return 10;
-		}
-		else if (type.equals("BOOLEAN"))
-		{
+		} else if (type.equals("BOOLEAN")) {
 			return 0;
-		}
-		else if (type.equals("BINARY"))
-		{
+		} else if (type.equals("BINARY")) {
 			return 128 * 1024;
-		}
-		else if (type.equals("DECIMAL"))
-		{
+		} else if (type.equals("DECIMAL")) {
 			return 31;
-		}	
-		else if (type.equals("ARRAY"))
-		{
+		} else if (type.equals("ARRAY")) {
 			return 128 * 1024;
-		}
-		else if (type.equals("UUID"))
-		{
+		} else if (type.equals("UUID")) {
 			return 16;
-		}
-		else if (type.equals("ST_POINT"))
-		{
+		} else if (type.equals("ST_POINT")) {
 			return 32;
-		}
-		else if (type.equals("IP"))
-		{
+		} else if (type.equals("IP")) {
 			return 16;
-		}
-		else if (type.equals("IPV4"))
-		{
+		} else if (type.equals("IPV4")) {
 			return 12;
-		}
-		else
-		{
+		} else {
 			LOGGER.log(Level.WARNING, "getPrecision() is throwing UNKNOWN_DATA_TYPE");
 			throw SQLStates.UNKNOWN_DATA_TYPE.clone();
 		}

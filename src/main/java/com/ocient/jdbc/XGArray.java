@@ -12,21 +12,19 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
 
-public class XGArray implements java.sql.Array
-{
+public class XGArray implements java.sql.Array {
 	private byte type;
 	private Object[] array;
 	private XGConnection conn;
 	private XGStatement stmt;
-	
-	public XGArray(int numElements, byte type, final XGConnection conn, final XGStatement stmt)
-	{
+
+	public XGArray(int numElements, byte type, final XGConnection conn, final XGStatement stmt) {
 		this.type = type;
 		this.conn = conn;
 		this.stmt = stmt;
 		array = new Object[numElements];
 	}
-	
+
 	@Override
 	public void free() throws SQLException {
 		array = new Object[0];
@@ -44,12 +42,9 @@ public class XGArray implements java.sql.Array
 
 	@Override
 	public Object getArray(long index, int count) throws SQLException {
-		try
-		{
-			return Arrays.copyOfRange(array, (int)index - 1, (int)index + count - 1);
-		}
-		catch(Exception e)
-		{
+		try {
+			return Arrays.copyOfRange(array, (int) index - 1, (int) index + count - 1);
+		} catch (Exception e) {
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -68,7 +63,7 @@ public class XGArray implements java.sql.Array
 			return Types.BIGINT;
 		case 3:
 			return Types.FLOAT;
-		case 4: 
+		case 4:
 			return Types.DOUBLE;
 		case 5:
 			return Types.VARCHAR;
@@ -111,7 +106,7 @@ public class XGArray implements java.sql.Array
 			return "BIGINT";
 		case 3:
 			return "FLOAT";
-		case 4: 
+		case 4:
 			return "DOUBLE";
 		case 5:
 			return "VARCHAR";
@@ -152,14 +147,13 @@ public class XGArray implements java.sql.Array
 	public ResultSet getResultSet() throws SQLException {
 		ArrayList<Object> alo = new ArrayList<Object>();
 		int i = 1;
-		for (Object o : array)
-		{
+		for (Object o : array) {
 			ArrayList<Object> row = new ArrayList<Object>();
 			row.add(i++);
 			row.add(o);
 			alo.add(row);
 		}
-		
+
 		XGResultSet retval = new XGResultSet(conn, alo, stmt);
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
 		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
@@ -169,7 +163,7 @@ public class XGArray implements java.sql.Array
 		pos2Cols.put(0, "index");
 		pos2Cols.put(1, "array_value");
 		cols2Types.put("index", "INT");
-		
+
 		switch (type) {
 		case 1:
 			cols2Types.put("array_value", "INT");
@@ -180,7 +174,7 @@ public class XGArray implements java.sql.Array
 		case 3:
 			cols2Types.put("array_value", "FLOAT");
 			break;
-		case 4: 
+		case 4:
 			cols2Types.put("array_value", "DOUBLE");
 			break;
 		case 5:
@@ -231,7 +225,7 @@ public class XGArray implements java.sql.Array
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
-		
+
 		retval.setCols2Pos(cols2Pos);
 		retval.setPos2Cols(pos2Cols);
 		retval.setCols2Types(cols2Types);
@@ -246,14 +240,13 @@ public class XGArray implements java.sql.Array
 	@Override
 	public ResultSet getResultSet(long index, int count) throws SQLException {
 		ArrayList<Object> alo = new ArrayList<Object>();
-		for (int i = (int)index; i < index + count; i++)
-		{
+		for (int i = (int) index; i < index + count; i++) {
 			ArrayList<Object> row = new ArrayList<Object>();
 			row.add(i);
 			row.add(array[i]);
 			alo.add(row);
 		}
-		
+
 		XGResultSet retval = new XGResultSet(conn, alo, stmt);
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
 		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
@@ -263,7 +256,7 @@ public class XGArray implements java.sql.Array
 		pos2Cols.put(0, "index");
 		pos2Cols.put(1, "array_value");
 		cols2Types.put("index", "INT");
-		
+
 		switch (type) {
 		case 1:
 			cols2Types.put("array_value", "INT");
@@ -274,7 +267,7 @@ public class XGArray implements java.sql.Array
 		case 3:
 			cols2Types.put("array_value", "FLOAT");
 			break;
-		case 4: 
+		case 4:
 			cols2Types.put("array_value", "DOUBLE");
 			break;
 		case 5:
@@ -325,7 +318,7 @@ public class XGArray implements java.sql.Array
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
-		
+
 		retval.setCols2Pos(cols2Pos);
 		retval.setPos2Cols(pos2Cols);
 		retval.setCols2Types(cols2Types);
@@ -336,26 +329,22 @@ public class XGArray implements java.sql.Array
 	public ResultSet getResultSet(long index, int count, Map<String, Class<?>> map) throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
-	
-	public void add(Object obj, int pos)
-	{
+
+	public void add(Object obj, int pos) {
 		array[pos] = obj;
 	}
-	
-	public String toString()
-	{
-		try
-		{
+
+	public String toString() {
+		try {
 			StringBuilder str = new StringBuilder();
 			str.append("[");
-			
-			if (array.length > 0)
-			{
+
+			if (array.length > 0) {
 				Object o = array[0];
 				if (o == null) {
 					str.append("NULL");
 				} else if (getBaseType() == java.sql.Types.ARRAY) {
-					str.append(((XGArray)o).toString());
+					str.append(((XGArray) o).toString());
 				} else if (getBaseType() == java.sql.Types.TIME) {
 					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 					final TimeZone utc = TimeZone.getTimeZone("UTC");
@@ -373,21 +362,18 @@ public class XGArray implements java.sql.Array
 					str.append(sdf.format(o));
 				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
 					str.append("0x" + bytesToHex((byte[]) o));
-				}
-				else
-				{
+				} else {
 					str.append(o);
 				}
 			}
-			
-			for (int i = 1; i < array.length; i++)
-			{
+
+			for (int i = 1; i < array.length; i++) {
 				str.append(", ");
 				Object o = array[i];
 				if (o == null) {
 					str.append("NULL");
 				} else if (getBaseType() == java.sql.Types.ARRAY) {
-					str.append(((XGArray)o).toString());
+					str.append(((XGArray) o).toString());
 				} else if (getBaseType() == java.sql.Types.TIME) {
 					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 					final TimeZone utc = TimeZone.getTimeZone("UTC");
@@ -405,24 +391,20 @@ public class XGArray implements java.sql.Array
 					str.append(sdf.format(o));
 				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
 					str.append("0x" + bytesToHex((byte[]) o));
-				}
-				else
-				{
+				} else {
 					str.append(o);
 				}
 			}
-			
+
 			str.append("]");
 			return str.toString();
-		}
-		catch(Exception e)
-		{
+		} catch (Exception e) {
 			return "Exception occurred accessing Array";
 		}
 	}
-	
+
 	private final static char[] hexArray = "0123456789abcdef".toCharArray();
-	
+
 	private static String bytesToHex(byte[] bytes) {
 		char[] hexChars = new char[bytes.length * 2];
 		for (int j = 0; j < bytes.length; j++) {

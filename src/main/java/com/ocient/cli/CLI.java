@@ -327,9 +327,9 @@ public class CLI {
 		return m.group(name);
 	}
 
-	private static Pattern connectToSyntax = Pattern.compile(
-			"connect to (?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up> user (" + userTk() + ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?",
-			Pattern.CASE_INSENSITIVE);
+	private static Pattern connectToSyntax = Pattern
+			.compile("connect to (?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up> user (" + userTk()
+					+ ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?", Pattern.CASE_INSENSITIVE);
 
 	private static void connectTo(final String cmd) {
 		if (isConnected()) {
@@ -628,15 +628,12 @@ public class CLI {
 					line.append(rs.getString("COLUMN_NAME"));
 					line.append(" (");
 					String type = rs.getString("TYPE_NAME");
-					if (type.equals("SHORT"))
-					{
+					if (type.equals("SHORT")) {
 						type = "SMALLINT";
-					}
-					else if (type.equals("LONG"))
-					{
+					} else if (type.equals("LONG")) {
 						type = "BIGINT";
 					}
-					
+
 					line.append(type);
 					// TODO: figure out precision stuff
 					if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
@@ -1055,7 +1052,7 @@ public class CLI {
 		try {
 			start = System.currentTimeMillis();
 			final int timeout = Integer.parseInt(cmd.substring("SET TIMEOUT ".length()).trim());
-			((XGConnection)conn).setTimeout(timeout);
+			((XGConnection) conn).setTimeout(timeout);
 			end = System.currentTimeMillis();
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -2072,7 +2069,8 @@ public class CLI {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					final TimeZone utc = TimeZone.getTimeZone("UTC");
 					sdf.setTimeZone(utc);
-					valueString = sdf.format(o);;
+					valueString = sdf.format(o);
+					;
 				} else if (o != null) {
 					valueString = o.toString();
 				}
