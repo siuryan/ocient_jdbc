@@ -878,7 +878,6 @@ public class XGConnection implements Connection
 
 	@Override
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
-		LOGGER.log(Level.INFO, "Called getTypeMap()");
 		return typeMap;
 	}
 
