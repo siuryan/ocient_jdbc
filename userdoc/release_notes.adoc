@@ -5,6 +5,12 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.31 (2020-06-23)
+
+New Features::
+  * Fix misbehavior with 'plan execute inline' using the CLI
+
+// tag::compact[]
 == 1.30 (2020-06-22)
 
 New Features::
