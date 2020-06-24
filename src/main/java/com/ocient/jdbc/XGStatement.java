@@ -1219,7 +1219,8 @@ public class XGStatement implements Statement {
 					setType.invoke(b1, PartitioningType.BY_NUMBER);
 				}
 				b1.getClass().getMethod("setPartitioningParam", int.class).invoke(b1, val);
-			} else {
+			} else if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
+				//don't touch the statment if this is a plan (proto buffer string plan)
 				sql = setParms(sql);
 			}
 
