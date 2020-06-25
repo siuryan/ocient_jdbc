@@ -126,14 +126,22 @@ public class CLI {
 
 		boolean quit = false;
 		String cmd = "";
+		boolean scrubCmd = true;
 
 		try {
 			while (true) {
 				// jline has ways to handle this, but they're underdocumented and overbuilt to
 				// the point of obscenity
 				if (!quit)
-					cmd = scrubCommand(reader.readLine("Ocient> ") + " ");
-
+					cmd = reader.readLine("Ocient> ") + " ";
+					if(startsWithIgnoreCase(cmd, "PLAN EXECUTE INLINE")) {
+						//the scrubing logic looks for comments blocks in the SQL statement. Now, plans have a lots of 
+						//double/single quotes, and those can be closed or not. scrubing a plans is not a good idea. It can cause the CLI to misinterpret quotes.  
+						scrubCmd = false;
+					}
+					else {
+						cmd = scrubCommand(cmd);
+					}
 				while (true) {
 					if (quit || cmd.trim().equalsIgnoreCase("QUIT")) {
 						try {
@@ -161,8 +169,14 @@ public class CLI {
 						// System.out.println("Finished trimming scrubbed: '" + cmd + "'");
 						break;
 					} else {
-						// System.out.println("Current command text: '" + cmd + "'");
-						cmd += scrubCommand(reader.readLine("(cont)> ") + " ");
+						//System.out.println("Current command text: '" + cmd + "'");
+						String line = reader.readLine("(cont)> ") + " ";
+						if(scrubCmd) {
+							cmd += scrubCommand(line);
+						}
+						else {
+							cmd += line;
+						}
 					}
 				}
 
