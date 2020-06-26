@@ -287,6 +287,8 @@ public class CLI {
 			forceExternal(cmd);
 		} else if (startsWithIgnoreCase(cmd, "EXPORT TABLE")) {
 			exportTable(cmd);
+                } else if (startsWithIgnoreCase(cmd, "EXPORT TRANSLATION")) {
+                        exportTranslation(cmd);
 		} else if (startsWithIgnoreCase(cmd, "SET TIMEOUT")) {
 			setQueryTimeout(cmd);
 		} else {
@@ -526,6 +528,28 @@ public class CLI {
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
+
+        private static void exportTranslation(final String cmd) {
+                long start = 0;
+                long end = 0;
+                if (!isConnected()) {
+                        System.out.println("No database connection exists");
+                        return;
+                }
+                try {
+                        final Statement stmt = conn.createStatement();
+                        start = System.currentTimeMillis();
+                        System.out.println(((XGStatement) stmt).exportTranslation(cmd));
+                        printWarnings(stmt);
+                        end = System.currentTimeMillis();
+
+                        stmt.close();
+
+                        printTime(start, end);
+                } catch (final Exception e) {
+                        System.out.println("Error: " + e.getMessage());
+                }
+        }
 
 	private static void exportTable(final String cmd) {
 		long start = 0;
