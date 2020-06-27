@@ -81,7 +81,7 @@ public class JDBCDriver implements Driver
 				} catch (final Throwable e) {
 					lastError = e;
 					LOGGER.log(Level.WARNING, String.format(
-							"Failed connecting to %s with exception %s with message %s", addr, e, e.getMessage()));
+							"Failed connecting to %s with exception %s with message %s", addr.toString(), e.toString(), e.getMessage()));
 				}
 			}
 			if (!connected && lastError != null) {
@@ -114,7 +114,7 @@ public class JDBCDriver implements Driver
 		catch (final Exception e)
 		{
 			LOGGER.log(Level.WARNING, String.format(
-					"After connecting, failed creating connection object with exception %s with message %s", e, e.getMessage()));
+					"After connecting, failed creating connection object with exception %s with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException)
 			{
 				throw (SQLException) e;

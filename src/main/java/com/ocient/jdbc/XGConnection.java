@@ -95,7 +95,7 @@ public class XGConnection implements Connection {
 					getStandardResponse();
 				} catch (SQLException | IOException e) {
 					LOGGER.log(Level.WARNING, String.format("Connection test failed with exception %s with message %s",
-							e, e.getMessage()));
+							e.toString(), e.getMessage()));
 					if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e)) {
 						throw e;
 					}
@@ -208,7 +208,7 @@ public class XGConnection implements Connection {
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
 					String.format("Copying the connection for a new statement failed with exception %s with message %",
-							e, e.getMessage()));
+							e.toString(), e.getMessage()));
 			try {
 				retval.close();
 			} catch (Exception f) {
@@ -366,7 +366,7 @@ public class XGConnection implements Connection {
 						+ "\n-----END PUBLIC KEY-----\n";
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING,
-						String.format("Exception %s occurred during handshake with message %s", e, e.getMessage()));
+						String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
 				throw new Exception(e);
 			}
 
@@ -453,7 +453,7 @@ public class XGConnection implements Connection {
 			}
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during handshake with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
 			e.printStackTrace();
 
 			try {
@@ -715,7 +715,7 @@ public class XGConnection implements Connection {
 			return getSchemaFromServer();
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during getSchema() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during getSchema() with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			} else {
@@ -1089,7 +1089,7 @@ public class XGConnection implements Connection {
 				connected = false;
 
 				LOGGER.log(Level.WARNING,
-						String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
+						String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
 				if (e instanceof IOException) {
 					throw (IOException) e;
 				}
@@ -1158,7 +1158,7 @@ public class XGConnection implements Connection {
 				}
 
 				LOGGER.log(Level.WARNING,
-						String.format("Exception %s occurred in reconnect() with message %s", e, e.getMessage()));
+						String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
 				continue;
 			}
 
@@ -1242,7 +1242,7 @@ public class XGConnection implements Connection {
 			}
 
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred in redirect() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
 			reconnect();
 			return;
 		}
@@ -1344,7 +1344,7 @@ public class XGConnection implements Connection {
 			// Doesn't matter...
 			LOGGER.log(Level.WARNING,
 					String.format("Failed sending set schema request to the server with exception %s with message %s",
-							e, e.getMessage()));
+							e.toString(), e.getMessage()));
 		}
 
 		setSchema = schema;
@@ -1375,7 +1375,7 @@ public class XGConnection implements Connection {
 			// Doesn't matter...
 			LOGGER.log(Level.WARNING,
 					String.format("Failed sending set schema request to the server with exception %s with message %s",
-							e, e.getMessage()));
+							e.toString(), e.getMessage()));
 		}
 	}
 
@@ -1444,7 +1444,7 @@ public class XGConnection implements Connection {
 		} catch (final IOException e) {
 			// Doesn't matter...
 			LOGGER.log(Level.WARNING, String.format(
-					"Failed sending set pso request to the server with exception %s with message ", e, e.getMessage()));
+					"Failed sending set pso request to the server with exception %s with message ", e.toString(), e.getMessage()));
 		}
 	}
 
@@ -1516,7 +1516,7 @@ public class XGConnection implements Connection {
 			sendSetSchema(schema);
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during setSchema() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during setSchema() with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			} else {

@@ -197,7 +197,7 @@ public class XGResultSet implements ResultSet {
 			sendCloseRS();
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during close() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during close() with message %s", e.toString(), e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -988,7 +988,7 @@ public class XGResultSet implements ResultSet {
 			return new XGResultSetMetaData(cols2Pos, pos2Cols, cols2Types);
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during getMetaData() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during getMetaData() with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
@@ -1009,7 +1009,7 @@ public class XGResultSet implements ResultSet {
 			return false;
 		}
 
-		LOGGER.log(Level.INFO, "Fetching more data from the server");
+		LOGGER.log(Level.INFO, String.format("Fetching more data from the server. Requesting %d rows.", fetchSize));
 		final Optional<String> queryId = getQueryId();
 		stmt.passUpCancel(false);
 		stmt.setRunningQueryThread(Thread.currentThread());
@@ -1044,7 +1044,7 @@ public class XGResultSet implements ResultSet {
 			return mergeData(fdr.getResultSet());
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred while fetching data with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
 				throw (SQLException) e;
 			}
@@ -1136,7 +1136,7 @@ public class XGResultSet implements ResultSet {
 			return c.newInstance(col);
 		} catch (Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during getObject() with message %s", e.toString(), e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1182,7 +1182,7 @@ public class XGResultSet implements ResultSet {
 			return (T) c.newInstance(col);
 		} catch (Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during getObject() with message %s", e.toString(), e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -1231,7 +1231,7 @@ public class XGResultSet implements ResultSet {
 			return c.newInstance(col);
 		} catch (Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during getObject() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during getObject() with message %s", e.toString(), e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
 	}
@@ -2202,6 +2202,7 @@ public class XGResultSet implements ResultSet {
 			}
 		}
 
+		LOGGER.log(Level.INFO, String.format("Received %d rows.", rs.size()));
 		return rs.size() > 0;
 	}
 
@@ -2387,7 +2388,7 @@ public class XGResultSet implements ResultSet {
 		} catch (final IOException e) {
 			// Doesn't matter...
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during sendCloseRs() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during sendCloseRs() with message %s", e.toString(), e.getMessage()));
 		}
 	}
 

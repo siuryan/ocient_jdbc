@@ -270,7 +270,7 @@ public class XGStatement implements Statement {
 					XGStatement.this.killQuery(optQueryId.get());
 				} catch (Exception e) {
 					LOGGER.log(Level.WARNING, String
-							.format("Sending kill query failed with exception %s with message %s", e, e.getMessage()));
+							.format("Sending kill query failed with exception %s with message %s", e.toString(), e.getMessage()));
 					suppressed = e;
 				} finally {
 					final SQLTimeoutException e = new SQLTimeoutException(
@@ -349,7 +349,7 @@ public class XGStatement implements Statement {
 				killQuery(queryId);
 			} catch (IOException | SQLException e) {
 				LOGGER.log(Level.SEVERE,
-						String.format("Error cancelling query with exception %s with message %s" + e, e.getMessage()));
+						String.format("Error cancelling query with exception %s with message %s", e.toString(), e.getMessage()));
 			}
 		}
 	}
@@ -531,7 +531,7 @@ public class XGStatement implements Statement {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred during executeQuery() with message %s", e, e.getMessage()));
+					String.format("Exception %s occurred during executeQuery() with message %s", e.toString(), e.getMessage()));
 			passUpCancel(false);
 			try {
 				reconnect();
