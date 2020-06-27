@@ -714,6 +714,13 @@ public class XGStatement implements Statement {
 		return er.getExportStatement();
 	}
 
+        // used by CLI
+        public String exportTranslation(final String table) throws SQLException {
+                final ClientWireProtocol.ExecuteExportResponse.Builder er = (ClientWireProtocol.ExecuteExportResponse.Builder) sendAndReceive(
+                                table, Request.RequestType.EXECUTE_EXPORT, 0, false);
+                return er.getExportStatement();
+        }
+
 	// used by Spark
 	// val is the size of each partition (if isInMb is true), or the number of
 	// partitions (otherwise)
@@ -1219,7 +1226,8 @@ public class XGStatement implements Statement {
 					setType.invoke(b1, PartitioningType.BY_NUMBER);
 				}
 				b1.getClass().getMethod("setPartitioningParam", int.class).invoke(b1, val);
-			} else {
+			} else if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
+				//don't touch the statment if this is a plan (proto buffer string plan)
 				sql = setParms(sql);
 			}
 
