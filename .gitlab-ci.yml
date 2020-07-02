@@ -1,5 +1,7 @@
 build-jar:
   script:
-    echo hello world
+    -echo hello world
+    -pwd
+    -ping i01-fil-001 -c 2
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master"'
