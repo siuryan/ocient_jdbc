@@ -7,6 +7,7 @@ build-jar:
     - pwd
     - #it clones the repo into the same directory that you're in
     # download and make protoc
+    - sudo apt-get install autoconf automake libtool curl make g++ unzip
     - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
     - tar xzvf protobuf-3.5.1.tar.gz
     - cd protobuf-3.5.1
@@ -16,6 +17,7 @@ build-jar:
     - make check
     - export PATH=$PATH:"$(pwd)/src"
     - protoc --version
+    - cd ..
     # download a jar
     #- mvn package
 #Uncomment this before putting this into master
