@@ -18,24 +18,24 @@ build-jar:
 
     # snag protobuf
     - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
-    - tar xzvf protobuf-3.5.1.tar.gz
+    - tar xzvf protobuf-3.5.1.tar.gz > /dev/null
     - rm protobuf-3.5.1.tar.gz
     - cd protobuf-3.5.1
     - ./autogen.sh
     - ./configure
-    - make
-    - make check
+    - make -j20
+    - make check -j20
     - export PATH=$PATH:"$(pwd)/src"
     - cd ..
     # download a jdk
     - wget -nv http://i01-fil-001/xgsrc/toolchain/jdk-13.0.1_linux-x64_bin.tar.gz
-    - tar xzvf jdk-13.0.1_linux-x64_bin.tar.gz
+    - tar xzvf jdk-13.0.1_linux-x64_bin.tar.gz > /dev/null
     - rm jdk-13.0.1_linux-x64_bin.tar.gz
     - export JAVA_HOME="$(pwd)/jdk-13.0.1"
     - export PATH=$PATH:"$JAVA_HOME/bin"
     # download maven
     - wget -nv https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-    - tar xzvf apache-maven-3.3.9-bin.tar.gz
+    - tar xzvf apache-maven-3.3.9-bin.tar.gz > /dev/null
     - rm apache-maven-3.3.9-bin.tar.gz
     - export PATH=$PATH:"$(pwd)/apache-maven-3.3.9/bin"
 
@@ -45,9 +45,9 @@ build-jar:
 
 
     # cleanup downloads?
-    #rm -rf protobuf-3.5.1
-    #rm -rf jdk-13.0.1
-    #rm -rf apache-maven-3.3.9
+    rm -rf protobuf-3.5.1
+    rm -rf jdk-13.0.1
+    rm -rf apache-maven-3.3.9
 
     #- mvn package
 #Uncomment this before putting this into master
