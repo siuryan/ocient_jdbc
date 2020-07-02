@@ -1,5 +1,40 @@
 build-jar:
+  tags:
+    #it likes to run on a shared runner without this and you lose network access
+    - lightweight
   script:
-    echo hello world
+    - echo hello world
+    - pwd
+    #it clones the repo into the same directory that you're in
+    # download and make protoc
+    #- sudo yum install autoconf
+    #- sudo yum install automake 
+    #- sudo yum install libtool 
+    #- sudo yum install curl 
+    #- sudo yum install wget 
+    #- sudo yum install make 
+    #- sudo yum install g++ 
+    #- sudo yum install unzip
+    - which autoconf
+    - which automake 
+    - which libtool 
+    - which curl 
+    - which wget 
+    - which make 
+    - which g++ 
+    - which unzip
+    - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
+    - tar xzvf protobuf-3.5.1.tar.gz
+    - cd protobuf-3.5.1
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
+    - export PATH=$PATH:"$(pwd)/src"
+    - protoc --version
+    - cd ..
+    # download a jar
+    #- mvn package
+#Uncomment this before putting this into master
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master"'
