@@ -45,9 +45,9 @@ build-jar:
 
 
     # cleanup downloads?
-    rm -rf protobuf-3.5.1
-    rm -rf jdk-13.0.1
-    rm -rf apache-maven-3.3.9
+    - rm -rf protobuf-3.5.1
+    - rm -rf jdk-13.0.1
+    - rm -rf apache-maven-3.3.9
 
     #- mvn package
 #Uncomment this before putting this into master
