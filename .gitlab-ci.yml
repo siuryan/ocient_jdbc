@@ -2,6 +2,7 @@ build-jar:
   script:
     - echo hello world
     - pwd
-    - ping i01-fil-001 -c 2
+    - ping 8.8.8.8 -c 2
+    - ping i01-fil-001.corp.ocient.com -c 2
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master"'
