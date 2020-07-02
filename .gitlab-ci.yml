@@ -1,20 +1,17 @@
-build-jar:
+stages:
+  - build-jar
+
+build-deps:
+  stage: build-jar
   tags:
-    #it likes to run on a shared runner without this and you lose network access
+    #gitlab run on a shared runner without this and you lose network access
     - lightweight
+  #Uncomment this before putting this into master
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master"'
   script:
-    - echo hello world
-    - pwd
-    #it clones the repo into the same directory that you're in
-    # download and make protoc
-    #- sudo yum install autoconf
-    #- sudo yum install automake 
-    #- sudo yum install libtool 
-    #- sudo yum install curl 
-    #- sudo yum install wget 
-    #- sudo yum install make 
-    #- sudo yum install g++ 
-    #- sudo yum install unzip
+    #gitlab clones the repo into the same directory that you're in
+    #check buildtool dependencies exist
     - which autoconf
     - which automake 
     - which libtool 
@@ -23,18 +20,42 @@ build-jar:
     - which make 
     - which g++ 
     - which unzip
-    - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
-    - tar xzvf protobuf-3.5.1.tar.gz
-    - cd protobuf-3.5.1
+
+    #set versions
+    - PROTOC_VERSION=3.5.1
+    - JDK_VERSION=13.0.1
+    - MVN_VERSION=3.3.9
+
+    # build protobuf
+    - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-$PROTOC_VERSION.tar.gz
+    - tar xzf protobuf-${PROTOC_VERSION}.tar.gz
+    - rm protobuf-${PROTOC_VERSION}.tar.gz
+    - cd protobuf-${PROTOC_VERSION}
     - ./autogen.sh
     - ./configure
-    - make
-    - make check
+    - make -j20
+    - make check -j20
     - export PATH=$PATH:"$(pwd)/src"
-    - protoc --version
     - cd ..
-    # download a jar
-    #- mvn package
-#Uncomment this before putting this into master
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
+    # download a jdk
+    - wget -nv http://i01-fil-001/xgsrc/toolchain/jdk-${JDK_VERSION}_linux-x64_bin.tar.gz
+    - tar xzf jdk-${JDK_VERSION}_linux-x64_bin.tar.gz
+    - rm jdk-${JDK_VERSION}_linux-x64_bin.tar.gz
+    - export JAVA_HOME="$(pwd)/jdk-${JDK_VERSION}"
+    - export PATH=$PATH:"${JAVA_HOME}/bin"
+    # download maven
+    - wget -nv https://archive.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries/apache-maven-${MVN_VERSION}-bin.tar.gz
+    - tar xzf apache-maven-${MVN_VERSION}-bin.tar.gz
+    - rm apache-maven-${MVN_VERSION}-bin.tar.gz
+    - export PATH=$PATH:"$(pwd)/apache-maven-${MVN_VERSION}/bin"
+
+    - protoc --version
+    - javac -version
+    - mvn --version
+
+    - cat ${DUMMY_XML}
+    - mvn package
+
+    - rm -rf protobuf-${PROTOC_VERSION}
+    - rm -rf jdk-${JDK_VERSION}
+    - rm -rf apache-maven-${MVN_VERSION}
