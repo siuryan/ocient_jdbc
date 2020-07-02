@@ -2,7 +2,7 @@ stages:
   - build-jar
 
 build-deps:
-  stage: build-dependencies
+  stage: build-jar
   tags:
     #it likes to run on a shared runner without this and you lose network access
     - lightweight
