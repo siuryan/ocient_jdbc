@@ -5,7 +5,7 @@ build-jar:
   script:
     - echo hello world
     - pwd
-    - #it clones the repo into the same directory that you're in
+    #it clones the repo into the same directory that you're in
     # download and make protoc
     - sudo apt-get install autoconf automake libtool curl wget make g++ unzip
     - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
