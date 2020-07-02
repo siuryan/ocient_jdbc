@@ -6,15 +6,7 @@ build-jar:
     - echo hello world
     - pwd
     #it clones the repo into the same directory that you're in
-    # download and make protoc
-    #- sudo yum install autoconf
-    #- sudo yum install automake 
-    #- sudo yum install libtool 
-    #- sudo yum install curl 
-    #- sudo yum install wget 
-    #- sudo yum install make 
-    #- sudo yum install g++ 
-    #- sudo yum install unzip
+    #check buildtool dependencies
     - which autoconf
     - which automake 
     - which libtool 
@@ -23,17 +15,40 @@ build-jar:
     - which make 
     - which g++ 
     - which unzip
+
+    # snag protobuf
     - wget -nv http://i01-fil-001/xgsrc/ext/protobuf-3.5.1.tar.gz
     - tar xzvf protobuf-3.5.1.tar.gz
+    - rm protobuf-3.5.1.tar.gz
     - cd protobuf-3.5.1
     - ./autogen.sh
     - ./configure
     - make
     - make check
     - export PATH=$PATH:"$(pwd)/src"
-    - protoc --version
     - cd ..
-    # download a jar
+    # download a jdk
+    - wget -nv http://i01-fil-001/xgsrc/toolchain/jdk-13.0.1_linux-x64_bin.tar.gz
+    - tar xzvf jdk-13.0.1_linux-x64_bin.tar.gz
+    - rm jdk-13.0.1_linux-x64_bin.tar.gz
+    - export JAVA_HOME="$(pwd)/jdk-13.0.1"
+    - export PATH=$PATH:"$JAVA_HOME/bin"
+    # download maven
+    - wget -nv https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+    - tar xzvf apache-maven-3.3.9-bin.tar.gz
+    - rm apache-maven-3.3.9-bin.tar.gz
+    - export PATH=$PATH:"$(pwd)/apache-maven-3.3.9/bin"
+
+    - protoc --version
+    - javac -version
+    - mvn --version
+
+
+    # cleanup downloads?
+    #rm -rf protobuf-3.5.1
+    #rm -rf jdk-13.0.1
+    #rm -rf apache-maven-3.3.9
+
     #- mvn package
 #Uncomment this before putting this into master
 #  rules:
