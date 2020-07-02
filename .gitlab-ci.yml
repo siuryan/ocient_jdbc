@@ -1,6 +1,6 @@
 build-jar:
   tags:
-    - ci
+    - lightweight
   script:
     - echo hello world
     - pwd
