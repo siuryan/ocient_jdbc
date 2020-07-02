@@ -1,4 +1,10 @@
-build-jar:
+stages:
+  - build-dependencies
+  - build-jar
+  - clean
+
+build-deps:
+  stage: build-dependencies
   tags:
     #it likes to run on a shared runner without this and you lose network access
     - lightweight
@@ -43,8 +49,20 @@ build-jar:
     - javac -version
     - mvn --version
 
+build-deps:
+  stage: build-jar
+  tags:
+    #it likes to run on a shared runner without this and you lose network access
+    - lightweight
+  script:
+    - mvn package
 
-    # cleanup downloads?
+clean:
+  stage: clean
+  tags:
+    #it likes to run on a shared runner without this and you lose network access
+    - lightweight
+  script:
     - rm -rf protobuf-3.5.1
     - rm -rf jdk-13.0.1
     - rm -rf apache-maven-3.3.9
