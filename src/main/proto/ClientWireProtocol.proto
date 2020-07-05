@@ -27,6 +27,11 @@ message ClientConnection2
    string pubKey = 4;
 }
 
+message SecondaryInterfaceList
+{
+	repeated string address = 1;
+}
+
 message ClientConnection2Response
 {
 	ConfirmationResponse response = 1;
@@ -34,6 +39,7 @@ message ClientConnection2Response
 	string redirectHost = 3;
 	fixed32 redirectPort = 4;
 	repeated string cmdcomps = 5; //If redirect = false, this is a list of all cmdcomps
+	repeated SecondaryInterfaceList secondary = 6;
 }
 
 message GetSchema
