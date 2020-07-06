@@ -53,6 +53,7 @@ build-deps:
     - javac -version
     - mvn --version
 
+    - cat ${DUMMY_XML}
     - mvn package
 
     - rm -rf protobuf-${PROTOC_VERSION}
