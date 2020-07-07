@@ -6,9 +6,8 @@ build-deps:
   tags:
     #gitlab run on a shared runner without this and you lose network access
     - lightweight
-  #Uncomment this before putting this into master
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
+  #rules:
+  #  - if: '$CI_COMMIT_BRANCH == "master"'
   script:
     #gitlab clones the repo into the same directory that you're in
     #check buildtool dependencies exist
@@ -53,9 +52,28 @@ build-deps:
     - javac -version
     - mvn --version
 
-    - cat ${DUMMY_XML}
-    - mvn package
+    # create a settings.xml file that moves the local maven repo, probably dont want that at user home of gitlab CI runner
+    - echo '<?xml version="1.0" encoding="UTF-8"?><settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">' > mavenGlobalSettings.xml
+    - echo '<localRepository>'$(pwd)'/.m2/repository</localRepository></settings>' >> mavenGlobalSettings.xml
 
+    - mvn package -q -gs mavenGlobalSettings.xml
+    
+    #it is unbelievably difficult to read the version from a pom file
+    - JDBC_VERSION=$(mvn -gs mavenGlobalSettings.xml help:evaluate -Dexpression=project.version -q -DforceStdout | tail -n 1)
+    - echo $JDBC_VERSION
+    - JAR_FILE=target/ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
+    # debug
+    - JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
+    #- JAR_DIR=v${JDBC_VERSION}
+    - mkdir $JAR_DIR
+    - cp $JAR_FILE $JAR_DIR
+    - mv $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
+    #- gpg --import ${JAR_SIGN_KEY}
+
+    #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
+
+    - rm -rf target
     - rm -rf protobuf-${PROTOC_VERSION}
     - rm -rf jdk-${JDK_VERSION}
     - rm -rf apache-maven-${MVN_VERSION}
+    - rm -rf .m2
