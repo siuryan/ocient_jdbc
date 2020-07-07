@@ -71,7 +71,9 @@ build-deps:
     #- JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
-    - scp -r $JAR_DIR user@ocient-archive:/home/user/www/ocientrepo/java/jdbc/
+    - ls /mnt/ocarchive1/www/ocientrepo/java/jdbc
+    - cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
+    - ls /mnt/ocarchive1/www/ocientrepo/java/jdbc
     # scp -i ${GITLAB_ARCHIVE_KEY} user@ocient-archive
     #- gpg --import ${JAR_SIGN_KEY}
 
