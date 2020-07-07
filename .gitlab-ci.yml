@@ -59,9 +59,25 @@ build-deps:
 
 
     - cat ${DUMMY_XML}
+    - echo ${DUMMY_XML}
     - mvn package -gs mavenGlobalSettings.xml
-    - ls .m2
+    
+    #it is unbelievably difficult to read the version from a pom file
+    - JDBC_VERSION=$(mvn -gs mavenGlobalSettings.xml help:evaluate -Dexpression=project.version -q -DforceStdout | tail -n 1)
+    - echo JDBC_VERSION
+    - JAR_FILE = ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
+    # take this out before merging
+    - JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
+    #- JAR_DIR=v${JDBC_VERSION}
+    - mkdir JAR_DIR
+    - cp $JAR_FILE $JAR_DIR
+    - scp -r $JAR_DIR user@ocient-archive:/home/user/www/ocientrepo/java/jdbc/
+    # scp -i ${GITLAB_ARCHIVE_KEY} user@ocient-archive
+    #- gpg --import ${JAR_SIGN_KEY}
 
+    #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
+
+    - rm -rf target
     - rm -rf protobuf-${PROTOC_VERSION}
     - rm -rf jdk-${JDK_VERSION}
     - rm -rf apache-maven-${MVN_VERSION}
