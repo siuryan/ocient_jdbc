@@ -65,7 +65,7 @@ build-deps:
     #it is unbelievably difficult to read the version from a pom file
     - JDBC_VERSION=$(mvn -gs mavenGlobalSettings.xml help:evaluate -Dexpression=project.version -q -DforceStdout | tail -n 1)
     - echo $JDBC_VERSION
-    - JAR_FILE=ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
+    - JAR_FILE=target/ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
     # take this out before merging
     - JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
     #- JAR_DIR=v${JDBC_VERSION}
