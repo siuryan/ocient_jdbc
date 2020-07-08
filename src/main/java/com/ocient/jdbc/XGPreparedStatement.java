@@ -29,19 +29,19 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 	private final String sql;
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final boolean force,
-			final boolean oneShotForce) {
+			final boolean oneShotForce) throws SQLException {
 		super(conn, force, oneShotForce);
 		this.sql = sql;
 	}
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final int arg1, final int arg2,
-			final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException {
+			final boolean force, final boolean oneShotForce) throws SQLException {
 		super(conn, arg1, arg2, force, oneShotForce);
 		this.sql = sql;
 	}
 
 	public XGPreparedStatement(final XGConnection conn, final String sql, final int arg1, final int arg2,
-			final int arg3, final boolean force, final boolean oneShotForce) throws SQLFeatureNotSupportedException {
+			final int arg3, final boolean force, final boolean oneShotForce) throws SQLException {
 		super(conn, arg1, arg2, arg3, force, oneShotForce);
 		this.sql = sql;
 	}
