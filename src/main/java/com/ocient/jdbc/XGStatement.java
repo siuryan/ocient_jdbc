@@ -126,7 +126,7 @@ public class XGStatement implements Statement {
 
 	private boolean oneShotForce;
 
-	public XGStatement(final XGConnection conn, final boolean force, final boolean oneShotForce) {
+	public XGStatement(final XGConnection conn, final boolean force, final boolean oneShotForce) throws SQLException {
 		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;
@@ -134,7 +134,7 @@ public class XGStatement implements Statement {
 	}
 
 	public XGStatement(final XGConnection conn, final int type, final int concur, final boolean force,
-			final boolean oneShotForce) throws SQLFeatureNotSupportedException {
+			final boolean oneShotForce) throws SQLException {
 		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;
@@ -151,7 +151,7 @@ public class XGStatement implements Statement {
 	}
 
 	public XGStatement(final XGConnection conn, final int type, final int concur, final int hold, final boolean force,
-			final boolean oneShotForce) throws SQLFeatureNotSupportedException {
+			final boolean oneShotForce) throws SQLException {
 		this.conn = conn.copy();
 		this.force = force;
 		this.oneShotForce = oneShotForce;

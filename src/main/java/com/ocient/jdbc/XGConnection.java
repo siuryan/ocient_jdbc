@@ -199,7 +199,7 @@ public class XGConnection implements Connection {
 	}
 
 	@SuppressWarnings("unchecked")
-	public XGConnection copy() {
+	public XGConnection copy() throws SQLException{
 		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, version, force);
 		try {
 			retval.connected = false;
@@ -212,12 +212,13 @@ public class XGConnection implements Connection {
 			retval.reconnect();
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
-					String.format("Copying the connection for a new statement failed with exception %s with message %",
+					String.format("Copying the connection for a new statement failed with exception %s with message %s",
 							e.toString(), e.getMessage()));
 			try {
 				retval.close();
 			} catch (Exception f) {
 			}
+			throw new SQLException(e);
 		}
 
 		return retval;
@@ -1323,8 +1324,7 @@ public class XGConnection implements Connection {
 		if (retVal != null) {
 			throw retVal;
 		}
-		
-		throw new IOException();
+		throw new IOException("Failed to reconnect.");
 	}
 
 	/*
