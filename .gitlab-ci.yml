@@ -4,10 +4,10 @@ stages:
 build-deps:
   stage: build-jar
   tags:
-    #gitlab run on a shared runner without this and you lose network access
+    #gitlab runs on a shared runner without this and you lose network access
     - lightweight
-  #rules:
-  #  - if: '$CI_COMMIT_BRANCH == "master"'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
   script:
     #gitlab clones the repo into the same directory that you're in
     #check buildtool dependencies exist
@@ -63,8 +63,8 @@ build-deps:
     - echo $JDBC_VERSION
     - JAR_FILE=target/ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
     # debug
-    - JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
-    #- JAR_DIR=v${JDBC_VERSION}
+    #- JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
+    - JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
     - mv $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
