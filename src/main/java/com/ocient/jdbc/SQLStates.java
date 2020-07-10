@@ -180,11 +180,16 @@ public class SQLStates {
 
 	// table related issues
 	private static int TABLE_NOT_FOUND_CODE = -600;
+	private static int CONNECTION_ALREADY_EXISTS_CODE = -607;
+	private static int CONNECTION_NOT_FOUND_CODE = -608;
 	private static int TRANSLATION_NOT_FOUND_CODE = -609;
 	private static int TRANSLATION_ALREADY_EXISTS_CODE = -610;
 
 	// security related issues
 	private static int READ_TABLE_AUTH_FAILURE = -700;
+	private static int CREATE_CONNECTION_AUTH_FAILURE = -713;
+	private static int DROP_CONNECTION_AUTH_FAILURE = -714;
+	private static int NOT_AUTHORIZED_CODE = -715;
 
 	// MLMODEL related issues
 	private static int ML_MODEL_NOT_FOUND_CODE = -800;
@@ -207,6 +212,13 @@ public class SQLStates {
 	private static int SEGMENT_NOT_AVAILABLE_CODE = -907;
 	private static int SYSTEM_INITIALIZING_CODE = -908;
 	private static int OUT_OF_TEMP_DISK_SPACE_CODE = -909;
+
+	// task related issues
+	private static int CREATE_TASK_FAILURE_CODE = -1001;
+	private static int TASK_ALREADY_IN_PROGRESS_ERROR_CODE = -1002;
+
+	// node related issues
+	private static int NODE_NOT_FOUND_CODE = -1101;
 
 	private static int UNDEFINED_EXCEPTION_CODE = -9999; // for internal-use only
 
@@ -290,6 +302,10 @@ public class SQLStates {
 			SELECT_AFTER_AGG_CODE);
 	public static SQLStates TABLE_NOT_FOUND = new SQLStates("The referenced table does not exist",
 			OBJECT_NOT_FOUND_STATE, TABLE_NOT_FOUND_CODE);
+	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection does not exist",
+			DUPLICATE_OBJECT, CONNECTION_ALREADY_EXISTS_CODE);
+	public static SQLStates CONNECTION_NOT_FOUND = new SQLStates("The referenced connection does not exist",
+			OBJECT_NOT_FOUND_STATE, CONNECTION_NOT_FOUND_CODE);
 	public static SQLStates TRANSLATION_NOT_FOUND = new SQLStates("The referenced translation does not exist",
 			OBJECT_NOT_FOUND_STATE, TRANSLATION_NOT_FOUND_CODE);
 	public static SQLStates TRANSLATION_ALREADY_EXISTS = new SQLStates("The referenced translation does not exist",
@@ -311,6 +327,12 @@ public class SQLStates {
 			SQL_NOT_VALID_IN_CONTEXT_CODE);
 	public static SQLStates NO_READ_AUTH = new SQLStates("The userid does not have read authority on a required table",
 			AUTH_FAILURE, READ_TABLE_AUTH_FAILURE);
+	public static SQLStates NO_CREATE_CONNECTION_AUTH = new SQLStates("The user does not have the authority to create a connection.",
+			AUTH_FAILURE, CREATE_CONNECTION_AUTH_FAILURE);
+	public static SQLStates CREATE_TASK_FAILURE = new SQLStates("Failed to create task",
+			SYSTEM_ERROR, CREATE_TASK_FAILURE_CODE);
+	public static SQLStates NO_DROP_CONNECTION_AUTH = new SQLStates("The user does not have the authority to drop the connection", 
+			AUTH_FAILURE, DROP_CONNECTION_AUTH_FAILURE);
 	public static SQLStates NAKED_INTERVAL_TYPE = new SQLStates(
 			"If the result of an expression is a time interval type, it must be cast to an integral type",
 			BAD_DATA_TYPE, NAKED_INTERVAL_TYPE_CODE);
@@ -475,6 +497,12 @@ public class SQLStates {
 			CASE_WITHIN_CASE_CODE);
 	public static SQLStates OUT_OF_TEMP_DISK_SPACE = new SQLStates("Out of temporary disk space",
 			STORAGE_OR_DATABASE_RESOURCE_NOT_AVAILABLE_STATE, OUT_OF_TEMP_DISK_SPACE_CODE);
+	public static SQLStates NOT_AUTHORIZED = new SQLStates("Not authorized to take this action", 
+			AUTH_FAILURE, NOT_AUTHORIZED_CODE);
+	public static SQLStates NODE_NOT_FOUND = new SQLStates("Node not found",
+			OBJECT_NOT_FOUND_STATE, NODE_NOT_FOUND_CODE);
+	public static SQLStates TASK_ALREADY_IN_PROGRESS = new SQLStates("Task already in progress",
+			DUPLICATE_OBJECT, TASK_ALREADY_IN_PROGRESS_ERROR_CODE);
 
 	public static SQLException newGenericException(Exception e) {
 		String reason = e.getMessage();
