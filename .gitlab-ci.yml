@@ -6,8 +6,8 @@ build-deps:
   tags:
     #gitlab runs on a shared runner without this and you lose network access
     - lightweight
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+  #rules:
+    #- if: '$CI_COMMIT_BRANCH == "master"'
   script:
     #gitlab clones the repo into the same directory that you're in
     #check buildtool dependencies exist
@@ -67,7 +67,7 @@ build-deps:
     - JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
-    - cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
+    - sudo cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
     #- gpg --import ${JAR_SIGN_KEY}
 
     #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
