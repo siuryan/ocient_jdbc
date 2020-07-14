@@ -67,11 +67,12 @@ build-deps:
     - JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
-    - mv $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
+    - cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
     #- gpg --import ${JAR_SIGN_KEY}
 
     #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
 
+    - rm -rf $JAR_DIR
     - rm -rf target
     - rm -rf protobuf-${PROTOC_VERSION}
     - rm -rf jdk-${JDK_VERSION}
