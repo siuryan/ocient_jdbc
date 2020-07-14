@@ -61,11 +61,11 @@ public class XGResultSetMetaData implements ResultSetMetaData {
 		} else if (type.equals("LONG")) {
 			return "java.lang.Long";
 		} else if (type.equals("TIMESTAMP")) {
-			return "java.sql.Timestamp";
+			return "com.ocient.jdbc.XGTimestamp";
 		} else if (type.equals("TIME")) {
-			return "java.sql.Time";
+			return "com.ocient.jdbc.XGTime";
 		} else if (type.equals("DATE")) {
-			return "java.util.Date";
+			return "com.ocient.jdbc.XGDate";
 		} else if (type.equals("BOOLEAN")) {
 			return "java.lang.Boolean";
 		} else if (type.equals("DECIMAL")) {

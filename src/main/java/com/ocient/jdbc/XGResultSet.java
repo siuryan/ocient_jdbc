@@ -618,13 +618,18 @@ public class XGResultSet implements ResultSet {
 			wasNull = true;
 			return null;
 		}
+		
+		if (col instanceof XGTimestamp)
+		{
+			return new XGDate((XGTimestamp)col);
+		}
 
-		if (!(col instanceof Date)) {
+		if (!(col instanceof XGDate)) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (Date) col;
+		return (XGDate) col;
 	}
 
 	@Override
@@ -655,13 +660,18 @@ public class XGResultSet implements ResultSet {
 			wasNull = true;
 			return null;
 		}
+		
+		if (col instanceof XGTimestamp)
+		{
+			return new XGDate((XGTimestamp)col);
+		}
 
-		if (!(col instanceof Date)) {
+		if (!(col instanceof XGDate)) {
 			LOGGER.log(Level.WARNING, "getDate() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (Date) col;
+		return (XGDate) col;
 	}
 
 	@Override
@@ -1492,12 +1502,12 @@ public class XGResultSet implements ResultSet {
 			return null;
 		}
 
-		if (!(col instanceof Time)) {
+		if (!(col instanceof XGTime)) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return (Time) col;
+		return (XGTime) col;
 	}
 
 	@Override
@@ -1529,12 +1539,12 @@ public class XGResultSet implements ResultSet {
 			return null;
 		}
 
-		if (!(col instanceof Time)) {
+		if (!(col instanceof XGTime)) {
 			LOGGER.log(Level.WARNING, "getTime() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Time(cal.getTimeZone().getRawOffset() + ((Time) col).getTime());
+		return ((XGTime)col).addMs(cal.getTimeZone().getRawOffset());
 	}
 
 	@Override
@@ -1595,13 +1605,18 @@ public class XGResultSet implements ResultSet {
 			wasNull = true;
 			return null;
 		}
+		
+		if (col instanceof XGTimestamp)
+		{
+			return (XGTimestamp)col;
+		}
 
-		if (!(col instanceof Date)) {
+		if (!(col instanceof XGDate)) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Timestamp(((Date) col).getTime());
+		return new XGTimestamp((XGDate)col);
 	}
 
 	@Override
@@ -1632,13 +1647,18 @@ public class XGResultSet implements ResultSet {
 			wasNull = true;
 			return null;
 		}
+		
+		if (col instanceof XGTimestamp)
+		{
+			return ((XGTimestamp)col).addMs(cal.getTimeZone().getOffset(((XGTimestamp) col).getTime()));
+		}
 
-		if (!(col instanceof Date)) {
+		if (!(col instanceof XGDate)) {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing INVALID_DATA_TYPE_CONVERSION");
 			throw SQLStates.INVALID_DATA_TYPE_CONVERSION.clone();
 		}
 
-		return new Timestamp(cal.getTimeZone().getOffset(((Date) col).getTime()) + ((Date) col).getTime());
+		return new XGTimestamp((XGDate)col).addMs(cal.getTimeZone().getOffset(((XGDate) col).getTime()));
 	}
 
 	@Override
@@ -1987,7 +2007,7 @@ public class XGResultSet implements ResultSet {
 					offset[0] += stringLength;
 				} else if (t == 6) // Timestamp
 				{
-					retval.add(new Date(bb.getLong(offset[0])), i);
+					retval.add(new XGTimestamp(bb.getLong(offset[0])), i);
 					offset[0] += 8;
 				} else if (t == 7) // Null
 				{
@@ -2015,7 +2035,7 @@ public class XGResultSet implements ResultSet {
 					offset[0] += 2;
 				} else if (t == 12) // TIME
 				{
-					retval.add(new Time(bb.getLong(offset[0])), i);
+					retval.add(new XGTime(bb.getLong(offset[0])), i);
 					offset[0] += 8;
 				} else if (t == 13) // DECIMAL
 				{
@@ -2052,7 +2072,7 @@ public class XGResultSet implements ResultSet {
 					retval.add(InetAddress.getByAddress(bytes), i);
 				} else if (t == 19) // Date
 				{
-					retval.add(new Date(bb.getLong(offset[0])), i);
+					retval.add(new XGDate(bb.getLong(offset[0])), i);
 					offset[0] += 8;
 				} else {
 					throw SQLStates.INVALID_COLUMN_TYPE.clone();
@@ -2116,7 +2136,7 @@ public class XGResultSet implements ResultSet {
 							offset += stringLength;
 						} else if (type == 6) // Timestamp
 						{
-							alo.add(new Date(bb.getLong(offset)));
+							alo.add(new XGTimestamp(bb.getLong(offset)));
 							offset += 8;
 						} else if (type == 7) // Null
 						{
@@ -2144,7 +2164,7 @@ public class XGResultSet implements ResultSet {
 							offset += 2;
 						} else if (type == 12) // TIME
 						{
-							alo.add(new Time(bb.getLong(offset)));
+							alo.add(new XGTime(bb.getLong(offset)));
 							offset += 8;
 						} else if (type == 13) // DECIMAL
 						{
@@ -2190,7 +2210,7 @@ public class XGResultSet implements ResultSet {
 							alo.add(InetAddress.getByAddress(bytes));
 						} else if (type == 19) // Date
 						{
-							alo.add(new Date(bb.getLong(offset)));
+							alo.add(new XGDate(bb.getLong(offset)));
 							offset += 8;
 						} else {
 							throw SQLStates.INVALID_COLUMN_TYPE.clone();

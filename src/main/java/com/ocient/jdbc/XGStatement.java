@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.logging.Logger;
@@ -1385,6 +1386,9 @@ public class XGStatement implements Statement {
 								final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 								final TimeZone utc = TimeZone.getTimeZone("UTC");
 								format.setTimeZone(utc);
+								GregorianCalendar cal = new GregorianCalendar();
+								cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
+								format.setCalendar(cal);
 								out += ("TIMESTAMP('" + format.format((Timestamp) parm) + "')");
 							} else if (parm instanceof Boolean) {
 								// System.out.println("inside BOOLEAN set param");
@@ -1395,11 +1399,17 @@ public class XGStatement implements Statement {
 								final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 								final TimeZone utc = TimeZone.getTimeZone("UTC");
 								format.setTimeZone(utc);
+								GregorianCalendar cal = new GregorianCalendar();
+								cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
+								format.setCalendar(cal);
 								out += ("DATE('" + format.format((Date) parm) + "')");
 							} else if (parm instanceof Time) {
 								final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss.SSS");
 								final TimeZone utc = TimeZone.getTimeZone("UTC");
 								format.setTimeZone(utc);
+								GregorianCalendar cal = new GregorianCalendar();
+								cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
+								format.setCalendar(cal);
 								out += ("TIME('" + format.format((Time) parm) + "')");
 							} else if (parm instanceof Byte) {
 								out += ("BYTE(" + parm + ")");

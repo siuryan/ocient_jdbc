@@ -345,21 +345,6 @@ public class XGArray implements java.sql.Array {
 					str.append("NULL");
 				} else if (getBaseType() == java.sql.Types.ARRAY) {
 					str.append(((XGArray) o).toString());
-				} else if (getBaseType() == java.sql.Types.TIME) {
-					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
-				} else if (getBaseType() == java.sql.Types.TIMESTAMP) {
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
-				} else if (getBaseType() == java.sql.Types.DATE) {
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
 				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
 					str.append("0x" + bytesToHex((byte[]) o));
 				} else {
@@ -374,21 +359,6 @@ public class XGArray implements java.sql.Array {
 					str.append("NULL");
 				} else if (getBaseType() == java.sql.Types.ARRAY) {
 					str.append(((XGArray) o).toString());
-				} else if (getBaseType() == java.sql.Types.TIME) {
-					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
-				} else if (getBaseType() == java.sql.Types.TIMESTAMP) {
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
-				} else if (getBaseType() == java.sql.Types.DATE) {
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-					final TimeZone utc = TimeZone.getTimeZone("UTC");
-					sdf.setTimeZone(utc);
-					str.append(sdf.format(o));
 				} else if (getBaseType() == java.sql.Types.BINARY || getBaseType() == java.sql.Types.VARBINARY) {
 					str.append("0x" + bytesToHex((byte[]) o));
 				} else {
