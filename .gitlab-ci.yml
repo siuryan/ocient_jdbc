@@ -67,6 +67,7 @@ build-deps:
     #- JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
+    - sudo chmod -R 777 $JAR_DIR
     - sudo cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
     #- gpg --import ${JAR_SIGN_KEY}
 
