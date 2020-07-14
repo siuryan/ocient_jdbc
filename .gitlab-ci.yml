@@ -63,8 +63,8 @@ build-deps:
     - echo $JDBC_VERSION
     - JAR_FILE=target/ocient-jdbc4-${JDBC_VERSION}-jar-with-dependencies.jar
     # debug
-    #- JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
-    - JAR_DIR=v${JDBC_VERSION}
+    - JAR_DIR=v${JDBC_VERSION}-TEST-DEPLOY
+    #- JAR_DIR=v${JDBC_VERSION}
     - mkdir $JAR_DIR
     - cp $JAR_FILE $JAR_DIR
     - sudo cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
