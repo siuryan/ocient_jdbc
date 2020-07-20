@@ -182,18 +182,25 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-gpg-plugin</artifactId>
-				<version>1.6</version>
+        		<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jarsigner-plugin</artifactId>
+        		<version>3.0.0</version>
 				<executions>
 					<execution>
 						<id>sign-artifacts</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>sign</goal>
+							<goal>verify</goal>
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<keystore>${keystorePath}</keystore>
+					<alias>${signAlias}</alias>
+					<storepass>${keystorePassword}</storepass>
+					<keypass></keypass>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
