@@ -44,7 +44,15 @@ message FilterClause
         OP_LIKE = 7;
         OP_NOT_LIKE = 8;
         OP_FALSE = 9;
-        OP_TRUE = 10;
+		OP_TRUE = 10;
+		OP_CONTAINS = 11;
+		OP_NOT_CONTAINS = 12;
+		OP_CONTAINED = 13;
+		OP_NOT_CONTAINED = 14;
+		OP_OVERLAP = 15;
+		OP_NOT_OVERLAP = 16;
+		OP_SIMILAR_TO = 17;
+		OP_NOT_SIMILAR_TO = 18;
     }
 
 	//Either a column name or a string representation of a literal

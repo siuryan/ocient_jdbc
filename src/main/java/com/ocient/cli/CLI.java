@@ -53,6 +53,7 @@ import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
 import com.google.common.collect.TreeMultimap;
 import com.google.protobuf.util.JsonFormat;
 import com.ocient.jdbc.DataEndMarker;
@@ -98,8 +99,16 @@ public class CLI {
 			if (cons == null) {
 				echo = true;
 			}
-			terminal = TerminalBuilder.builder().system(true).build();
-			reader = LineReaderBuilder.builder().terminal(terminal).build();
+			DefaultParser parser = new DefaultParser();
+			//Prevents \ from disappearing and \\ from converting to \.  
+			parser.setEscapeChars(null);
+			terminal = TerminalBuilder.builder()
+				.system(true)
+				.build();
+			reader = LineReaderBuilder.builder()
+				.parser(parser)
+				.terminal(terminal)
+				.build();
 		} catch (final IOException e) {
 			System.out.println("Error setting up console");
 			return;

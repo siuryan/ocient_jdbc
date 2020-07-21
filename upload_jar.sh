@@ -12,4 +12,5 @@ cd target
 rm -rf $VERSION_DIR
 mkdir $VERSION_DIR
 cp ocient-jdbc4-$VERSION-jar-with-dependencies.jar $VERSION_DIR
+sudo chmod -R 777 $VERSION_DIR
 scp -r $VERSION_DIR user@ocient-archive:/home/user/www/ocientrepo/java/jdbc/
