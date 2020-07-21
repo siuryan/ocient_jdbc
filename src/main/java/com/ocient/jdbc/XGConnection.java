@@ -132,7 +132,8 @@ public class XGConnection implements Connection {
 	protected XGResultSet rs;
 	protected int portNum;
 	protected ArrayList<SQLWarning> warnings = new ArrayList<>();
-	protected String url;
+	protected final String url;
+	protected String ip;
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
@@ -158,6 +159,7 @@ public class XGConnection implements Connection {
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
 			final String database, final String version, final String force) throws Exception {
+		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
 		if (force.equals("true")) {
 			this.force = true;
 		}
@@ -209,6 +211,7 @@ public class XGConnection implements Connection {
 			retval.cmdcomps = (ArrayList<String>) cmdcomps.clone();
 			retval.secondaryInterfaces = (ArrayList<ArrayList<String>>)secondaryInterfaces.clone();
 			retval.secondaryIndex = secondaryIndex;
+			retval.ip = ip;
 			retval.reconnect();
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
@@ -468,7 +471,7 @@ public class XGConnection implements Connection {
 				}
 				
 				//Figure out what secondary index it is
-				String combined = this.url + ":" + this.portNum;
+				String combined = ip + ":" + this.portNum;
 				for (ArrayList<String> list : secondaryInterfaces)
 				{
 					int index = 0;
@@ -1085,6 +1088,7 @@ public class XGConnection implements Connection {
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
 		LOGGER.log(Level.INFO, "Enterred reconnect()");
+		
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {
@@ -1111,7 +1115,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.url, this.portNum));
+				sock.connect(new InetSocketAddress(this.ip, this.portNum));
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1180,7 +1184,7 @@ public class XGConnection implements Connection {
 				final int port = Integer.parseInt(tokens.nextToken());
 
 				// Try to connect to this one
-				this.url = host;
+				this.ip = host;
 
 				sock = null;
 				try {
@@ -1254,7 +1258,7 @@ public class XGConnection implements Connection {
 				final int port = Integer.parseInt(tokens.nextToken());
 	
 				// Try to connect to this one
-				this.url = host;
+				this.ip = host;
 	
 				sock = null;
 				try {
@@ -1360,18 +1364,18 @@ public class XGConnection implements Connection {
 			if (listIndex < secondaryInterfaces.size())
 			{
 				final StringTokenizer tokens = new StringTokenizer(secondaryInterfaces.get(listIndex).get(secondaryIndex), ":", false);
-				this.url = tokens.nextToken();
+				this.ip = tokens.nextToken();
 				this.portNum = Integer.parseInt(tokens.nextToken());
 			}
 			else
 			{
-				this.url = host;
+				this.ip = host;
 				this.portNum = port;
 			}
 		}
 		else
 		{
-			this.url = host;
+			this.ip = host;
 			this.portNum = port;
 		}
 
@@ -1380,7 +1384,7 @@ public class XGConnection implements Connection {
 			sock = new Socket();
 			sock.setReceiveBufferSize(4194304);
 			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.url, this.portNum));
+			sock.connect(new InetSocketAddress(this.ip, this.portNum));
 		} catch (final Exception e) {
 			try {
 				sock.close();
