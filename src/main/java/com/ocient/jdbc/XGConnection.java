@@ -1347,6 +1347,8 @@ public class XGConnection implements Connection {
 		}
 		
 		//Figure out the correct interface to use
+		boolean tryAllInList = false;
+		int listToTry = 0;
 		if (secondaryIndex != -1)
 		{
 			String combined = host + ":" + port;
@@ -1375,63 +1377,149 @@ public class XGConnection implements Connection {
 		}
 		else
 		{
-			this.ip = host;
-			this.portNum = port;
+			String combined = host + ":" + port;
+			int listIndex = 0;
+			for (ArrayList<String> list : secondaryInterfaces)
+			{
+				if (list.get(0).equals(combined))
+				{
+					break;
+				}
+				
+				listIndex++;
+			}
+			
+			if (listIndex < secondaryInterfaces.size())
+			{
+				tryAllInList = true;
+				listToTry = listIndex;
+			}
+			else
+			{
+				this.ip = host;
+				this.portNum = port;
+			}
 		}
 
-		sock = null;
-		try {
-			sock = new Socket();
-			sock.setReceiveBufferSize(4194304);
-			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.ip, this.portNum));
-		} catch (final Exception e) {
+		if (!tryAllInList)
+		{
+			sock = null;
 			try {
-				sock.close();
-			} catch (final IOException f) {
+				sock = new Socket();
+				sock.setReceiveBufferSize(4194304);
+				sock.setSendBufferSize(4194304);
+				sock.connect(new InetSocketAddress(this.ip, this.portNum));
+			} catch (final Exception e) {
+				try {
+					sock.close();
+				} catch (final IOException f) {
+				}
+	
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
+				reconnect();
+				return;
 			}
-
-			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
-			reconnect();
-			return;
+	
+			try {
+				in = new BufferedInputStream(sock.getInputStream());
+				out = new BufferedOutputStream(sock.getOutputStream());
+				clientHandshake(user, pwd, database);
+				oneShotForce = true;
+				if (!setSchema.equals("")) {
+					setSchema(setSchema);
+				}
+	
+				if (setPso == -1) {
+					// We have to turn it off
+					setPSO(false);
+				} else if (setPso > 0) {
+					// Set non-default threshold
+					setPSO(setPso);
+				}
+	
+				if (setPso == -1) {
+					// We have to turn it off
+					setPSO(false);
+				} else if (setPso > 0) {
+					// Set non-default threshold
+					setPSO(setPso);
+				}
+	
+				return;
+			} catch (final Exception e) {
+				try {
+					in.close();
+					out.close();
+					sock.close();
+				} catch (final IOException f) {
+				}
+	
+				reconnect();
+			}
 		}
-
-		try {
-			in = new BufferedInputStream(sock.getInputStream());
-			out = new BufferedOutputStream(sock.getOutputStream());
-			clientHandshake(user, pwd, database);
-			oneShotForce = true;
-			if (!setSchema.equals("")) {
-				setSchema(setSchema);
+		else
+		{
+			for (String cmdcomp : secondaryInterfaces.get(listToTry))
+			{
+				final StringTokenizer tokens = new StringTokenizer(cmdcomp, ":", false);
+				this.ip = tokens.nextToken();
+				this.portNum = Integer.parseInt(tokens.nextToken());
+				
+				sock = null;
+				try {
+					sock = new Socket();
+					sock.setReceiveBufferSize(4194304);
+					sock.setSendBufferSize(4194304);
+					sock.connect(new InetSocketAddress(this.ip, this.portNum));
+				} catch (final Exception e) {
+					try {
+						sock.close();
+					} catch (final IOException f) {
+					}
+		
+					LOGGER.log(Level.WARNING,
+							String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
+					continue;
+				}
+		
+				try {
+					in = new BufferedInputStream(sock.getInputStream());
+					out = new BufferedOutputStream(sock.getOutputStream());
+					clientHandshake(user, pwd, database);
+					oneShotForce = true;
+					if (!setSchema.equals("")) {
+						setSchema(setSchema);
+					}
+		
+					if (setPso == -1) {
+						// We have to turn it off
+						setPSO(false);
+					} else if (setPso > 0) {
+						// Set non-default threshold
+						setPSO(setPso);
+					}
+		
+					if (setPso == -1) {
+						// We have to turn it off
+						setPSO(false);
+					} else if (setPso > 0) {
+						// Set non-default threshold
+						setPSO(setPso);
+					}
+		
+					return;
+				} catch (final Exception e) {
+					try {
+						in.close();
+						out.close();
+						sock.close();
+					} catch (final IOException f) {
+					}
+				}
 			}
-
-			if (setPso == -1) {
-				// We have to turn it off
-				setPSO(false);
-			} else if (setPso > 0) {
-				// Set non-default threshold
-				setPSO(setPso);
-			}
-
-			if (setPso == -1) {
-				// We have to turn it off
-				setPSO(false);
-			} else if (setPso > 0) {
-				// Set non-default threshold
-				setPSO(setPso);
-			}
-
-			return;
-		} catch (final Exception e) {
-			try {
-				in.close();
-				out.close();
-				sock.close();
-			} catch (final IOException f) {
-			}
-
-			reconnect();
+			
+			reconnect(); //Everything else failed, so just call reconnect()
 		}
 	}
 
