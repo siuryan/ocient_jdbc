@@ -69,8 +69,13 @@ build-deps:
     - cp $JAR_FILE $JAR_DIR
     - sudo chmod -R 777 $JAR_DIR
     - sudo cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
-    #- gpg --import ${JAR_SIGN_KEY}
 
+    # keytool/jarsigner are horrible and require a lot of setup
+    # convert cert/keypair to  pkcs12
+    #- openssl pkcs12 -export -in certificate.crt -inkey privateKey.key -out keystore.p12 -name coolCert -CAfile /etc/openssl/certs/ca-bundle.crt -caname root
+    # convert to javas lame keystore
+    #- keytool -importkeystore -deststorepass <> -destkeypass <> -destkeystore keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass test -alias coolCert
+    
     #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
 
     - rm -rf $JAR_DIR
