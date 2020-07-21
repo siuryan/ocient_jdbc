@@ -87,6 +87,7 @@
 				<version>1.6.8</version>
 				<extensions>true</extensions>
 				<configuration>
+					<!--Additional builds settings configured in settings.xml at https://gitlab.com/ocient/ocient_jdbc/-/settings/ci_cd-->
 					<serverId>ossrh</serverId>
 					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 					<autoReleaseAfterClose>false</autoReleaseAfterClose>
@@ -181,6 +182,7 @@
 					</archive>
 				</configuration>
 			</plugin>
+			<!-- Note this signing should appear before the gpg signing-->
 			<plugin>
         		<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jarsigner-plugin</artifactId>
@@ -196,10 +198,27 @@
 					</execution>
 				</executions>
 				<configuration>
+					<!--Additional builds settings configured in settings.xml at https://gitlab.com/ocient/ocient_jdbc/-/settings/ci_cd-->
 					<keystore>${keystorePath}</keystore>
 					<alias>${signAlias}</alias>
-					<storepass>${keystorePassword}</storepass>
-					<keypass></keypass>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!--Additional builds settings configured in settings.xml at https://gitlab.com/ocient/ocient_jdbc/-/settings/ci_cd-->
+					<keyname>Ocient</keyname>
 				</configuration>
 			</plugin>
 		</plugins>

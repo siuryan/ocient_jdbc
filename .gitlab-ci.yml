@@ -6,6 +6,7 @@ build-deps:
   tags:
     #gitlab runs on a shared runner without this and you lose network access
     - lightweight
+    - gpg-signing
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
   script:
@@ -19,6 +20,11 @@ build-deps:
     - which make 
     - which g++ 
     - which unzip
+
+    # sanity check if required files exist
+    - gpg --list-secret-keys Ocient
+    - test -f /home/gitlab-runner/codesignstore.jks
+    - test -f ${DEPLOY_SETTINGS_XML}
 
     #set versions
     - PROTOC_VERSION=3.5.1
@@ -56,7 +62,7 @@ build-deps:
     - echo '<?xml version="1.0" encoding="UTF-8"?><settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">' > mavenGlobalSettings.xml
     - echo '<localRepository>'$(pwd)'/.m2/repository</localRepository></settings>' >> mavenGlobalSettings.xml
 
-    - mvn package -q -gs mavenGlobalSettings.xml
+    - mvn verify -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} -Djarsigner.storepass=$(cat /home/gitlab-runner/codesignstore.pwd)
     
     #it is unbelievably difficult to read the version from a pom file
     - JDBC_VERSION=$(mvn -gs mavenGlobalSettings.xml help:evaluate -Dexpression=project.version -q -DforceStdout | tail -n 1)
@@ -70,13 +76,8 @@ build-deps:
     - sudo chmod -R 777 $JAR_DIR
     - sudo cp -r $JAR_DIR /mnt/ocarchive1/www/ocientrepo/java/jdbc/
 
-    # keytool/jarsigner are horrible and require a lot of setup
-    # convert cert/keypair to  pkcs12
-    #- openssl pkcs12 -export -in certificate.crt -inkey privateKey.key -out keystore.p12 -name coolCert -CAfile /etc/openssl/certs/ca-bundle.crt -caname root
-    # convert to javas lame keystore
-    #- keytool -importkeystore -deststorepass <> -destkeypass <> -destkeystore keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass test -alias coolCert
-    
-    #- mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} 
+    #Separate this from verify in case deploy fails for some reason
+    - mvn deploy -gs mavenGlobalSettings.xml -s ${DEPLOY_SETTINGS_XML} -Djarsigner.storepass=$(cat /home/gitlab-runner/codesignstore.pwd)
 
     - rm -rf $JAR_DIR
     - rm -rf target
@@ -84,3 +85,4 @@ build-deps:
     - rm -rf jdk-${JDK_VERSION}
     - rm -rf apache-maven-${MVN_VERSION}
     - rm -rf .m2
+    - rm mavenGlobalSettings.xml
