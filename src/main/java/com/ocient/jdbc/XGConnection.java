@@ -132,7 +132,8 @@ public class XGConnection implements Connection {
 	protected XGResultSet rs;
 	protected int portNum;
 	protected ArrayList<SQLWarning> warnings = new ArrayList<>();
-	protected String url;
+	protected final String url;
+	protected String ip;
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
@@ -158,6 +159,7 @@ public class XGConnection implements Connection {
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
 			final String database, final String version, final String force) throws Exception {
+		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
 		if (force.equals("true")) {
 			this.force = true;
 		}
@@ -209,6 +211,7 @@ public class XGConnection implements Connection {
 			retval.cmdcomps = (ArrayList<String>) cmdcomps.clone();
 			retval.secondaryInterfaces = (ArrayList<ArrayList<String>>)secondaryInterfaces.clone();
 			retval.secondaryIndex = secondaryIndex;
+			retval.ip = ip;
 			retval.reconnect();
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
@@ -468,7 +471,7 @@ public class XGConnection implements Connection {
 				}
 				
 				//Figure out what secondary index it is
-				String combined = this.url + ":" + this.portNum;
+				String combined = ip + ":" + this.portNum;
 				for (ArrayList<String> list : secondaryInterfaces)
 				{
 					int index = 0;
@@ -1085,6 +1088,7 @@ public class XGConnection implements Connection {
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
 		LOGGER.log(Level.INFO, "Enterred reconnect()");
+		
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {
@@ -1111,7 +1115,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.url, this.portNum));
+				sock.connect(new InetSocketAddress(this.ip, this.portNum));
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1180,7 +1184,7 @@ public class XGConnection implements Connection {
 				final int port = Integer.parseInt(tokens.nextToken());
 
 				// Try to connect to this one
-				this.url = host;
+				this.ip = host;
 
 				sock = null;
 				try {
@@ -1254,7 +1258,7 @@ public class XGConnection implements Connection {
 				final int port = Integer.parseInt(tokens.nextToken());
 	
 				// Try to connect to this one
-				this.url = host;
+				this.ip = host;
 	
 				sock = null;
 				try {
@@ -1343,6 +1347,8 @@ public class XGConnection implements Connection {
 		}
 		
 		//Figure out the correct interface to use
+		boolean tryAllInList = false;
+		int listToTry = 0;
 		if (secondaryIndex != -1)
 		{
 			String combined = host + ":" + port;
@@ -1360,74 +1366,160 @@ public class XGConnection implements Connection {
 			if (listIndex < secondaryInterfaces.size())
 			{
 				final StringTokenizer tokens = new StringTokenizer(secondaryInterfaces.get(listIndex).get(secondaryIndex), ":", false);
-				this.url = tokens.nextToken();
+				this.ip = tokens.nextToken();
 				this.portNum = Integer.parseInt(tokens.nextToken());
 			}
 			else
 			{
-				this.url = host;
+				this.ip = host;
 				this.portNum = port;
 			}
 		}
 		else
 		{
-			this.url = host;
-			this.portNum = port;
+			String combined = host + ":" + port;
+			int listIndex = 0;
+			for (ArrayList<String> list : secondaryInterfaces)
+			{
+				if (list.get(0).equals(combined))
+				{
+					break;
+				}
+				
+				listIndex++;
+			}
+			
+			if (listIndex < secondaryInterfaces.size())
+			{
+				tryAllInList = true;
+				listToTry = listIndex;
+			}
+			else
+			{
+				this.ip = host;
+				this.portNum = port;
+			}
 		}
 
-		sock = null;
-		try {
-			sock = new Socket();
-			sock.setReceiveBufferSize(4194304);
-			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.url, this.portNum));
-		} catch (final Exception e) {
+		if (!tryAllInList)
+		{
+			sock = null;
 			try {
-				sock.close();
-			} catch (final IOException f) {
+				sock = new Socket();
+				sock.setReceiveBufferSize(4194304);
+				sock.setSendBufferSize(4194304);
+				sock.connect(new InetSocketAddress(this.ip, this.portNum));
+			} catch (final Exception e) {
+				try {
+					sock.close();
+				} catch (final IOException f) {
+				}
+	
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
+				reconnect();
+				return;
 			}
-
-			LOGGER.log(Level.WARNING,
-					String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
-			reconnect();
-			return;
+	
+			try {
+				in = new BufferedInputStream(sock.getInputStream());
+				out = new BufferedOutputStream(sock.getOutputStream());
+				clientHandshake(user, pwd, database);
+				oneShotForce = true;
+				if (!setSchema.equals("")) {
+					setSchema(setSchema);
+				}
+	
+				if (setPso == -1) {
+					// We have to turn it off
+					setPSO(false);
+				} else if (setPso > 0) {
+					// Set non-default threshold
+					setPSO(setPso);
+				}
+	
+				if (setPso == -1) {
+					// We have to turn it off
+					setPSO(false);
+				} else if (setPso > 0) {
+					// Set non-default threshold
+					setPSO(setPso);
+				}
+	
+				return;
+			} catch (final Exception e) {
+				try {
+					in.close();
+					out.close();
+					sock.close();
+				} catch (final IOException f) {
+				}
+	
+				reconnect();
+			}
 		}
-
-		try {
-			in = new BufferedInputStream(sock.getInputStream());
-			out = new BufferedOutputStream(sock.getOutputStream());
-			clientHandshake(user, pwd, database);
-			oneShotForce = true;
-			if (!setSchema.equals("")) {
-				setSchema(setSchema);
+		else
+		{
+			for (String cmdcomp : secondaryInterfaces.get(listToTry))
+			{
+				final StringTokenizer tokens = new StringTokenizer(cmdcomp, ":", false);
+				this.ip = tokens.nextToken();
+				this.portNum = Integer.parseInt(tokens.nextToken());
+				
+				sock = null;
+				try {
+					sock = new Socket();
+					sock.setReceiveBufferSize(4194304);
+					sock.setSendBufferSize(4194304);
+					sock.connect(new InetSocketAddress(this.ip, this.portNum));
+				} catch (final Exception e) {
+					try {
+						sock.close();
+					} catch (final IOException f) {
+					}
+		
+					LOGGER.log(Level.WARNING,
+							String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
+					continue;
+				}
+		
+				try {
+					in = new BufferedInputStream(sock.getInputStream());
+					out = new BufferedOutputStream(sock.getOutputStream());
+					clientHandshake(user, pwd, database);
+					oneShotForce = true;
+					if (!setSchema.equals("")) {
+						setSchema(setSchema);
+					}
+		
+					if (setPso == -1) {
+						// We have to turn it off
+						setPSO(false);
+					} else if (setPso > 0) {
+						// Set non-default threshold
+						setPSO(setPso);
+					}
+		
+					if (setPso == -1) {
+						// We have to turn it off
+						setPSO(false);
+					} else if (setPso > 0) {
+						// Set non-default threshold
+						setPSO(setPso);
+					}
+		
+					return;
+				} catch (final Exception e) {
+					try {
+						in.close();
+						out.close();
+						sock.close();
+					} catch (final IOException f) {
+					}
+				}
 			}
-
-			if (setPso == -1) {
-				// We have to turn it off
-				setPSO(false);
-			} else if (setPso > 0) {
-				// Set non-default threshold
-				setPSO(setPso);
-			}
-
-			if (setPso == -1) {
-				// We have to turn it off
-				setPSO(false);
-			} else if (setPso > 0) {
-				// Set non-default threshold
-				setPSO(setPso);
-			}
-
-			return;
-		} catch (final Exception e) {
-			try {
-				in.close();
-				out.close();
-				sock.close();
-			} catch (final IOException f) {
-			}
-
-			reconnect();
+			
+			reconnect(); //Everything else failed, so just call reconnect()
 		}
 	}
 

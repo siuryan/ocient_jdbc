@@ -53,6 +53,7 @@ import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
 import com.google.common.collect.TreeMultimap;
 import com.google.protobuf.util.JsonFormat;
 import com.ocient.jdbc.DataEndMarker;
@@ -98,8 +99,16 @@ public class CLI {
 			if (cons == null) {
 				echo = true;
 			}
-			terminal = TerminalBuilder.builder().system(true).build();
-			reader = LineReaderBuilder.builder().terminal(terminal).build();
+			DefaultParser parser = new DefaultParser();
+			//Prevents \ from disappearing and \\ from converting to \.  
+			parser.setEscapeChars(null);
+			terminal = TerminalBuilder.builder()
+				.system(true)
+				.build();
+			reader = LineReaderBuilder.builder()
+				.parser(parser)
+				.terminal(terminal)
+				.build();
 		} catch (final IOException e) {
 			System.out.println("Error setting up console");
 			return;
@@ -253,8 +262,6 @@ public class CLI {
 				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")
 				|| startsWithIgnoreCase(cmd, "SET PSO")) {
 			update(cmd);
-		} else if (startsWithIgnoreCase(cmd, "LOAD INTO")) {
-			loadFromFiles(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST TABLES")) {
 			listTables(cmd, false);
 		} else if (startsWithIgnoreCase(cmd, "LIST SYSTEM TABLES")) {
@@ -344,8 +351,8 @@ public class CLI {
 	}
 
 	private static Pattern connectToSyntax = Pattern
-			.compile("connect to (?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up> user (" + userTk()
-					+ ") using (?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force> force)?", Pattern.CASE_INSENSITIVE);
+			.compile("connect\\s+to\\s+(?<preurl>jdbc:ocient://?)(?<hosts>.+?)(?<posturl>/.+?)(?<up>\\s+user\\s+(" + userTk()
+					+ ")\\s+using\\s+(?<q>\"?)(?<pwd>.+?)\\k<q>)?(?<force>\\s+force)?", Pattern.CASE_INSENSITIVE);
 
 	private static void connectTo(final String cmd) {
 		if (isConnected()) {
@@ -463,10 +470,10 @@ public class CLI {
 		}
 	}
 
-	private static Pattern listTablesSyntax = Pattern.compile("list tables(?<verbose> verbose)?",
+	private static Pattern listTablesSyntax = Pattern.compile("list\\s+tables(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
-	private static Pattern listSystemTablesSyntax = Pattern.compile("list system tables(?<verbose> verbose)?",
+	private static Pattern listSystemTablesSyntax = Pattern.compile("list\\s+system\\s+tables(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void listTables(final String cmd, boolean isSystemTables) {
@@ -573,7 +580,7 @@ public class CLI {
 		}
 	}
 
-	private static Pattern listViewsSyntax = Pattern.compile("list views(?<verbose> verbose)?",
+	private static Pattern listViewsSyntax = Pattern.compile("list\\s+views(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void listViews(final String cmd) {
@@ -633,7 +640,7 @@ public class CLI {
 	}
 
 	private static Pattern describeTableSyntax = Pattern.compile(
-			"describe( table )?((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose> verbose)?",
+			"describe(\\s+table\\s+)?((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void describeTable(final String cmd) {
@@ -714,7 +721,7 @@ public class CLI {
 	}
 
 	private static Pattern describeViewSyntax = Pattern.compile(
-			"describe( view )?((" + tk("schema") + ")\\.)?(" + tk("view") + ")(?<verbose> verbose)?",
+			"describe(\\s+view\\s+)?((" + tk("schema") + ")\\.)?(" + tk("view") + ")(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void describeView(final String cmd) {
@@ -770,7 +777,7 @@ public class CLI {
 	}
 
 	private static Pattern listIndexesSyntax = Pattern.compile(
-			"list ind(ic|ex)es ((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose> verbose)?",
+			"list\\s+ind(ic|ex)es\\s+((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose>\\s+verbose)?",
 			Pattern.CASE_INSENSITIVE);
 
 	private static void listIndexes(final String cmd) {
@@ -1195,85 +1202,6 @@ public class CLI {
 		}
 	}
 
-	private static Pattern loadFromFilesSyntax = Pattern.compile(
-			"load into ((" + tk("schema") + ")\\.)?(" + tk("table")
-					+ ")( delimiter '(?<delim>.)')?( streams (?<nstr>\\d+?))? from (?<glob>.*)",
-			Pattern.CASE_INSENSITIVE);
-
-	/*
-	 * Feed ingress from delimited file(s)
-	 */
-	private static void loadFromFiles(final String cmd) {
-		long start = 0;
-		long end = 0;
-		if (!isConnected()) {
-			System.out.println("No database connection exists");
-			return;
-		}
-
-		try {
-			final Matcher m = loadFromFilesSyntax.matcher(cmd);
-			if (!m.matches()) {
-				System.out.println(
-						"Syntax: load into (<schema>.)?<table> (delimiter '<delimiter char>')? (streams <num streams>)? from <filename pattern>\n");
-				return;
-			}
-
-			String schema = getTk(m, "schema", conn.getSchema());
-			String table = getTk(m, "table", null);
-			String delimiter = (m.group("delim") != null) ? m.group("delim") : "|"; // default delimiter
-			String glob = m.group("glob").trim();
-			int streams = (m.group("delim") != null) ? Integer.parseInt(m.group("nstr"))
-					: Runtime.getRuntime().availableProcessors();
-			if (streams < 1) {
-				System.out.println("The number of streams cannot be less than one.");
-				return;
-			}
-
-			start = System.currentTimeMillis();
-
-			long numRows = 0; // Number of rows loaded
-			// Now we need to get info for all the ingress nodes
-			ArrayList<Endpoint> ingressNodes = new ArrayList<>(); // TODO = getIngressNodes();
-			ingressNodes = pickNodesToTalkTo(ingressNodes, streams);
-
-			// Verify that the table exists and get its metadata
-			// TODO if (!ingressKnowsTable(ingressNodes, schema, table))
-			// {
-			// System.out.println("Table doesn't exist!");
-			// return;
-			// }
-
-			// Get table metadata
-			final TableMetadata tableMetadata = null; // TODO = getTableMetadataFromIngress(ingressNodes, schema,
-														// table);
-
-			// And figure out what files we are loading from
-			final ArrayList<Path> files = processGlob(glob);
-			if (files.size() == 0) {
-				System.out.println("No input files!");
-				return;
-			}
-
-			// Load from "files" to "ingressNodes" using "tableMetadata" and "delimiter"
-			numRows = doLoadFromFiles(files, ingressNodes, tableMetadata, delimiter);
-
-			end = System.currentTimeMillis();
-
-			// Did the load abort?
-			if (numRows == -1) {
-				System.out.println("The load aborted due to an internal error");
-				return;
-			}
-
-			System.out.println("Loaded " + numRows + (numRows == 1 ? " row" : " rows"));
-
-			printTime(start, end);
-		} catch (final Exception e) {
-			System.out.println("Error: " + e.getMessage());
-		}
-	}
-
 	private static boolean sourceCommands(BufferedReader reader) throws IOException {
 		boolean quit = false;
 
@@ -1382,582 +1310,6 @@ public class CLI {
 
 		return quit;
 	}
-
-	/*
-	 * We have a set of ingress nodes that we know about and a desired number of
-	 * streams to use.
-	 *
-	 * We need to figure out exactly what ingress nodes to use and get connections
-	 * to them.
-	 */
-	private static ArrayList<Endpoint> pickNodesToTalkTo(final ArrayList<Endpoint> nodes, final int numStreams) {
-		final Random random = new Random();
-		final ArrayList<Endpoint> retval = new ArrayList<>();
-		while (retval.size() < numStreams && nodes.size() > 0) {
-			final int index = random.nextInt(nodes.size());
-			final Endpoint node = nodes.remove(index);
-			// TODO test that we can connect OK
-			// TODO CLI static db, user, and pwd variables
-			// TODO indicate what database we will be loading into
-			// TODO and the userid and password to use for authentication to that database
-			// TODO after connecting we need to store the conenctions somewhere
-			// TODO so that they can be used later - a static collection is probably OK
-			// TODO maybe a hashmap that's keyed by endpoint
-			// if (!connectToIngressNode(node))
-			// {
-			// continue;
-			// }
-
-			retval.add(node);
-		}
-
-		return retval;
-	}
-
-	/*
-	 * The actual work for bulk loading data from files into table via ingress
-	 * Returns the number of rows loaded
-	 */
-	private static long doLoadFromFiles(final ArrayList<Path> files, final ArrayList<Endpoint> ingressNodes,
-			final TableMetadata tableMetadata, final String delimiter) {
-		// Start threads for communication with ingress nodes
-		final ArrayList<IngressSourceThread> threads = new ArrayList<>();
-		for (final Endpoint endpoint : ingressNodes) {
-			final IngressSourceThread thread = new IngressSourceThread(endpoint, tableMetadata);
-			threads.add(thread);
-		}
-
-		final CountDownLatch latch = new CountDownLatch(threads.size());
-		for (final IngressSourceThread thread : threads) {
-			thread.setAllThreads(threads);
-			thread.setLatch(latch);
-			thread.start();
-		}
-
-		// Start threads for reading files
-		final ArrayList<FileReaderThread> threads2 = new ArrayList<>();
-		for (final Path path : files) {
-			final FileReaderThread thread = new FileReaderThread(path, tableMetadata, delimiter, threads);
-			threads2.add(thread);
-			thread.start();
-		}
-
-		// Join file readers
-		long failedRows = 0;
-		for (final FileReaderThread thread : threads2) {
-			while (true) {
-				try {
-					thread.join();
-					if (!thread.ok()) {
-						thread.getException().printStackTrace();
-						for (final IngressSourceThread thread2 : threads) {
-							thread2.setAbort();
-						}
-					}
-
-					failedRows += thread.getNumFailedRows();
-					break;
-				} catch (final InterruptedException e) {
-				}
-			}
-		}
-
-		// Send data end marker to each ingress source thread
-		for (final IngressSourceThread thread : threads) {
-			while (true) {
-				try {
-					thread.getQueue().put(new DataEndMarker());
-					break;
-				} catch (final InterruptedException e) {
-				}
-			}
-		}
-
-		long numRows = 0;
-		boolean aborted = false;
-		// Join comms threads
-		for (final IngressSourceThread thread : threads) {
-			while (true) {
-				try {
-					thread.join();
-					if (thread.getAbort()) {
-						aborted = true;
-					}
-					numRows += thread.getNumRowsLoaded();
-					failedRows += thread.getNumFailedRows();
-					break;
-				} catch (final InterruptedException e) {
-				}
-			}
-		}
-
-		if (aborted) {
-			return -1;
-		}
-
-		if (failedRows > 1) {
-			System.out.println(failedRows + " rows failed to be loaded");
-		} else if (failedRows == 1) {
-			System.out.println("1 row failed to be loaded");
-		}
-
-		return numRows;
-	}
-
-	/*
-	 * Convert a glob to a list of filenames
-	 */
-	private static ArrayList<Path> processGlob(final String glob) {
-		final ArrayList<Path> files = new ArrayList<>();
-		final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
-		int a = 0;
-		int b = 0;
-		while (a < glob.length()) {
-			if (glob.charAt(a) == '/') {
-				b = a;
-			}
-
-			if (glob.charAt(a) == '*') {
-				break;
-			}
-
-			a++;
-		}
-
-		final String startingPath = glob.substring(0, b + 1);
-		final Set<FileVisitOption> options = new HashSet<>();
-		final HashSet<String> dirs = new HashSet<>();
-		options.add(FileVisitOption.FOLLOW_LINKS);
-
-		try {
-			Files.walkFileTree(Paths.get(startingPath), options, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult postVisitDirectory(final Path file, final IOException exc) throws IOException {
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFile(final Path file,
-						final java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
-					try {
-						final String dir = file.getParent().toString();
-						if (!dirs.contains(dir)) {
-							dirs.add(dir);
-						}
-						if (matcher.matches(file)) {
-							files.add(file);
-						}
-						return FileVisitResult.CONTINUE;
-					} catch (final Exception e) {
-						return FileVisitResult.CONTINUE;
-					}
-				}
-
-				@Override
-				public FileVisitResult visitFileFailed(final Path file, final IOException exc) throws IOException {
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (final Exception e) {
-			e.printStackTrace();
-			return files;
-		}
-
-		return files;
-	}
-
-	/*
-	 * Contains the hostname and port on which we can connect to an ingress node
-	 */
-	private static class Endpoint {
-		private final String host;
-		private final int port;
-
-		public Endpoint(String host, int port) {
-			this.host = host;
-			this.port = port;
-		}
-
-		@Override
-		public boolean equals(final Object r) {
-			if (r == null) {
-				return false;
-			}
-
-			if (!(r instanceof Endpoint)) {
-				return false;
-			}
-
-			final Endpoint rhs = (Endpoint) r;
-			return host.equals(rhs.host) && port == rhs.port;
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 23;
-			hash = hash * 31 + host.hashCode();
-			hash = hash * 31 + port;
-			return hash;
-		}
-	}
-
-	/*
-	 * Holds metadata for the table that we are going to load into The metadata is
-	 * retrieved from an ingress server
-	 */
-	private static class TableMetadata {
-		// TODO this will have to include the columns and their data types as well
-		// TODO also needs to tell us what columns are in the hash an in what order
-		// TODO also needs to tell us what the time column is
-		private String fullyQualifiedName; // The fully qualified name of the table
-		private int heartbeatInMs; // Ingress server is requesting heartbeat messages on this interval
-		private int internalStreamsPerNode; // This is the number of internal streams per ingress node - we may not use
-											// this right away but we should be fetching this info and filling it in
-
-		public int getHeartbeat() {
-			return heartbeatInMs;
-		}
-	}
-
-	/*
-	 * The thread responsible for reading a single input file
-	 */
-	private static class FileReaderThread extends Thread {
-		/*
-		 * Return the approx size in bytes for the row
-		 */
-		private static int approxSizeInBytes(final ArrayList<Object> row) {
-			// TODO doesn't have to be exact
-			// TODO just go through the objects in the list
-			// TODO check their types and add a value that makes sense
-			return 1;
-		}
-
-		private final Path file;
-		private final TableMetadata meta;
-		private final String delim;
-		private final ArrayList<IngressSourceThread> threads;
-		private boolean ok = true;
-		private Exception e;
-		private final long failedRows = 0;
-		// Map from key (according to metadata) to a sorted bag of rows
-		private final HashMap<ArrayList<Object>, TreeBag> buckets = new HashMap<>();
-		// Using AtomicInteger so that we don't have to allocate a new object every time
-		// we update
-		private final HashMap<ArrayList<Object>, AtomicInteger> approxSizeByKey = new HashMap<>();
-		private final TreeMultimap<Integer, ArrayList<Object>> keysByApproxSize;
-
-		private int bufferedData = 0;
-
-		public FileReaderThread(final Path file, final TableMetadata meta, final String delim,
-				final ArrayList<IngressSourceThread> threads) {
-			this.file = file;
-			this.meta = meta;
-			this.delim = delim;
-			this.threads = threads;
-			keysByApproxSize = TreeMultimap.create(new ReverseIntComparator(), new KeyComparator(meta));
-		}
-
-		public Exception getException() {
-			return e;
-		}
-
-		public long getNumFailedRows() {
-			return failedRows;
-		}
-
-		public boolean ok() {
-			return ok;
-		}
-
-		@Override
-		public void run() {
-			try {
-				final BufferedReader in = new BufferedReader(new FileReader(file.toFile()), 512 * 1024);
-				String line = in.readLine();
-				if (line == null) {
-					in.close();
-					return;
-				}
-
-				// For the first line, we'll do this twice, but it prevents an object allocation
-				// in the loop
-				final FastStringTokenizer fst = new FastStringTokenizer(line, delim, false);
-				final ArrayList<Object> row = new ArrayList<>();
-				final ArrayList<Object> key = new ArrayList<>();
-				long rr = 0;
-				while (line != null) {
-					fst.reuse(line, delim, false);
-					final String[] tokens = fst.allTokens();
-					row.clear();
-					key.clear();
-					// TODO parse tokens into row based on table metadata
-					// TODO if parsing of a row fails, don't consider that a failure
-					// TODO instead just increment failed rows
-					// TODO and I'd like to capture the data of the failed row
-					// TODO and store it in a file for the user
-					// TODO just like I'd like to do with failed rows coming back
-					// TODO from the ingress server
-					// TODO fill in key based on metadata
-					TreeBag bag = buckets.get(key);
-					if (bag == null) {
-						bag = new TreeBag(new TimeColComparator(meta));
-						buckets.put(key, bag);
-					}
-
-					bag.add(row);
-					final int approx = approxSizeInBytes(row);
-					bufferedData += approx;
-					AtomicInteger size = approxSizeByKey.get(key);
-					if (size == null) {
-						size = new AtomicInteger(0);
-						approxSizeByKey.put(key, size);
-					}
-
-					final int oldSize = size.get();
-					final int newSize = size.addAndGet(approx);
-
-					if (oldSize != 0) {
-						keysByApproxSize.remove(oldSize, key);
-					}
-					keysByApproxSize.put(newSize, key);
-
-					if (bag.size() >= BAG_FLUSH_SIZE) {
-						// Round robin to IngressSourceThread
-						buckets.remove(key);
-						threads.get((int) (rr++ % threads.size())).getQueue().put(bag);
-
-						size = approxSizeByKey.remove(key);
-						final int s = size.get();
-						keysByApproxSize.remove(size, key);
-						bufferedData -= s;
-					}
-
-					while (bufferedData >= MAX_BAGS_SIZE_PER_READER) {
-						// Flush largest bins till under limit
-						for (final Map.Entry<Integer, ArrayList<Object>> entry : keysByApproxSize.entries()) {
-							final int s = entry.getKey();
-							final ArrayList<Object> key2 = entry.getValue();
-							final TreeBag bag2 = buckets.remove(key2);
-							threads.get((int) (rr++ % threads.size())).getQueue().put(bag2);
-
-							approxSizeByKey.remove(key2);
-							keysByApproxSize.remove(s, key2);
-							bufferedData -= s;
-							break;
-						}
-					}
-
-					line = in.readLine();
-				}
-
-				in.close();
-			} catch (final Exception e) {
-				ok = false;
-				this.e = e;
-			}
-		}
-	}
-
-	/*
-	 * This is a thread that communicates with an ingress server
-	 */
-	private static class IngressSourceThread extends Thread {
-		private final ArrayBlockingQueue<Object> in = new ArrayBlockingQueue<>(16); // Input queue to this thread
-		private final long heartbeat;
-		private final long loadedRows = 0;
-		private final long failedRows = 0;
-		private final AtomicBoolean abort = new AtomicBoolean(false);
-		private CountDownLatch latch;
-
-		public IngressSourceThread(final Endpoint node, final TableMetadata meta) {
-			heartbeat = meta.getHeartbeat();
-		}
-
-		public boolean getAbort() {
-			return abort.get();
-		}
-
-		public long getNumFailedRows() {
-			return failedRows;
-		}
-
-		public long getNumRowsLoaded() {
-			return loadedRows;
-		}
-
-		public ArrayBlockingQueue<Object> getQueue() {
-			return in;
-		}
-
-		@Override
-		public void run() {
-			// TODO create a new session with the ingress server using existing connection
-			// TODO send heartbeat message
-			while (true) {
-				if (abort.get()) {
-					// TODO send abort session message to ingress server
-					// TODO close connection
-					return;
-				}
-
-				Object o = null;
-				try {
-					o = in.poll(heartbeat, TimeUnit.MILLISECONDS);
-				} catch (final InterruptedException f) {
-				}
-
-				if (o == null) {
-					// TODO send heartbeat
-					// TODO if connection is lost, attempt to reconnect and then send heartbeat
-					// TODO If reconnection fails
-					// TODO send abort session message to ingress server
-					// TODO Set abort flag on all IngressSourceThreads
-					// TODO close connection
-					// TODO return
-				} else if (o instanceof DataEndMarker) // no more data
-				{
-					// Check again before entering latch
-					if (abort.get()) {
-						// TODO send abort session message to ingress server
-						// TODO close connection
-						return;
-					}
-
-					latch.countDown();
-					while (true) {
-						try {
-							final boolean done = latch.await(heartbeat, TimeUnit.MILLISECONDS);
-							if (done) {
-								break;
-							}
-						} catch (final InterruptedException f) {
-						}
-
-						if (abort.get()) {
-							// TODO send abort session message to ingress server
-							// TODO close connection
-							return;
-						}
-
-						// TODO send heartbeat
-						// TODO if connection is lost, attempt to reconnect and then send heartbeat
-						// TODO If reconnection fails
-						// TODO send abort session message to ingress server
-						// TODO Set abort flag on all IngressSourceThreads
-						// TODO close connection
-						// TODO return
-					}
-
-					// TODO tell ingress to do a full commit of the session (not partial like with
-					// kafka)
-					// TODO set number of failed rows (if any)
-					// TODO subtract the number of failed rows from loadedRows
-					// TODO I'd really like to be able to be able to get the actual failed rows and
-					// TODO write them to a file so the caller can see what failed
-					// TODO I've asked for it to be implemented by the ingress server
-					// TODO but I don't yet know if that will make it into V1 or not
-
-					// If we have a comms failure in the middle of trying to send
-					// the commit, we are truly good and screwed for now
-					// Cross your fingers and try to reconnect
-					// If it fails set
-					// failedRows to the current value of loadedRows
-					// and set loadedRows to zero, close the connection, and return
-					// In the future we want to implement ingress server 2PC across all open
-					// sessions
-
-					// TODO close this connection
-					return;
-				} else {
-					// We have data to send to the ingress server - make sure to increment
-					// loadedRows
-					// TODO compute 32 bit FNV-1 hash for every row and send data
-					// TODO if connection is lost, attempt to reconnect and then send heartbeat
-					// TODO If reconnection fails
-					// TODO send abort session message to ingress server
-					// TODO Set abort flag on all IngressSourceThreads
-					// TODO close connection
-					// TODO return
-				}
-			}
-		}
-
-		public void setAbort() {
-			abort.set(true);
-		}
-
-		public void setAllThreads(final ArrayList<IngressSourceThread> threads) {
-		}
-
-		public void setLatch(final CountDownLatch latch) {
-			this.latch = latch;
-		}
-	}
-
-	/*
-	 * Given 2 ArrayList<Object>s containing just the keys of two rows, compare the
-	 * keys
-	 */
-	private static class KeyComparator implements Comparator {
-		public KeyComparator(final TableMetadata meta) {
-		}
-
-		@Override
-		public int compare(final Object arg0, final Object arg1) {
-			// TODO the metadata object is here if you want to use it
-			// TODO both arraylist will have the same size and the same types in the same
-			// positions
-			// TODO just need to compare them
-			return 0;
-		}
-	}
-
-	/*
-	 * Sort integer keys in descending order
-	 */
-	private static class ReverseIntComparator implements Comparator {
-		@Override
-		public int compare(final Object arg0, final Object arg1) {
-			final Integer lhs = (Integer) arg0;
-			final Integer rhs = (Integer) arg1;
-			return -1 * lhs.compareTo(rhs);
-		}
-
-	}
-
-	/*
-	 * Sort rows by time column
-	 */
-	private static class TimeColComparator implements Comparator {
-		public TimeColComparator(final TableMetadata meta) {
-		}
-
-		@Override
-		public int compare(final Object arg0, final Object arg1) {
-			// TODO need to use metadata to pull out the time column
-			// TODO from the row and compare them
-			// TODO return -1 if time col from left row is less than time col from right row
-			// TODO return 1 if time col from left row is greater than time col from right
-			// row
-			// TODO otherwise return 0
-			return 0;
-		}
-	}
-
-	// /*
-	// * Calls nextToken on a tokenizer, but trims tokens and throws away empty ones
-	// */
-	// private static String betterNextToken(final StringTokenizer tokens) throws
-	// NoSuchElementException {
-	// String retval = "";
-	// while (retval.equals(""))
-	// {
-	// retval = tokens.nextToken().trim();
-	// }
-	//
-	// return retval;
-	// }
 
 	private final static char[] hexArray = "0123456789abcdef".toCharArray();
 
@@ -2118,103 +1470,6 @@ public class CLI {
 	private static void printTime(long start, long end) {
 		if (timing) {
 			System.out.println("\nCommand took " + (end - start) / 1000.0 + " seconds");
-		}
-	}
-
-	/*
-	 * unused?
-	 *
-	 * We have a one or two part table name that might be double quoted with unknown
-	 * case We want the actual name of the table being referenced
-	 */
-	private static String properTable(final String table) throws Exception {
-		final StringTokenizer tokens = new StringTokenizer(table, ".\"", true);
-		String token = tokens.nextToken();
-		if (token.equals("\"")) {
-			// It's either a quoted table name or schema name
-			String name = tokens.nextToken();
-			if (!tokens.nextToken().equals("\"")) {
-				throw new Exception(); // This will trigger syntax error message
-			}
-
-			if (tokens.hasMoreTokens()) {
-				if (!tokens.nextToken().equals(".")) {
-					throw new Exception();
-				}
-
-				token = tokens.nextToken();
-				if (token.equals("\"")) {
-					// name is the schema name
-					// This is a quoted table name
-					final String schema = name;
-					name = tokens.nextToken();
-					if (!tokens.nextToken().equals("\"")) {
-						throw new Exception();
-					}
-
-					if (tokens.hasMoreTokens()) {
-						throw new Exception();
-					}
-
-					return schema + "." + name;
-				} else {
-					// name is the schema name
-					// This is an unquoted table name
-					final String schema = name;
-					name = tokens.nextToken().toLowerCase();
-					if (tokens.hasMoreTokens()) {
-						throw new Exception();
-					}
-
-					return schema + "." + name;
-				}
-			} else {
-				// name is the table name
-				// We have to get the schema name from the JDBC driver
-				final String schema = conn.getSchema();
-				return schema + "." + name;
-			}
-		} else {
-			// Unquoted schema or table name
-			String name = token.toLowerCase();
-
-			if (tokens.hasMoreTokens()) {
-				if (!tokens.nextToken().equals(".")) {
-					throw new Exception();
-				}
-
-				token = tokens.nextToken();
-				if (token.equals("\"")) {
-					// name is the schema name
-					// This is a quoted table name
-					final String schema = name;
-					name = tokens.nextToken();
-					if (!tokens.nextToken().equals("\"")) {
-						throw new Exception();
-					}
-
-					if (tokens.hasMoreTokens()) {
-						throw new Exception();
-					}
-
-					return schema + "." + name;
-				} else {
-					// name is the schema name
-					// This is an unquoted table name
-					final String schema = name;
-					name = tokens.nextToken().toLowerCase();
-					if (tokens.hasMoreTokens()) {
-						throw new Exception();
-					}
-
-					return schema + "." + name;
-				}
-			} else {
-				// name is the table name
-				// We have to get the schema name from the JDBC driver
-				final String schema = conn.getSchema();
-				return schema + "." + name;
-			}
 		}
 	}
 }
