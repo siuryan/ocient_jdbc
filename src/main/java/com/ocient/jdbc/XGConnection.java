@@ -493,13 +493,13 @@ public class XGConnection implements Connection {
 					}
 				}
 				
-				LOGGER.log(Level.INFO, "Using secondary index %d", secondaryIndex);
+				LOGGER.log(Level.INFO, String.format("Using secondary index %d", secondaryIndex));
 				for (ArrayList<String> list : secondaryInterfaces)
 				{
 					LOGGER.log(Level.INFO, "New SQL node");
 					for (String address : list)
 					{
-						LOGGER.log(Level.INFO, "Interface %s", address);
+						LOGGER.log(Level.INFO, String.format("Interface %s", address));
 					}
 				}
 			}
