@@ -134,6 +134,8 @@ public class XGConnection implements Connection {
 	protected ArrayList<SQLWarning> warnings = new ArrayList<>();
 	protected final String url;
 	protected String ip;
+	protected String originalIp;
+	protected int originalPort;
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
@@ -160,6 +162,8 @@ public class XGConnection implements Connection {
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
 			final String database, final String version, final String force) throws Exception {
 		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
+		originalIp = ip;
+		originalPort = portNum;
 		if (force.equals("true")) {
 			this.force = true;
 		}
@@ -212,6 +216,8 @@ public class XGConnection implements Connection {
 			retval.secondaryInterfaces = (ArrayList<ArrayList<String>>)secondaryInterfaces.clone();
 			retval.secondaryIndex = secondaryIndex;
 			retval.ip = ip;
+			retval.originalIp = originalIp;
+			retval.originalPort = originalPort;
 			retval.reconnect();
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
@@ -484,6 +490,16 @@ public class XGConnection implements Connection {
 						}
 						
 						index++;
+					}
+				}
+				
+				LOGGER.log(Level.INFO, "Using secondary index %d", secondaryIndex);
+				for (ArrayList<String> list : secondaryInterfaces)
+				{
+					LOGGER.log(Level.INFO, "New SQL node");
+					for (String address : list)
+					{
+						LOGGER.log(Level.INFO, "Interface %s", address);
 					}
 				}
 			}
@@ -1323,12 +1339,69 @@ public class XGConnection implements Connection {
 				index++;
 			}
 		}
+		
+		sock = null;
+		this.ip = originalIp;
+		this.portNum = originalPort;
+		try {
+			sock = new Socket();
+			sock.setReceiveBufferSize(4194304);
+			sock.setSendBufferSize(4194304);
+			sock.connect(new InetSocketAddress(this.ip, this.portNum));
+		} catch (final Exception e) {
+			try {
+				sock.close();
+			} catch (final IOException f) {
+			}
 
-		// One of the cmdComps failed on handshake, so throw that exception
-		if (retVal != null) {
-			throw retVal;
+			// reconnect failed so we are no longer connected
+			connected = false;
+
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
+			if (e instanceof IOException) {
+				throw (IOException) e;
+			}
+
+			throw new IOException("Failed to reconnect.");
 		}
-		throw new IOException("Failed to reconnect.");
+
+		try {
+			in = new BufferedInputStream(sock.getInputStream());
+			out = new BufferedOutputStream(sock.getOutputStream());
+
+			clientHandshake(user, pwd, database);
+			if (!setSchema.equals("")) {
+				setSchema(setSchema);
+			}
+
+			if (setPso == -1) {
+				// We have to turn it off
+				setPSO(false);
+			} else if (setPso > 0) {
+				// Set non-default threshold
+				setPSO(setPso);
+			}
+
+			return;
+		} catch (final Exception handshakeException) {
+			try {
+				in.close();
+				out.close();
+				sock.close();
+			} catch (final IOException f) {
+			}
+
+			// reconnect failed so we are no longer connected
+			connected = false;
+
+			// Failed on the client handshake, so capture exception
+			if (handshakeException instanceof SQLException) {
+				throw (SQLException) handshakeException;
+			}
+
+			throw new IOException("Failed to reconnect.");
+		}
 	}
 
 	/*

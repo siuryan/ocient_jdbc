@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.35 (2020-07-23)
+
+New Features::
+
+  * Capture initial connection IP and use as last resort for reconnect()
+
+// tag::compact[]
 == 1.34 (2020-07-14)
 
 New Features::
