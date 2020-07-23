@@ -1131,7 +1131,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum));
+				sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1207,7 +1207,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port));
+					sock.connect(new InetSocketAddress(host, port), 10000);
 				} catch (final Exception e) {
 					try {
 						sock.close();
@@ -1281,7 +1281,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port));
+					sock.connect(new InetSocketAddress(host, port), 10000);
 				} catch (final Exception e) {
 					try {
 						sock.close();
@@ -1347,7 +1347,7 @@ public class XGConnection implements Connection {
 			sock = new Socket();
 			sock.setReceiveBufferSize(4194304);
 			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.ip, this.portNum));
+			sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
 		} catch (final Exception e) {
 			try {
 				sock.close();
@@ -1481,7 +1481,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum));
+				sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1544,7 +1544,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(this.ip, this.portNum));
+					sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
 				} catch (final Exception e) {
 					try {
 						sock.close();

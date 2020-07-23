@@ -79,9 +79,8 @@ public class CLI {
 
 	private static char quote = '\0';
 	private static boolean comment = false;
-
-	private static int BAG_FLUSH_SIZE = 8192;
-	private static int MAX_BAGS_SIZE_PER_READER = 64 * 1024 * 1024;
+	
+	private static Statement stmt;
 
 	public static void main(final String[] args) {
 		Terminal terminal;
@@ -357,6 +356,10 @@ public class CLI {
 	private static void connectTo(final String cmd) {
 		if (isConnected()) {
 			try {
+				if (stmt != null && !stmt.isClosed())
+				{
+					stmt.close();
+				}
 				conn.close();
 			} catch (final Exception e) {
 				System.out.println("Error: " + e.getMessage());
@@ -384,6 +387,7 @@ public class CLI {
 					doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
 				}
 				// No exception thrown means connection was successful, and connectTo may return
+				stmt = conn.createStatement();
 				return;
 			} catch (final Exception e) {
 				System.out.println("Failed to connect to " + hosts);
@@ -544,13 +548,10 @@ public class CLI {
                         return;
                 }
                 try {
-                        final Statement stmt = conn.createStatement();
                         start = System.currentTimeMillis();
                         System.out.println(((XGStatement) stmt).exportTranslation(cmd));
                         printWarnings(stmt);
                         end = System.currentTimeMillis();
-
-                        stmt.close();
 
                         printTime(start, end);
                 } catch (final Exception e) {
@@ -566,13 +567,10 @@ public class CLI {
 			return;
 		}
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			System.out.println(((XGStatement) stmt).exportTable(cmd));
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -865,11 +863,9 @@ public class CLI {
 			return;
 		}
 
-		Statement stmt = null;
 		ResultSet rs = null;
 
 		try {
-			stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			rs = stmt.executeQuery(cmd);
 			printWarnings(stmt);
@@ -885,13 +881,11 @@ public class CLI {
 			end = System.currentTimeMillis();
 
 			rs.close();
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
 			try {
 				rs.close();
-				stmt.close();
 			} catch (Exception f) {
 			}
 			System.out.println("Error: " + e.getMessage());
@@ -905,11 +899,10 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
-		Statement stmt = null;
+		
 		ResultSet rs = null;
 
 		try {
-			stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			rs = stmt.executeQuery(cmd);
 
@@ -920,13 +913,11 @@ public class CLI {
 			end = System.currentTimeMillis();
 
 			rs.close();
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
 			try {
 				rs.close();
-				stmt.close();
 			} catch (Exception f) {
 			}
 			System.out.println("Error: " + e.getMessage());
@@ -941,7 +932,6 @@ public class CLI {
 			return;
 		}
 
-		Statement stmt = null;
 		ResultSet rs = null;
 		String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
 
@@ -949,7 +939,6 @@ public class CLI {
 			plan = plan.substring("INLINE ".length()).trim();
 
 			try {
-				stmt = conn.createStatement();
 				start = System.currentTimeMillis();
 				rs = ((XGStatement) stmt).executeInlinePlan(plan);
 				final ResultSetMetaData meta = rs.getMetaData();
@@ -960,20 +949,17 @@ public class CLI {
 				end = System.currentTimeMillis();
 
 				rs.close();
-				stmt.close();
 
 				printTime(start, end);
 			} catch (final Exception e) {
 				try {
 					rs.close();
-					stmt.close();
 				} catch (Exception f) {
 				}
 				System.out.println("Error: " + e.getMessage());
 			}
 		} else {
 			try {
-				stmt = conn.createStatement();
 				start = System.currentTimeMillis();
 				rs = ((XGStatement) stmt).executePlan(plan);
 				final ResultSetMetaData meta = rs.getMetaData();
@@ -984,13 +970,11 @@ public class CLI {
 				end = System.currentTimeMillis();
 
 				rs.close();
-				stmt.close();
 
 				printTime(start, end);
 			} catch (final Exception e) {
 				try {
 					rs.close();
-					stmt.close();
 				} catch (Exception f) {
 				}
 				System.out.println("Error: " + e.getMessage());
@@ -1007,7 +991,6 @@ public class CLI {
 		}
 
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
 
@@ -1026,7 +1009,6 @@ public class CLI {
 			}
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -1043,7 +1025,6 @@ public class CLI {
 		}
 
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final ArrayList<String> planNames = ((XGStatement) stmt).listPlan();
 			if (planNames.size() > 0) {
@@ -1055,8 +1036,6 @@ public class CLI {
 
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -1072,14 +1051,11 @@ public class CLI {
 			return;
 		}
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final String uuid = cmd.substring("CANCEL ".length()).trim();
 			((XGStatement) stmt).cancelQuery(uuid);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -1113,14 +1089,11 @@ public class CLI {
 			return;
 		}
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final String uuid = cmd.substring("KILL ".length()).trim();
 			((XGStatement) stmt).killQuery(uuid);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -1136,7 +1109,6 @@ public class CLI {
 			return;
 		}
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final ArrayList<SysQueriesRow> queryList = ((XGStatement) stmt).listAllQueries();
 
@@ -1146,8 +1118,6 @@ public class CLI {
 
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
@@ -1186,15 +1156,12 @@ public class CLI {
 		}
 
 		try {
-			final Statement stmt = conn.createStatement();
 			start = System.currentTimeMillis();
 			final long numRows = stmt.executeUpdate(cmd);
 			end = System.currentTimeMillis();
 
 			System.out.println("Modified " + numRows + (numRows == 1 ? " row" : " rows"));
 			printWarnings(stmt);
-
-			stmt.close();
 
 			printTime(start, end);
 		} catch (final Exception e) {
