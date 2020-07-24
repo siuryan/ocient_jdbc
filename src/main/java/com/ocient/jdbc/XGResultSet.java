@@ -200,6 +200,8 @@ public class XGResultSet implements ResultSet {
 					String.format("Exception %s occurred during close() with message %s", e.toString(), e.getMessage()));
 			throw SQLStates.newGenericException(e);
 		}
+		
+		stmt.setQueryCancelled(false);
 	}
 
 	@Override
