@@ -164,6 +164,9 @@ public class XGConnection implements Connection {
 		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
 		originalIp = ip;
 		originalPort = portNum;
+		
+		LOGGER.log(Level.INFO, String.format("Connection constructor is setting IP = %s and PORT = %d", ip, portNum));
+		
 		if (force.equals("true")) {
 			this.force = true;
 		}
@@ -455,54 +458,55 @@ public class XGConnection implements Connection {
 			}
 			retryCounter = 0;
 			processResponseType(rType, response);
+			
+			final int count = ccr2.getCmdcompsCount();
+			cmdcomps.clear();
+			for (int i = 0; i < count; i++) {
+				cmdcomps.add(ccr2.getCmdcomps(i));
+			}
+			
+			secondaryInterfaces.clear();
+			for (int i = 0; i < ccr2.getSecondaryCount(); i++)
+			{
+				secondaryInterfaces.add(new ArrayList<String>());
+				for (int j = 0; j < ccr2.getSecondary(i).getAddressCount(); j++)
+				{
+					secondaryInterfaces.get(i).add(ccr2.getSecondary(i).getAddress(j));
+				}
+			}
+			
+			//Figure out what secondary index it is
+			String combined = ip + ":" + this.portNum;
+			for (ArrayList<String> list : secondaryInterfaces)
+			{
+				int index = 0;
+				for (String address : list)
+				{
+					if (address.equals(combined))
+					{
+						secondaryIndex = index;
+						break;
+					}
+					
+					index++;
+				}
+			}
+			
+			LOGGER.log(Level.INFO, String.format("Using secondary index %d", secondaryIndex));
+			for (ArrayList<String> list : secondaryInterfaces)
+			{
+				LOGGER.log(Level.INFO, "New SQL node");
+				for (String address : list)
+				{
+					LOGGER.log(Level.INFO, String.format("Interface %s", address));
+				}
+			}
+			
 			if (ccr2.getRedirect()) {
 				final String host = ccr2.getRedirectHost();
 				final int port = ccr2.getRedirectPort();
 				redirect(host, port);
-			} else {
-				final int count = ccr2.getCmdcompsCount();
-				cmdcomps.clear();
-				for (int i = 0; i < count; i++) {
-					cmdcomps.add(ccr2.getCmdcomps(i));
-				}
-				
-				secondaryInterfaces.clear();
-				for (int i = 0; i < ccr2.getSecondaryCount(); i++)
-				{
-					secondaryInterfaces.add(new ArrayList<String>());
-					for (int j = 0; j < ccr2.getSecondary(i).getAddressCount(); j++)
-					{
-						secondaryInterfaces.get(i).add(ccr2.getSecondary(i).getAddress(j));
-					}
-				}
-				
-				//Figure out what secondary index it is
-				String combined = ip + ":" + this.portNum;
-				for (ArrayList<String> list : secondaryInterfaces)
-				{
-					int index = 0;
-					for (String address : list)
-					{
-						if (address.equals(combined))
-						{
-							secondaryIndex = index;
-							break;
-						}
-						
-						index++;
-					}
-				}
-				
-				LOGGER.log(Level.INFO, String.format("Using secondary index %d", secondaryIndex));
-				for (ArrayList<String> list : secondaryInterfaces)
-				{
-					LOGGER.log(Level.INFO, "New SQL node");
-					for (String address : list)
-					{
-						LOGGER.log(Level.INFO, String.format("Interface %s", address));
-					}
-				}
-			}
+			} 
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
 					String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
