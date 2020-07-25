@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -471,7 +472,18 @@ public class XGConnection implements Connection {
 				secondaryInterfaces.add(new ArrayList<String>());
 				for (int j = 0; j < ccr2.getSecondary(i).getAddressCount(); j++)
 				{
-					secondaryInterfaces.get(i).add(ccr2.getSecondary(i).getAddress(j));
+					//Do hostname / IP translation here
+					String connInfo = ccr2.getSecondary(i).getAddress(j);
+					final StringTokenizer tokens = new StringTokenizer(connInfo, ":", false);
+					final String connHost = tokens.nextToken();
+					final int connPort = Integer.parseInt(tokens.nextToken());
+					final InetAddress[] addrs = InetAddress.getAllByName(connHost);
+					for (InetAddress addr : addrs)
+					{
+						connInfo = addr.toString().substring(sock.getInetAddress().toString().indexOf('/') + 1)
+								+ ":" + connPort;
+						secondaryInterfaces.get(i).add(connInfo);
+					}
 				}
 			}
 			
