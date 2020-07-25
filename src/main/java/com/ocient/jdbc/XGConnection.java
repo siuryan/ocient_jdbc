@@ -480,7 +480,7 @@ public class XGConnection implements Connection {
 					final InetAddress[] addrs = InetAddress.getAllByName(connHost);
 					for (InetAddress addr : addrs)
 					{
-						connInfo = addr.toString().substring(sock.getInetAddress().toString().indexOf('/') + 1)
+						connInfo = addr.toString().substring(addr.toString().indexOf('/') + 1)
 								+ ":" + connPort;
 						secondaryInterfaces.get(i).add(connInfo);
 					}
