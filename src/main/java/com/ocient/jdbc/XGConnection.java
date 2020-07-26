@@ -150,6 +150,7 @@ public class XGConnection implements Connection {
 	protected ArrayList<String> cmdcomps = new ArrayList<>();
 	protected ArrayList<ArrayList<String>> secondaryInterfaces = new ArrayList<ArrayList<String>>();
 	protected int secondaryIndex = -1;
+	protected int networkTimeout = 10000;
 
 	// The timer is initially null, created when the first query timeout is set and
 	// destroyed on close()
@@ -769,7 +770,12 @@ public class XGConnection implements Connection {
 
 	@Override
 	public int getNetworkTimeout() throws SQLException {
-		return 0;
+		LOGGER.log(Level.INFO, "Called getNetworkTimeout()");
+		if (closed) {
+			LOGGER.log(Level.WARNING, "getNetworkTimeout() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+		return networkTimeout;
 	}
 
 	@Override
@@ -1147,7 +1153,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
+				sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1223,7 +1229,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port), 10000);
+					sock.connect(new InetSocketAddress(host, port), networkTimeout);
 				} catch (final Exception e) {
 					try {
 						sock.close();
@@ -1297,7 +1303,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port), 10000);
+					sock.connect(new InetSocketAddress(host, port), networkTimeout);
 				} catch (final Exception e) {
 					try {
 						sock.close();
@@ -1363,7 +1369,7 @@ public class XGConnection implements Connection {
 			sock = new Socket();
 			sock.setReceiveBufferSize(4194304);
 			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
+			sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
 		} catch (final Exception e) {
 			try {
 				sock.close();
@@ -1497,7 +1503,7 @@ public class XGConnection implements Connection {
 				sock = new Socket();
 				sock.setReceiveBufferSize(4194304);
 				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
+				sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
 			} catch (final Exception e) {
 				try {
 					sock.close();
@@ -1560,7 +1566,7 @@ public class XGConnection implements Connection {
 					sock = new Socket();
 					sock.setReceiveBufferSize(4194304);
 					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(this.ip, this.portNum), 10000);
+					sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
 				} catch (final Exception e) {
 					try {
 						sock.close();
@@ -1804,8 +1810,13 @@ public class XGConnection implements Connection {
 
 	@Override
 	public void setNetworkTimeout(final Executor executor, final int milliseconds) throws SQLException {
-		LOGGER.log(Level.WARNING, "setNetworkTimeout() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		LOGGER.log(Level.WARNING, "Called setNetworkTimeout()");
+		if (closed) {
+			LOGGER.log(Level.WARNING, "setNetworkTimeout() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+		
+		networkTimeout = milliseconds;
 	}
 
 	@Override
