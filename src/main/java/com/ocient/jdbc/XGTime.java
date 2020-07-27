@@ -14,6 +14,7 @@ public class XGTime extends Time {
 	 * 
 	 */
 	private static final long serialVersionUID = -6636929210798184587L;
+	private int nanos;
 
 	@Deprecated
 	public XGTime(int hour, int minute, int second)
@@ -24,11 +25,28 @@ public class XGTime extends Time {
 	public XGTime(long time)
 	{
 		super(time);
+		long seconds = time / 1000;
+		int ms = (int)(time - (seconds * 1000));
+		setNanos(ms * 1000000);
 	}
 	
 	public XGTime(Time t)
 	{
 		super(t.getTime());
+		long time = t.getTime();
+		long seconds = time / 1000;
+		int ms = (int)(time - (seconds * 1000));
+		setNanos(ms * 1000000);
+	}
+	
+	void setNanos(int nanos)
+	{
+		this.nanos = nanos;
+	}
+	
+	int getNanos()
+	{
+		return nanos;
 	}
 	
 	public static Time valueOf(String s)
@@ -38,19 +56,22 @@ public class XGTime extends Time {
 	
 	public XGTime addMs(int ms)
 	{
-		return new XGTime(getTime() + ms);
+		int fractionPastMs = getNanos() - (getNanos() / 1000000) * 1000000;
+		XGTime retval = new XGTime(getTime() + ms);
+		retval.setNanos(retval.getNanos() + fractionPastMs);
+		return retval;
 	}
 	
 	//Always returns //UTC string
 	public String toString()
 	{
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		GregorianCalendar cal = new GregorianCalendar();
 		cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
 		cal.setTimeZone(TimeZone.getTimeZone("UTC"));
 		sdf.setCalendar(cal);
-		return sdf.format(this);
+		return sdf.format(this) + "." + String.format("%09d", getNanos());
 	}
 	
 	@Deprecated
@@ -180,6 +201,12 @@ public class XGTime extends Time {
 	
 	public boolean equals(Object obj)
 	{
+		if (obj instanceof XGTime)
+		{
+			return getTime() == ((java.sql.Date)obj).getTime() &&
+					getNanos() == ((XGTime)obj).getNanos();
+		}
+		
 		if (obj instanceof java.util.Date)
 		{
 			return getTime() == ((java.util.Date)obj).getTime();
@@ -225,6 +252,8 @@ public class XGTime extends Time {
 	
 	public static Date from(Instant instant)
 	{
-		return new XGDate(instant.toEpochMilli());
+		XGTime retval = new XGTime(instant.toEpochMilli());
+		retval.setNanos(instant.getNano());
+		return retval;
 	}
 }

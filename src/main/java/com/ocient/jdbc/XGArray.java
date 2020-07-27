@@ -92,6 +92,10 @@ public class XGArray implements java.sql.Array {
 			return Types.OTHER;
 		case 19:
 			return Types.DATE;
+		case 20:
+			return Types.TIMESTAMP;
+		case 21:
+			return Types.TIME;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
@@ -138,6 +142,10 @@ public class XGArray implements java.sql.Array {
 			return "IPV4";
 		case 19:
 			return "DATE";
+		case 20:
+			return "TIMESTAMP";
+		case 21:
+			return "TIME";
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
 		}
@@ -221,6 +229,12 @@ public class XGArray implements java.sql.Array {
 			break;
 		case 19:
 			cols2Types.put("array_value", "DATE");
+			break;
+		case 20:
+			cols2Types.put("array_value", "TIMESTAMP");
+			break;
+		case 21:
+			cols2Types.put("array_value", "TIME");
 			break;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();
@@ -314,6 +328,12 @@ public class XGArray implements java.sql.Array {
 			break;
 		case 19:
 			cols2Types.put("array_value", "DATE");
+			break;
+		case 20:
+			cols2Types.put("array_value", "TIMESTAMP");
+			break;
+		case 21:
+			cols2Types.put("array_value", "TIME");
 			break;
 		default:
 			throw SQLStates.INVALID_COLUMN_TYPE.clone();

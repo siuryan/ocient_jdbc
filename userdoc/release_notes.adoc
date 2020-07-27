@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.37 (2020-07-26)
+
+New Features::
+
+  * Timestamp and Time now have nanosecond precision
+
+// tag::compact[]
 == 1.36 (2020-07-25)
 
 New Features::

@@ -59,13 +59,13 @@ public class XGTimestamp extends Timestamp {
 	//Always returns //UTC string
 	public String toString()
 	{
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		GregorianCalendar cal = new GregorianCalendar();
 		cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
 		cal.setTimeZone(TimeZone.getTimeZone("UTC"));
 		sdf.setCalendar(cal);
-		return sdf.format(this);
+		return sdf.format(this) + "." + String.format("%09d", getNanos());
 	}
 	
 	@Deprecated
@@ -195,6 +195,12 @@ public class XGTimestamp extends Timestamp {
 	
 	public boolean equals(Object obj)
 	{
+		if (obj instanceof java.sql.Timestamp)
+		{
+			return getTime() == ((java.sql.Timestamp)obj).getTime() &&
+					getNanos() == ((java.sql.Timestamp)obj).getNanos();
+		}
+		
 		if (obj instanceof java.util.Date)
 		{
 			return getTime() == ((java.util.Date)obj).getTime();
