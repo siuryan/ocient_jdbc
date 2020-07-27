@@ -41,6 +41,13 @@ public class XGTime extends Time {
 	
 	void setNanos(int nanos)
 	{
+		//We have to update time as well, unlike with timestamp
+		//Get milliseconds 
+		int ms = nanos / 1000000;
+		
+		//Time needs to be set to this much past a second boundary
+		this.setTime((this.getTime() / 1000) * 1000 + ms);
+		
 		this.nanos = nanos;
 	}
 	
