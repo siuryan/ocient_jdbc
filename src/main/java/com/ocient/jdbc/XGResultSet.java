@@ -2081,7 +2081,7 @@ public class XGResultSet implements ResultSet {
 					long nanos = bb.getLong(offset[0]);
 					long seconds = nanos / 1000000000;
 					XGTimestamp ts = new XGTimestamp(seconds * 1000);
-					ts.setNanos((int)(nanos - (seconds * 1000)));
+					ts.setNanos((int)(nanos - (seconds * 1000000000)));
 					retval.add(ts, i);
 					offset[0] += 8;
 				} else if (t == 21) // Time w/ nanos
@@ -2089,7 +2089,7 @@ public class XGResultSet implements ResultSet {
 					long nanos = bb.getLong(offset[0]);
 					long seconds = nanos / 1000000000;
 					XGTime time = new XGTime(seconds * 1000);
-					time.setNanos((int)(nanos - (seconds * 1000)));
+					time.setNanos((int)(nanos - (seconds * 1000000000)));
 					retval.add(time, i);
 					offset[0] += 8;
 				} 
@@ -2236,7 +2236,7 @@ public class XGResultSet implements ResultSet {
 							long nanos = bb.getLong(offset);
 							long seconds = nanos / 1000000000;
 							XGTimestamp ts = new XGTimestamp(seconds * 1000);
-							ts.setNanos((int)(nanos - (seconds * 1000)));
+							ts.setNanos((int)(nanos - (seconds * 1000000000)));
 							alo.add(ts);
 							offset += 8;
 						} else if (type == 21) // Time w/ nanos
@@ -2244,7 +2244,7 @@ public class XGResultSet implements ResultSet {
 							long nanos = bb.getLong(offset);
 							long seconds = nanos / 1000000000;
 							XGTime time = new XGTime(seconds * 1000);
-							time.setNanos((int)(nanos - (seconds * 1000)));
+							time.setNanos((int)(nanos - (seconds * 1000000000)));
 							alo.add(time);
 							offset += 8;
 						}  
