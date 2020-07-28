@@ -1062,13 +1062,18 @@ message HashJoinOperator
 	bool gdcJoin = 7;
 	//Whether or not this join is matching null keys
 	bool matchNullKeys = 8; // deprecated in v4. does not need to be set v4+, it has no effect
-	// implicitly project gdc keys [(for left child, for right child), ...] each
+	// [ONLY IF GDCJOIN] implicitly project gdc keys [(for left child, for right child), ...] each
 	repeated bool implicit_projs = 9;
+	// [ONLY IF GDCJOIN] implicitly project gdc vals for each lookup child
+	repeated bool implicit_val_projs = 13;
+	// [ONLY IF GDCJOIN] mark which lookup children output specially named replacement cols at the back of this op's outputColumns
+	repeated bool lookup_outputs_replacement_col = 14;
 	// Which equi join conditions match null keys? The index here corresponds to join col position in join_cols
 	repeated uint64 matchNullKeysIdxes = 10;
 	//Should we use a product multiplexer instead of a hash join multiplexer?
 	bool productMultiplex = 11;
 	repeated string checkedExceptionCols = 12;
+	// 13 and 14 defined above
 }
 
 message EosOperator
