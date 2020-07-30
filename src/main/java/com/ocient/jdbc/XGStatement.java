@@ -27,8 +27,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseType;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplain;
-import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplainForSpark;
-import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplainForSpark.PartitioningType;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExport;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExportResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecutePlan;
@@ -722,16 +720,6 @@ public class XGStatement implements Statement {
                 return er.getExportStatement();
         }
 
-	// used by Spark
-	// val is the size of each partition (if isInMb is true), or the number of
-	// partitions (otherwise)
-	public PlanMessage explain(final String sql, final int val, final boolean isInMb) throws SQLException {
-		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
-				sql, Request.RequestType.EXECUTE_EXPLAIN_FOR_SPARK, val, isInMb);
-
-		return er.getPlan();
-	}
-
 	private ClientWireProtocol.FetchSystemMetadataResponse.Builder fetchSystemMetadata(
 			final FetchSystemMetadata.SystemMetadataCall call, final String schema, final String table,
 			final String col, final boolean test) throws SQLException {
@@ -1146,12 +1134,6 @@ public class XGStatement implements Statement {
 				br = ClientWireProtocol.ExplainResponse.newBuilder();
 				setWrapped = b2.getClass().getMethod("setExecuteExplain", c);
 				break;
-			case EXECUTE_EXPLAIN_FOR_SPARK:
-				c = ExecuteExplainForSpark.class;
-				b1 = ExecuteExplainForSpark.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
-				setWrapped = b2.getClass().getMethod("setExecuteExplainForSpark", c);
-				break;
 			case EXECUTE_UPDATE:
 				c = ExecuteUpdate.class;
 				b1 = ExecuteUpdate.newBuilder();
@@ -1219,15 +1201,7 @@ public class XGStatement implements Statement {
 			default:
 				throw SQLStates.INTERNAL_ERROR.clone();
 			}
-			if (requestType == Request.RequestType.EXECUTE_EXPLAIN_FOR_SPARK) {
-				final Method setType = b1.getClass().getMethod("setType", PartitioningType.class);
-				if (isInMb) {
-					setType.invoke(b1, PartitioningType.BY_SIZE);
-				} else {
-					setType.invoke(b1, PartitioningType.BY_NUMBER);
-				}
-				b1.getClass().getMethod("setPartitioningParam", int.class).invoke(b1, val);
-			} else if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
+			if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
 				//don't touch the statment if this is a plan (proto buffer string plan)
 				sql = setParms(sql);
 			}
