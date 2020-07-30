@@ -1,5 +1,4 @@
 syntax = "proto3";
-import "PlanProtocol.proto";
 package xg.cmdcomp;
 option java_package = "com.ocient.jdbc.proto";
 option java_outer_classname = "ClientWireProtocol";
@@ -200,7 +199,7 @@ message ExecuteExplainForSpark
 message ExplainResponse
 {
 	ConfirmationResponse response = 1;
-	xg.db.sqlPlans.PlanMessage plan = 2;
+	string plan = 2;
 	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
 	string redirectHost = 4;
 	fixed32 redirectPort = 5;

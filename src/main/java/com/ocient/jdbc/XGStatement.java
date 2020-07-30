@@ -38,7 +38,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ListPlan;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchSystemMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.KillQuery;
 import java.util.TimeZone;
@@ -484,8 +483,7 @@ public class XGStatement implements Statement {
 			try {
 				// get the plan in proto format and convert it to its Json representation
 				LOGGER.log(Level.INFO, String.format("Doing a JSON explain of: %s", sqlQuery));
-				final PlanMessage pm = explain(sqlQuery);
-				explain = JsonFormat.printer().print(pm);
+				explain = explain(sqlQuery);
 			} catch (Exception e) {
 				throw SQLStates.newGenericException(e);
 			}
@@ -496,8 +494,7 @@ public class XGStatement implements Statement {
 			LOGGER.log(Level.INFO, String.format("Doing an explain of: %s", sqlQuery));
 			// get the plan in proto format and convert it to its google proto buffer string
 			// representation
-			final PlanMessage pm = explain(sqlQuery);
-			explain = pm.toString();
+			explain = explain(sqlQuery);
 			isExplain = true;
 		}
 
@@ -614,14 +611,14 @@ public class XGStatement implements Statement {
 	}
 
 	// used by CLI
-	public PlanMessage explain(final String sql) throws SQLException {
+	public String explain(final String sql) throws SQLException {
 		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
 				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false);
 		return er.getPlan();
 	}
 
 	// used by CLI
-	public PlanMessage explainPlan(final String plan) throws SQLException {
+	public String explainPlan(final String plan) throws SQLException {
 		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
 				plan, Request.RequestType.EXPLAIN_PLAN, 0, false);
 		return er.getPlan();

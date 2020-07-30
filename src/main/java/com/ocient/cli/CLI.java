@@ -61,7 +61,6 @@ import com.ocient.jdbc.XGConnection;
 import com.ocient.jdbc.XGDatabaseMetaData;
 import com.ocient.jdbc.XGStatement;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import java.util.TimeZone;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -999,11 +998,12 @@ public class CLI {
 				plan = plan.substring("JSON ".length()).trim();
 				jsonFormat = true;
 			}
-			final PlanMessage pm = ((XGStatement) stmt).explainPlan(plan);
+			final String pm = ((XGStatement) stmt).explainPlan(plan);
 
+			//TODO fixme
 			if (jsonFormat) {
-				final String planJsonFormat = JsonFormat.printer().print(pm);
-				System.out.println(planJsonFormat);
+				//final String planJsonFormat = JsonFormat.printer().print(pm);
+				//System.out.println(planJsonFormat);
 			} else {
 				System.out.println(pm);
 			}
