@@ -181,21 +181,6 @@ message ExecuteExplain
 	bool force = 2;
 }
 
-message ExecuteExplainForSpark
-{
-	enum PartitioningType
-	{
-		INVALID_PARTITIONING = 0;
-		BY_SIZE = 1;
-		BY_NUMBER = 2;
-	}
-	
-	string sql = 1;
-	PartitioningType type = 2;
-	sfixed32 partitioningParam = 3;
-	bool force = 4;
-}
-
 message ExplainResponse
 {
 	ConfirmationResponse response = 1;
@@ -271,7 +256,6 @@ message Request
         CLOSE_RESULT_SET = 9;
         EXECUTE_QUERY = 10;
         EXECUTE_EXPLAIN = 11;
-        EXECUTE_EXPLAIN_FOR_SPARK = 12;
         EXECUTE_UPDATE = 13;
         LOAD_BROADCAST = 14;
         FETCH_SYSTEM_METADATA = 15;
@@ -306,7 +290,6 @@ message Request
     	CloseResultSet close_result_set = 10;
     	ExecuteQuery execute_query = 11;
     	ExecuteExplain execute_explain = 12;
-    	ExecuteExplainForSpark execute_explain_for_spark = 13;
     	ExecuteUpdate execute_update = 14;
     	LoadBroadcast load_broadcast = 15;
     	FetchSystemMetadata fetch_system_metadata = 16;
