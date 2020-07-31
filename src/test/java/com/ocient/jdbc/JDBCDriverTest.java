@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.ocient.jdbc.XGStatement;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
+import com.ocient.jdbc.proto.ClientWireProtocol.ExplainFormat;
 
 //all of these tests are based on the fact that we are getting empty result sets
 public class JDBCDriverTest {
@@ -485,8 +485,9 @@ public class JDBCDriverTest {
 		try {
 			Connection conn = DriverManager.getConnection(urlTest, propTest);
 			Statement stmt = conn.createStatement();
-			PlanMessage plan = ((XGStatement)stmt).explain("select * from (select c1, sin(c1), char(c1) from sys.dummy10000) order by c1");
-			success = (plan != com.ocient.jdbc.proto.PlanProtocol.PlanMessage.getDefaultInstance()) && success;
+			String plan = ((XGStatement)stmt).explain("select * from (select c1, sin(c1), char(c1) from sys.dummy10000) order by c1", ExplainFormat.PROTO);
+			//success = (plan == )
+			//How to test plan equality?
 			conn.close();
 		}
 		catch(final Exception e) {

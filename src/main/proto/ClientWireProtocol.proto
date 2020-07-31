@@ -175,10 +175,17 @@ message ExecuteUpdateResponse
 	fixed32 redirectPort = 5;
 }
 
+enum ExplainFormat
+{
+	PROTO = 0;
+	JSON = 1;
+}
+
 message ExecuteExplain
 {
 	string sql = 1;
 	bool force = 2;
+	ExplainFormat format = 3;
 }
 
 message ExplainResponse
@@ -346,6 +353,7 @@ message ExplainPlan
 	//sql is actually the plan name but this makes the logic easier
 	string sql = 1;
 	bool force = 2;
+	ExplainFormat format = 3;
 }
 
 message ForceExternal

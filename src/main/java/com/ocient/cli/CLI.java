@@ -60,6 +60,7 @@ import com.ocient.jdbc.DataEndMarker;
 import com.ocient.jdbc.XGConnection;
 import com.ocient.jdbc.XGDatabaseMetaData;
 import com.ocient.jdbc.XGStatement;
+import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
 import java.util.TimeZone;
 import java.sql.Time;
@@ -993,20 +994,15 @@ public class CLI {
 			start = System.currentTimeMillis();
 			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
 
-			boolean jsonFormat = false;
+			ClientWireProtocol.ExplainFormat format = ClientWireProtocol.ExplainFormat.PROTO;
 			if (plan.substring(0, "JSON ".length()).equalsIgnoreCase("JSON ")) {
 				plan = plan.substring("JSON ".length()).trim();
-				jsonFormat = true;
+				format = ClientWireProtocol.ExplainFormat.JSON;
 			}
-			final String pm = ((XGStatement) stmt).explainPlan(plan);
+			final String pm = ((XGStatement) stmt).explainPlan(plan, format);
 
-			//TODO fixme
-			if (jsonFormat) {
-				//final String planJsonFormat = JsonFormat.printer().print(pm);
-				//System.out.println(planJsonFormat);
-			} else {
-				System.out.println(pm);
-			}
+			System.out.println(pm);
+			
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
