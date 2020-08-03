@@ -1121,7 +1121,7 @@ public class XGStatement implements Statement {
 	}
 
 	private Object sendAndReceive(String sql, final Request.RequestType requestType, final int val,
-			final boolean isInMb, final Optional<Function<Object, Void>> additionPropertySetter) throws SQLException {
+			final boolean isInMb, final Optional<Function<Object, Void>> additionalPropertySetter) throws SQLException {
 		clearWarnings();
 		if (conn.rs != null && !conn.rs.isClosed()) {
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
@@ -1234,9 +1234,10 @@ public class XGStatement implements Statement {
 			}
 
 			//Lambda to set properties specific to a message type
-			if(additionPropertySetter.isPresent())
+			//Not all that nice but better than more reflection
+			if(additionalPropertySetter.isPresent())
 			{
-				additionPropertySetter.get().apply(b1);
+				additionalPropertySetter.get().apply(b1);
 			}
 
 			b2.getClass().getMethod("setType", requestType.getClass()).invoke(b2, requestType);
@@ -1263,7 +1264,7 @@ public class XGStatement implements Statement {
 						final Method getRedirectHost = br.getClass().getMethod("getRedirectHost");
 						final Method getRedirectPort = br.getClass().getMethod("getRedirectPort");
 						redirect((String) getRedirectHost.invoke(br), (int) getRedirectPort.invoke(br));
-						return sendAndReceive(sql, requestType, val, isInMb, additionPropertySetter);
+						return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
 					}
 				}
 
@@ -1282,7 +1283,7 @@ public class XGStatement implements Statement {
 				}
 				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
-				return sendAndReceive(sql, requestType, val, isInMb, additionPropertySetter);
+				return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
 			}
 		} catch (final Exception e) {
 			if (e instanceof SQLException) {
