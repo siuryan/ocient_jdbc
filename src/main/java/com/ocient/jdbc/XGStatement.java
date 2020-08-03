@@ -1146,7 +1146,7 @@ public class XGStatement implements Statement {
 			case EXECUTE_EXPLAIN:
 				c = ExecuteExplain.class;
 				b1 = ExecuteExplain.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
+				br = ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
 				setWrapped = b2.getClass().getMethod("setExecuteExplain", c);
 				break;
 			case EXECUTE_UPDATE:
@@ -1170,7 +1170,7 @@ public class XGStatement implements Statement {
 			case EXPLAIN_PLAN:
 				c = ExplainPlan.class;
 				b1 = ExplainPlan.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
+				br = ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
 				setWrapped = b2.getClass().getMethod("setExplainPlan", c);
 				break;
 			case LIST_PLAN:
