@@ -26,9 +26,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseType;
-
-import org.checkerframework.checker.nullness.Opt;
-
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplain;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExport;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExportResponse;
