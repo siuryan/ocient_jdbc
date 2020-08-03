@@ -995,7 +995,7 @@ public class CLI {
 			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
 
 			ClientWireProtocol.ExplainFormat format = ClientWireProtocol.ExplainFormat.PROTO;
-			if (plan.substring(0, "JSON ".length()).equalsIgnoreCase("JSON ")) {
+			if (startsWithIgnoreCase(plan, "JSON ")) {
 				plan = plan.substring("JSON ".length()).trim();
 				format = ClientWireProtocol.ExplainFormat.JSON;
 			}

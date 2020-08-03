@@ -632,7 +632,7 @@ public class XGStatement implements Statement {
 	public String explainPlan(final String plan, final ClientWireProtocol.ExplainFormat format) throws SQLException {
 
 		Function<Object, Void> typeSetter = (Object builder) -> {
-			ClientWireProtocol.ExecuteExplain.Builder typedBuilder = (ClientWireProtocol.ExecuteExplain.Builder) builder;
+			ClientWireProtocol.ExplainPlan.Builder typedBuilder = (ClientWireProtocol.ExplainPlan.Builder) builder;
 			typedBuilder.setFormat(format);
 			return null;
 		};
