@@ -623,7 +623,7 @@ public class XGStatement implements Statement {
 			return null;
 		};
 
-		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
+		final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
 				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.of(typeSetter));
 		return er.getPlan();
 	}
@@ -637,7 +637,7 @@ public class XGStatement implements Statement {
 			return null;
 		};
 
-		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
+		final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
 				plan, Request.RequestType.EXPLAIN_PLAN, 0, false, Optional.of(typeSetter));
 		return er.getPlan();
 	}

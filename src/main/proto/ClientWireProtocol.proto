@@ -1,4 +1,7 @@
 syntax = "proto3";
+
+//Deprecated jdbc version 1.38, plans are always strings
+import "PlanProtocol.proto";
 package xg.cmdcomp;
 option java_package = "com.ocient.jdbc.proto";
 option java_outer_classname = "ClientWireProtocol";
@@ -8,7 +11,7 @@ message ClientConnection
     string userid = 1;
     string database = 2;
     string clientid = 3;
-    string version = 4;
+	string version = 4;
 }
 
 message ClientConnectionResponse 
@@ -188,7 +191,33 @@ message ExecuteExplain
 	ExplainFormat format = 3;
 }
 
+//Spark Deprecated
+message ExecuteExplainForSpark
+{
+	enum PartitioningType
+	{
+		INVALID_PARTITIONING = 0;
+		BY_SIZE = 1;
+		BY_NUMBER = 2;
+	}
+	
+	string sql = 1;
+	PartitioningType type = 2;
+	sfixed32 partitioningParam = 3;
+	bool force = 4;
+}
+
+//Deprecated jdbc version 1.38 / db 7.0.1
 message ExplainResponse
+{
+	ConfirmationResponse response = 1;
+	xg.db.sqlPlans.PlanMessage plan = 2;
+	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
+	string redirectHost = 4;
+	fixed32 redirectPort = 5;
+}
+
+message ExplainResponseStringPlan
 {
 	ConfirmationResponse response = 1;
 	string plan = 2;
@@ -262,7 +291,9 @@ message Request
         FETCH_METADATA = 8;
         CLOSE_RESULT_SET = 9;
         EXECUTE_QUERY = 10;
-        EXECUTE_EXPLAIN = 11;
+		EXECUTE_EXPLAIN = 11;		
+		//Spark Deprecated
+        EXECUTE_EXPLAIN_FOR_SPARK = 12;
         EXECUTE_UPDATE = 13;
         LOAD_BROADCAST = 14;
         FETCH_SYSTEM_METADATA = 15;
@@ -296,7 +327,9 @@ message Request
     	FetchMetadata fetch_metadata = 9;
     	CloseResultSet close_result_set = 10;
     	ExecuteQuery execute_query = 11;
-    	ExecuteExplain execute_explain = 12;
+		ExecuteExplain execute_explain = 12;
+		//Spark Deprecated
+		ExecuteExplainForSpark execute_explain_for_spark = 13;
     	ExecuteUpdate execute_update = 14;
     	LoadBroadcast load_broadcast = 15;
     	FetchSystemMetadata fetch_system_metadata = 16;
