@@ -22,7 +22,7 @@ import java.util.logging.Level;
 public class JDBCDriver implements Driver
 {
 
-	private static String version = "7.0.0";
+	private static String version = "7.0.1";
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 	private static String logFileName;
 	private static FileHandler logHandler;
