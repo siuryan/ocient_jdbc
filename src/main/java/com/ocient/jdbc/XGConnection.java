@@ -140,7 +140,8 @@ public class XGConnection implements Connection {
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
-	protected String version;
+	protected String driverVersion;
+	protected String serverVersion = "";
 	protected String setSchema = "";
 	protected long setPso = 0;
 	protected boolean force = false;
@@ -162,7 +163,7 @@ public class XGConnection implements Connection {
 	protected Map<String, Class<?>> typeMap;
 
 	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
-			final String database, final String version, final String force) throws Exception {
+			final String database, final String driverVersion, final String force) throws Exception {
 		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
 		originalIp = ip;
 		originalPort = portNum;
@@ -179,14 +180,13 @@ public class XGConnection implements Connection {
 		this.sock = sock;
 		this.portNum = portNum;
 		this.database = database;
-		this.version = version;
+		this.driverVersion = driverVersion;
 		this.retryCounter = 0;
 		this.typeMap = new HashMap<String, Class<?>>();
 		in = new BufferedInputStream(sock.getInputStream());
 		out = new BufferedOutputStream(sock.getOutputStream());
 		try {
-
-			clientHandshake(user, pwd, database);
+			clientHandshake(user, pwd, database, true);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			throw e;
@@ -194,7 +194,7 @@ public class XGConnection implements Connection {
 	}
 
 	public XGConnection(final String user, final String pwd, final int portNum, final String url, final String database,
-			final String version, final boolean force) {
+			final String driverVersion, final boolean force) {
 		this.force = force;
 		this.url = url;
 		this.user = user;
@@ -202,16 +202,20 @@ public class XGConnection implements Connection {
 		this.sock = null;
 		this.portNum = portNum;
 		this.database = database;
-		this.version = version;
+		this.driverVersion = driverVersion;
 		this.retryCounter = 0;
 		this.typeMap = new HashMap<String, Class<?>>();
 		in = null;
 		out = null;
 	}
 
-	@SuppressWarnings("unchecked")
 	public XGConnection copy() throws SQLException{
-		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, version, force);
+		return copy(true);
+	}
+
+	@SuppressWarnings("unchecked")
+	public XGConnection copy(final boolean shouldRequestVersion) throws SQLException{
+		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, force);
 		try {
 			retval.connected = false;
 			retval.setSchema = setSchema;
@@ -223,7 +227,7 @@ public class XGConnection implements Connection {
 			retval.ip = ip;
 			retval.originalIp = originalIp;
 			retval.originalPort = originalPort;
-			retval.reconnect();
+			retval.reconnect(shouldRequestVersion);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
 					String.format("Copying the connection for a new statement failed with exception %s with message %s",
@@ -236,6 +240,19 @@ public class XGConnection implements Connection {
 		}
 
 		return retval;
+	}
+
+	public void setServerVersion(String version)
+	{
+		//Versions are major.minor.patch-date
+		//don't want the date
+		String cleanVersion = version.indexOf("-") == -1 ? version : version.substring(0, version.indexOf("-"));
+		this.serverVersion = cleanVersion;
+	}
+
+	public String getServerVersion()
+	{
+		return serverVersion;
 	}
 
 	@Override
@@ -312,7 +329,7 @@ public class XGConnection implements Connection {
 		getTimer().purge();
 	}
 
-	private void clientHandshake(final String userid, final String pwd, final String db) throws Exception {
+	private void clientHandshake(final String userid, final String pwd, final String db, final boolean shouldRequestVersion) throws Exception {
 		try {
 			LOGGER.log(Level.INFO, "Beginning handshake");
 			// send first part of handshake - contains userid
@@ -321,7 +338,7 @@ public class XGConnection implements Connection {
 			builder.setUserid(userid);
 			builder.setDatabase(database);
 			builder.setClientid(client);
-			builder.setVersion(version);
+			builder.setVersion(driverVersion);
 			final ClientConnection msg = builder.build();
 			ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
 			b2.setType(ClientWireProtocol.Request.RequestType.CLIENT_CONNECTION);
@@ -455,7 +472,7 @@ public class XGConnection implements Connection {
 			// the server, just try again(up to 5 times)
 			if (SQLStates.FAILED_HANDSHAKE.equals(state) && retryCounter++ < 5) {
 				LOGGER.log(Level.INFO, "Handshake failed, retrying");
-				clientHandshake(userid, pwd, db);
+				clientHandshake(userid, pwd, db, shouldRequestVersion);
 				return;
 			}
 			retryCounter = 0;
@@ -532,7 +549,33 @@ public class XGConnection implements Connection {
 
 			throw e;
 		}
+
+		if(shouldRequestVersion)
+		{
+			fetchServerVersion();
+		}
 	}
+
+	private void fetchServerVersion() throws Exception
+	{
+		try{
+			XGStatement stmt = new XGStatement(this, false);
+			String version = stmt.fetchSystemMetadataString(
+				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
+			setServerVersion(version);
+		}
+		catch (final Exception e)
+		{
+			LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred while fetching server version with message %s", e.toString(), e.getMessage()));
+			try {
+				sock.close();
+			} catch (final Exception f) {
+			}
+
+			throw e;
+		}
+	} 
 
 	@Override
 	public void close() throws SQLException {
@@ -749,7 +792,7 @@ public class XGConnection implements Connection {
 	}
 
 	public int getMajorVersion() {
-		return Integer.parseInt(version.substring(0, version.indexOf(".")));
+		return Integer.parseInt(driverVersion.substring(0, driverVersion.indexOf(".")));
 	}
 
 	@Override
@@ -764,8 +807,8 @@ public class XGConnection implements Connection {
 	}
 
 	public int getMinorVersion() {
-		final int i = version.indexOf(".") + 1;
-		return Integer.parseInt(version.substring(i, version.indexOf(".", i)));
+		final int i = driverVersion.indexOf(".") + 1;
+		return Integer.parseInt(driverVersion.substring(i, driverVersion.indexOf(".", i)));
 	}
 
 	@Override
@@ -882,7 +925,7 @@ public class XGConnection implements Connection {
 	}
 
 	public String getVersion() {
-		return version;
+		return driverVersion;
 	}
 
 	@Override
@@ -1104,10 +1147,15 @@ public class XGConnection implements Connection {
 		return connected;
 	}
 
+	public void reconnect() throws IOException, SQLException
+	{
+		reconnect(true);
+	}
+
 	/*
 	 * We seem to have lost our connection. Reconnect to any cmdcomp
 	 */
-	public void reconnect() throws IOException, SQLException {
+	public void reconnect(final boolean shouldRequestVersion) throws IOException, SQLException {
 		// Try to find any cmdcomp that we can connect to
 		// If we can't connect to any throw IOException
 
@@ -1176,7 +1224,7 @@ public class XGConnection implements Connection {
 				in = new BufferedInputStream(sock.getInputStream());
 				out = new BufferedOutputStream(sock.getOutputStream());
 
-				clientHandshake(user, pwd, database);
+				clientHandshake(user, pwd, database, true);
 				if (!setSchema.equals("")) {
 					setSchema(setSchema);
 				}
@@ -1246,7 +1294,7 @@ public class XGConnection implements Connection {
 					in = new BufferedInputStream(sock.getInputStream());
 					out = new BufferedOutputStream(sock.getOutputStream());
 
-					clientHandshake(user, pwd, database);
+					clientHandshake(user, pwd, database, shouldRequestVersion);
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
 					}
@@ -1321,7 +1369,7 @@ public class XGConnection implements Connection {
 					in = new BufferedInputStream(sock.getInputStream());
 					out = new BufferedOutputStream(sock.getOutputStream());
 	
-					clientHandshake(user, pwd, database);
+					clientHandshake(user, pwd, database, shouldRequestVersion);
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
 					}
@@ -1392,7 +1440,7 @@ public class XGConnection implements Connection {
 			in = new BufferedInputStream(sock.getInputStream());
 			out = new BufferedOutputStream(sock.getOutputStream());
 
-			clientHandshake(user, pwd, database);
+			clientHandshake(user, pwd, database, shouldRequestVersion);
 			if (!setSchema.equals("")) {
 				setSchema(setSchema);
 			}
@@ -1519,7 +1567,7 @@ public class XGConnection implements Connection {
 			try {
 				in = new BufferedInputStream(sock.getInputStream());
 				out = new BufferedOutputStream(sock.getOutputStream());
-				clientHandshake(user, pwd, database);
+				clientHandshake(user, pwd, database, true);
 				oneShotForce = true;
 				if (!setSchema.equals("")) {
 					setSchema(setSchema);
@@ -1581,7 +1629,7 @@ public class XGConnection implements Connection {
 				try {
 					in = new BufferedInputStream(sock.getInputStream());
 					out = new BufferedOutputStream(sock.getOutputStream());
-					clientHandshake(user, pwd, database);
+					clientHandshake(user, pwd, database, true);
 					oneShotForce = true;
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
