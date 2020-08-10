@@ -27,8 +27,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseType;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplain;
-import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplainForSpark;
-import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplainForSpark.PartitioningType;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExport;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExportResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecutePlan;
@@ -40,15 +38,17 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ListPlan;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchSystemMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.KillQuery;
+import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
+import com.google.protobuf.util.JsonFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import com.google.common.base.Preconditions;
 import com.google.protobuf.util.JsonFormat;
@@ -126,6 +126,14 @@ public class XGStatement implements Statement {
 	private volatile long timeoutMillis;
 
 	private boolean oneShotForce;
+
+	//TODO make a builder class for xgstatement to avoid so many constructors
+	public XGStatement(final XGConnection conn, final boolean shouldRequestVersion) throws SQLException {
+		this.conn = conn.copy(shouldRequestVersion);
+		this.force = false;
+		this.oneShotForce = false;
+		this.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
+	}
 
 	public XGStatement(final XGConnection conn, final boolean force, final boolean oneShotForce) throws SQLException {
 		this.conn = conn.copy();
@@ -486,8 +494,7 @@ public class XGStatement implements Statement {
 			try {
 				// get the plan in proto format and convert it to its Json representation
 				LOGGER.log(Level.INFO, String.format("Doing a JSON explain of: %s", sqlQuery));
-				final PlanMessage pm = explain(sqlQuery);
-				explain = JsonFormat.printer().print(pm);
+				explain = explain(sqlQuery, ClientWireProtocol.ExplainFormat.JSON);
 			} catch (Exception e) {
 				throw SQLStates.newGenericException(e);
 			}
@@ -498,8 +505,7 @@ public class XGStatement implements Statement {
 			LOGGER.log(Level.INFO, String.format("Doing an explain of: %s", sqlQuery));
 			// get the plan in proto format and convert it to its google proto buffer string
 			// representation
-			final PlanMessage pm = explain(sqlQuery);
-			explain = pm.toString();
+			explain = explain(sqlQuery, ClientWireProtocol.ExplainFormat.PROTO);
 			isExplain = true;
 		}
 
@@ -527,7 +533,7 @@ public class XGStatement implements Statement {
 		}
 
 		LOGGER.log(Level.INFO, String.format("Executing query: %s", sql));
-		sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false);
+		sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false, Optional.empty());
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
 		} catch (final Exception e) {
@@ -593,7 +599,7 @@ public class XGStatement implements Statement {
 		// otherwise we are handling a normal update command
 		LOGGER.log(Level.INFO, String.format("Executing update: %s", sql));
 		final ClientWireProtocol.ExecuteUpdateResponse.Builder eur = (ClientWireProtocol.ExecuteUpdateResponse.Builder) sendAndReceive(
-				sql, Request.RequestType.EXECUTE_UPDATE, 0, false);
+				sql, Request.RequestType.EXECUTE_UPDATE, 0, false, Optional.empty());
 		return eur.getUpdateRowCount();
 	}
 
@@ -615,23 +621,90 @@ public class XGStatement implements Statement {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	// used by CLI
-	public PlanMessage explain(final String sql) throws SQLException {
+
+	private boolean shouldDeprecatedExplain()
+	{
+		return conn.getServerVersion().compareTo("7.0.1") == -1;
+	}
+	
+	private String planProtoToString(final PlanMessage plan, final ClientWireProtocol.ExplainFormat format) throws SQLException
+	{
+		if(format == ClientWireProtocol.ExplainFormat.PROTO)
+		{
+			return plan.toString();
+		}
+		else // JSON
+		{
+			try{
+				return JsonFormat.printer().print(plan);
+			}
+			catch(Exception e)
+			{
+				throw SQLStates.newGenericException(e);
+			}
+		}
+	}
+
+	//Used before version 7.0.1
+	//The explain responses are proto instead of strings
+	private String explainDeprecated(final String sql, final ClientWireProtocol.ExplainFormat format) throws SQLException
+	{
 		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
-				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false);
-		return er.getPlan();
+				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.empty());
+		return planProtoToString(er.getPlan(), format);
 	}
 
 	// used by CLI
-	public PlanMessage explainPlan(final String plan) throws SQLException {
+	public String explain(final String sql, final ClientWireProtocol.ExplainFormat format) throws SQLException {
+
+		if(shouldDeprecatedExplain())
+		{
+			return explainDeprecated(sql, format);
+		}
+
+
+		Function<Object, Void> typeSetter = (Object builder) -> {
+			ClientWireProtocol.ExecuteExplain.Builder typedBuilder = (ClientWireProtocol.ExecuteExplain.Builder) builder;
+			typedBuilder.setFormat(format);
+			return null;
+		};
+
+		final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
+				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.of(typeSetter));
+		return er.getPlan();
+	}
+
+	//Used before version 7.0.1
+	//The explain responses are proto instead of strings
+	private String explainPlanDeprecated(final String plan, final ClientWireProtocol.ExplainFormat format) throws SQLException
+	{
 		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
-				plan, Request.RequestType.EXPLAIN_PLAN, 0, false);
+				plan, Request.RequestType.EXPLAIN_PLAN, 0, false, Optional.empty());
+		return planProtoToString(er.getPlan(), format);
+	}
+
+	// used by CLI
+	public String explainPlan(final String plan, final ClientWireProtocol.ExplainFormat format) throws SQLException {
+
+		if(shouldDeprecatedExplain())
+		{
+			return explainPlanDeprecated(plan, format);
+		}
+
+		Function<Object, Void> typeSetter = (Object builder) -> {
+			ClientWireProtocol.ExplainPlan.Builder typedBuilder = (ClientWireProtocol.ExplainPlan.Builder) builder;
+			typedBuilder.setFormat(format);
+			return null;
+		};
+
+		final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
+				plan, Request.RequestType.EXPLAIN_PLAN, 0, false, Optional.of(typeSetter));
 		return er.getPlan();
 	}
 
 	// used by CLI
 	public ResultSet executePlan(final String plan) throws SQLException {
-		sendAndReceive(plan, Request.RequestType.EXECUTE_PLAN, 0, false);
+		sendAndReceive(plan, Request.RequestType.EXECUTE_PLAN, 0, false, Optional.empty());
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
 		} catch (final Exception e) {
@@ -652,7 +725,7 @@ public class XGStatement implements Statement {
 
 	// used by CLI
 	public ResultSet executeInlinePlan(final String plan) throws SQLException {
-		sendAndReceive(plan, Request.RequestType.EXECUTE_INLINE_PLAN, 0, false);
+		sendAndReceive(plan, Request.RequestType.EXECUTE_INLINE_PLAN, 0, false, Optional.empty());
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
 		} catch (final Exception e) {
@@ -674,7 +747,7 @@ public class XGStatement implements Statement {
 	// used by CLI
 	public ArrayList<String> listPlan() throws SQLException {
 		final ClientWireProtocol.ListPlanResponse.Builder er = (ClientWireProtocol.ListPlanResponse.Builder) sendAndReceive(
-				"", Request.RequestType.LIST_PLAN, 0, false);
+				"", Request.RequestType.LIST_PLAN, 0, false, Optional.empty());
 		ArrayList<String> planNames = new ArrayList<String>(er.getPlanNameCount());
 		for (int i = 0; i < er.getPlanNameCount(); ++i)
 			planNames.add(er.getPlanName(i));
@@ -685,20 +758,20 @@ public class XGStatement implements Statement {
 	// used by CLI
 	public void cancelQuery(String uuid) throws SQLException {
 		final ClientWireProtocol.CancelQueryResponse.Builder er = (ClientWireProtocol.CancelQueryResponse.Builder) sendAndReceive(
-				uuid, Request.RequestType.CANCEL_QUERY, 0, false);
+				uuid, Request.RequestType.CANCEL_QUERY, 0, false, Optional.empty());
 		return;
 	}
 
 	public void killQuery(String uuid) throws SQLException {
 		final ClientWireProtocol.KillQueryResponse.Builder er = (ClientWireProtocol.KillQueryResponse.Builder) sendAndReceive(
-				uuid, Request.RequestType.KILL_QUERY, 0, false);
+				uuid, Request.RequestType.KILL_QUERY, 0, false, Optional.empty());
 		return;
 	}
 
 	// used by CLI
 	public ArrayList<SysQueriesRow> listAllQueries() throws SQLException {
 		final ClientWireProtocol.SystemWideQueriesResponse.Builder er = (ClientWireProtocol.SystemWideQueriesResponse.Builder) sendAndReceive(
-				"", Request.RequestType.SYSTEM_WIDE_QUERIES, 0, false);
+				"", Request.RequestType.SYSTEM_WIDE_QUERIES, 0, false, Optional.empty());
 
 		ArrayList<SysQueriesRow> queries = new ArrayList<SysQueriesRow>(er.getRowsCount());
 		for (int i = 0; i < er.getRowsCount(); ++i) {
@@ -711,26 +784,16 @@ public class XGStatement implements Statement {
 	// used by CLI
 	public String exportTable(final String table) throws SQLException {
 		final ClientWireProtocol.ExecuteExportResponse.Builder er = (ClientWireProtocol.ExecuteExportResponse.Builder) sendAndReceive(
-				table, Request.RequestType.EXECUTE_EXPORT, 0, false);
+				table, Request.RequestType.EXECUTE_EXPORT, 0, false, Optional.empty());
 		return er.getExportStatement();
 	}
 
         // used by CLI
         public String exportTranslation(final String table) throws SQLException {
                 final ClientWireProtocol.ExecuteExportResponse.Builder er = (ClientWireProtocol.ExecuteExportResponse.Builder) sendAndReceive(
-                                table, Request.RequestType.EXECUTE_EXPORT, 0, false);
+                                table, Request.RequestType.EXECUTE_EXPORT, 0, false, Optional.empty());
                 return er.getExportStatement();
         }
-
-	// used by Spark
-	// val is the size of each partition (if isInMb is true), or the number of
-	// partitions (otherwise)
-	public PlanMessage explain(final String sql, final int val, final boolean isInMb) throws SQLException {
-		final ClientWireProtocol.ExplainResponse.Builder er = (ClientWireProtocol.ExplainResponse.Builder) sendAndReceive(
-				sql, Request.RequestType.EXECUTE_EXPLAIN_FOR_SPARK, val, isInMb);
-
-		return er.getPlan();
-	}
 
 	private ClientWireProtocol.FetchSystemMetadataResponse.Builder fetchSystemMetadata(
 			final FetchSystemMetadata.SystemMetadataCall call, final String schema, final String table,
@@ -1118,7 +1181,7 @@ public class XGStatement implements Statement {
 	}
 
 	private Object sendAndReceive(String sql, final Request.RequestType requestType, final int val,
-			final boolean isInMb) throws SQLException {
+			final boolean isInMb, final Optional<Function<Object, Void>> additionalPropertySetter) throws SQLException {
 		clearWarnings();
 		if (conn.rs != null && !conn.rs.isClosed()) {
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
@@ -1143,14 +1206,8 @@ public class XGStatement implements Statement {
 			case EXECUTE_EXPLAIN:
 				c = ExecuteExplain.class;
 				b1 = ExecuteExplain.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
+				br = shouldDeprecatedExplain() ? ClientWireProtocol.ExplainResponse.newBuilder() : ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
 				setWrapped = b2.getClass().getMethod("setExecuteExplain", c);
-				break;
-			case EXECUTE_EXPLAIN_FOR_SPARK:
-				c = ExecuteExplainForSpark.class;
-				b1 = ExecuteExplainForSpark.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
-				setWrapped = b2.getClass().getMethod("setExecuteExplainForSpark", c);
 				break;
 			case EXECUTE_UPDATE:
 				c = ExecuteUpdate.class;
@@ -1173,7 +1230,7 @@ public class XGStatement implements Statement {
 			case EXPLAIN_PLAN:
 				c = ExplainPlan.class;
 				b1 = ExplainPlan.newBuilder();
-				br = ClientWireProtocol.ExplainResponse.newBuilder();
+				br = shouldDeprecatedExplain() ? ClientWireProtocol.ExplainResponse.newBuilder() : ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
 				setWrapped = b2.getClass().getMethod("setExplainPlan", c);
 				break;
 			case LIST_PLAN:
@@ -1219,15 +1276,7 @@ public class XGStatement implements Statement {
 			default:
 				throw SQLStates.INTERNAL_ERROR.clone();
 			}
-			if (requestType == Request.RequestType.EXECUTE_EXPLAIN_FOR_SPARK) {
-				final Method setType = b1.getClass().getMethod("setType", PartitioningType.class);
-				if (isInMb) {
-					setType.invoke(b1, PartitioningType.BY_SIZE);
-				} else {
-					setType.invoke(b1, PartitioningType.BY_NUMBER);
-				}
-				b1.getClass().getMethod("setPartitioningParam", int.class).invoke(b1, val);
-			} else if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
+			if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
 				//don't touch the statment if this is a plan (proto buffer string plan)
 				sql = setParms(sql);
 			}
@@ -1242,6 +1291,13 @@ public class XGStatement implements Statement {
 						oneShotForce = false;
 					}
 				}
+			}
+
+			//Lambda to set properties specific to a message type
+			//Not all that nice but better than more reflection
+			if(additionalPropertySetter.isPresent())
+			{
+				additionalPropertySetter.get().apply(b1);
 			}
 
 			b2.getClass().getMethod("setType", requestType.getClass()).invoke(b2, requestType);
@@ -1268,7 +1324,7 @@ public class XGStatement implements Statement {
 						final Method getRedirectHost = br.getClass().getMethod("getRedirectHost");
 						final Method getRedirectPort = br.getClass().getMethod("getRedirectPort");
 						redirect((String) getRedirectHost.invoke(br), (int) getRedirectPort.invoke(br));
-						return sendAndReceive(sql, requestType, val, isInMb);
+						return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
 					}
 				}
 
@@ -1287,7 +1343,7 @@ public class XGStatement implements Statement {
 				}
 				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
-				return sendAndReceive(sql, requestType, val, isInMb);
+				return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
 			}
 		} catch (final Exception e) {
 			if (e instanceof SQLException) {
