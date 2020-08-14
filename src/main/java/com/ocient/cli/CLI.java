@@ -389,6 +389,9 @@ public class CLI {
 				// No exception thrown means connection was successful, and connectTo may return
 				stmt = conn.createStatement();
 				return;
+			} catch (final SQLException e) {
+				System.out.println("Failed to connect to " + hosts + "(" + e.getCause().getMessage() + ")");
+				throw e;
 			} catch (final Exception e) {
 				System.out.println("Failed to connect to " + hosts);
 				throw e;

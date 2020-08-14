@@ -8,6 +8,11 @@ import java.util.logging.Logger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import javax.net.ssl.*;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+import javax.net.ssl.SSLContext;
+import sun.security.util.HostnameChecker;
 import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
@@ -72,6 +77,13 @@ import com.ocient.jdbc.proto.ClientWireProtocol.TestConnection;
 public class XGConnection implements Connection {
 	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
 
+	  public enum Tls {
+		  OFF,    // No TLS
+		  UNVERIFIED, // Don't verify certificates
+		  ON,     // TLS but no server identity verification
+		  VERIFY, // TLS with server identity verification
+	  }
+
 	private class TestConnectionThread extends Thread {
 		Exception e = null;
 
@@ -124,6 +136,105 @@ public class XGConnection implements Connection {
 		buff[3] = (byte) ((val & 0x000000FF));
 		return buff;
 	}
+	
+	private class XGTrustManager extends X509ExtendedTrustManager {
+		X509TrustManager defaultTm;
+		Tls tls;
+
+		public XGTrustManager(Tls t) throws Exception {
+			super();
+			tls = t;
+			
+			TrustManagerFactory tmf = TrustManagerFactory
+				.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			
+			tmf.init((java.security.KeyStore) null);
+			
+			for (TrustManager tm : tmf.getTrustManagers()) {
+				if (tm instanceof X509TrustManager) {
+					defaultTm = (X509TrustManager) tm;
+					break;
+				}
+			}
+		}
+				
+		@Override
+		public void checkServerTrusted(X509Certificate certificates[],
+									   String s,
+									   javax.net.ssl.SSLEngine sslEngine) throws CertificateException {
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkServerTrusted "+s+"with sslEngine");
+			checkServerTrusted(certificates, s);
+		}
+		
+		@Override
+		public void checkServerTrusted(X509Certificate[] certificates,
+									   String s,
+									   java.net.Socket socket) throws CertificateException {
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkServerTrusted "+s+"with socket");
+			checkServerTrusted(certificates, s);
+
+			// Do host name verification
+			if (tls == Tls.VERIFY) {
+				throw new UnsupportedOperationException("TLS Verify mode not supported");
+			}
+		}
+		
+		@Override
+		public void checkServerTrusted(X509Certificate[] certificates,
+									   String s) throws CertificateException {
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkServerTrusted "+s);
+			try {
+				defaultTm.checkServerTrusted(certificates, s);
+			} catch (CertificateException e) {
+				
+				// Rethrow the exception if we are not using level ON
+				if (tls != tls.UNVERIFIED)
+					throw e;
+				else
+					LOGGER.log(Level.WARNING, "Ignoring certificate exception: "+e.getMessage());
+			}
+		}
+		
+		@Override
+		public void checkClientTrusted(X509Certificate certificates[],
+									   String s,
+									   javax.net.ssl.SSLEngine sslEngine) throws CertificateException {
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkClientTrusted "+s+"with sslEngine");
+			checkClientTrusted(certificates, s);
+		}
+		
+		@Override
+		public void checkClientTrusted(X509Certificate[] certificates,
+									   String s,
+									   java.net.Socket socket) throws CertificateException{
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkClientTrusted "+s+"with socket");
+			checkClientTrusted(certificates, s);
+		}
+		
+		@Override
+		public void checkClientTrusted(X509Certificate[] certificates,
+									   String s) throws CertificateException {
+			
+			LOGGER.log(Level.INFO,"x509ExtendedTrustManager: checkClientTrusted "+s);
+			try {
+				defaultTm.checkClientTrusted(certificates, s);
+			} catch (CertificateException e) {
+				LOGGER.log(Level.WARNING, "checkClientTrusted caught "+e.getMessage());
+
+				// Rethrow the exception if we are not using level ON
+				if (tls != Tls.UNVERIFIED)
+					throw e;
+				else
+					LOGGER.log(Level.WARNING, "Ignoring certificate exception: "+e.getMessage());
+			}
+		}
+		
+		@Override
+		public X509Certificate[] getAcceptedIssuers() {
+			return defaultTm.getAcceptedIssuers();
+		}
+		
+	};
 
 	protected BufferedInputStream in;
 	protected BufferedOutputStream out;
@@ -152,6 +263,7 @@ public class XGConnection implements Connection {
 	protected ArrayList<ArrayList<String>> secondaryInterfaces = new ArrayList<ArrayList<String>>();
 	protected int secondaryIndex = -1;
 	protected int networkTimeout = 10000;
+	protected Tls tls;
 
 	// The timer is initially null, created when the first query timeout is set and
 	// destroyed on close()
@@ -162,9 +274,8 @@ public class XGConnection implements Connection {
 
 	protected Map<String, Class<?>> typeMap;
 
-	public XGConnection(final Socket sock, final String user, final String pwd, final int portNum, final String url,
-			final String database, final String driverVersion, final String force) throws Exception {
-		ip = sock.getInetAddress().toString().substring(sock.getInetAddress().toString().indexOf('/') + 1);
+	public XGConnection(final String user, final String pwd, final String ip, final int portNum, final String url,
+						final String database, final String driverVersion, final String force, final Tls tls) throws Exception {
 		originalIp = ip;
 		originalPort = portNum;
 		
@@ -178,23 +289,17 @@ public class XGConnection implements Connection {
 		this.user = user;
 		this.pwd = pwd;
 		this.sock = sock;
+		this.ip = ip;
 		this.portNum = portNum;
 		this.database = database;
 		this.driverVersion = driverVersion;
 		this.retryCounter = 0;
+		this.tls = tls;
 		this.typeMap = new HashMap<String, Class<?>>();
-		in = new BufferedInputStream(sock.getInputStream());
-		out = new BufferedOutputStream(sock.getOutputStream());
-		try {
-			clientHandshake(user, pwd, database, true);
-		} catch (final Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
 	}
 
 	public XGConnection(final String user, final String pwd, final int portNum, final String url, final String database,
-			final String driverVersion, final boolean force) {
+						final String driverVersion, final boolean force, final Tls tls) {
 		this.force = force;
 		this.url = url;
 		this.user = user;
@@ -204,6 +309,7 @@ public class XGConnection implements Connection {
 		this.database = database;
 		this.driverVersion = driverVersion;
 		this.retryCounter = 0;
+		this.tls = tls;
 		this.typeMap = new HashMap<String, Class<?>>();
 		in = null;
 		out = null;
@@ -215,7 +321,7 @@ public class XGConnection implements Connection {
 
 	@SuppressWarnings("unchecked")
 	public XGConnection copy(final boolean shouldRequestVersion) throws SQLException{
-		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, force);
+		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, force, tls);
 		try {
 			retval.connected = false;
 			retval.setSchema = setSchema;
@@ -227,6 +333,7 @@ public class XGConnection implements Connection {
 			retval.ip = ip;
 			retval.originalIp = originalIp;
 			retval.originalPort = originalPort;
+			retval.tls = tls;
 			retval.reconnect(shouldRequestVersion);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
@@ -329,7 +436,74 @@ public class XGConnection implements Connection {
 		getTimer().purge();
 	}
 
-	private void clientHandshake(final String userid, final String pwd, final String db, final boolean shouldRequestVersion) throws Exception {
+  public void connect() throws Exception {
+	  connect(ip, portNum);
+	  try {
+		  clientHandshake(user, pwd, database, true);
+	  } catch (final Exception e) {
+		  e.printStackTrace();
+		  throw e;
+	  }
+  }
+
+  private void connect(final String ip, int port) throws Exception {
+    try {
+      switch (this.tls) {
+      case OFF:
+		LOGGER.log(Level.INFO,"Unencrypted connection");
+        sock = new Socket();
+        sock.setReceiveBufferSize(4194304);
+        sock.setSendBufferSize(4194304);
+        sock.connect(new InetSocketAddress(ip, port), networkTimeout);
+        in = new BufferedInputStream(sock.getInputStream());
+        out = new BufferedOutputStream(sock.getOutputStream());
+        break;
+
+      case UNVERIFIED:
+	  case ON:
+	  case VERIFY:
+		  
+		LOGGER.log(Level.INFO,"TLS Connection "+tls.name());
+		SSLContext sc = SSLContext.getInstance("TLS");
+		  
+		TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
+		
+		sc.init(null, tms, null);
+        SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
+		SSLSocket sslsock = (SSLSocket)sslsocketfactory.createSocket(ip, port);
+        sslsock.setReceiveBufferSize(4194304);
+        sslsock.setSendBufferSize(4194304);
+		sslsock.setUseClientMode(true);
+        sslsock.startHandshake();
+		sock = sslsock;
+        in = new BufferedInputStream(sock.getInputStream());
+        out = new BufferedOutputStream(sock.getOutputStream());
+		break;
+      }
+    } catch (Exception e) {
+      try {
+        if (in != null)
+          in.close();
+          in = null;
+      } catch (final IOException f) {
+      }
+      try {
+        if (out != null)
+          out.close();
+          out = null;
+      } catch (final IOException f) {
+      }
+      try {
+        if (sock != null)
+          sock.close();
+          sock = null;
+      } catch (final IOException f) {
+      }
+      throw e;
+    }
+  }
+
+  private void clientHandshake(final String userid, final String pwd, final String db, final boolean shouldRequestVersion) throws Exception {
 		try {
 			LOGGER.log(Level.INFO, "Beginning handshake");
 			// send first part of handshake - contains userid
@@ -1198,16 +1372,8 @@ public class XGConnection implements Connection {
 		if (force) {
 			sock = null;
 			try {
-				sock = new Socket();
-				sock.setReceiveBufferSize(4194304);
-				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
+				connect(this.ip, this.portNum);
 			} catch (final Exception e) {
-				try {
-					sock.close();
-				} catch (final IOException f) {
-				}
-
 				// reconnect failed so we are no longer connected
 				connected = false;
 
@@ -1221,9 +1387,6 @@ public class XGConnection implements Connection {
 			}
 
 			try {
-				in = new BufferedInputStream(sock.getInputStream());
-				out = new BufferedOutputStream(sock.getOutputStream());
-
 				clientHandshake(user, pwd, database, true);
 				if (!setSchema.equals("")) {
 					setSchema(setSchema);
@@ -1274,16 +1437,8 @@ public class XGConnection implements Connection {
 
 				sock = null;
 				try {
-					sock = new Socket();
-					sock.setReceiveBufferSize(4194304);
-					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port), networkTimeout);
+					connect(host, port);
 				} catch (final Exception e) {
-					try {
-						sock.close();
-					} catch (final IOException f) {
-					}
-
 					LOGGER.log(Level.WARNING,
 							String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
 					continue;
@@ -1291,9 +1446,6 @@ public class XGConnection implements Connection {
 
 				this.portNum = port;
 				try {
-					in = new BufferedInputStream(sock.getInputStream());
-					out = new BufferedOutputStream(sock.getOutputStream());
-
 					clientHandshake(user, pwd, database, shouldRequestVersion);
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
@@ -1348,16 +1500,8 @@ public class XGConnection implements Connection {
 	
 				sock = null;
 				try {
-					sock = new Socket();
-					sock.setReceiveBufferSize(4194304);
-					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(host, port), networkTimeout);
+					connect(host, port);
 				} catch (final Exception e) {
-					try {
-						sock.close();
-					} catch (final IOException f) {
-					}
-	
 					LOGGER.log(Level.WARNING,
 							String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
 					index++;
@@ -1366,9 +1510,6 @@ public class XGConnection implements Connection {
 	
 				this.portNum = port;
 				try {
-					in = new BufferedInputStream(sock.getInputStream());
-					out = new BufferedOutputStream(sock.getOutputStream());
-	
 					clientHandshake(user, pwd, database, shouldRequestVersion);
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
@@ -1414,16 +1555,8 @@ public class XGConnection implements Connection {
 		this.ip = originalIp;
 		this.portNum = originalPort;
 		try {
-			sock = new Socket();
-			sock.setReceiveBufferSize(4194304);
-			sock.setSendBufferSize(4194304);
-			sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
+			connect(this.ip, this.portNum);
 		} catch (final Exception e) {
-			try {
-				sock.close();
-			} catch (final IOException f) {
-			}
-
 			// reconnect failed so we are no longer connected
 			connected = false;
 
@@ -1437,9 +1570,6 @@ public class XGConnection implements Connection {
 		}
 
 		try {
-			in = new BufferedInputStream(sock.getInputStream());
-			out = new BufferedOutputStream(sock.getOutputStream());
-
 			clientHandshake(user, pwd, database, shouldRequestVersion);
 			if (!setSchema.equals("")) {
 				setSchema(setSchema);
@@ -1548,15 +1678,8 @@ public class XGConnection implements Connection {
 		{
 			sock = null;
 			try {
-				sock = new Socket();
-				sock.setReceiveBufferSize(4194304);
-				sock.setSendBufferSize(4194304);
-				sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
+				connect(this.ip, this.portNum);
 			} catch (final Exception e) {
-				try {
-					sock.close();
-				} catch (final IOException f) {
-				}
 	
 				LOGGER.log(Level.WARNING,
 						String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
@@ -1565,8 +1688,6 @@ public class XGConnection implements Connection {
 			}
 	
 			try {
-				in = new BufferedInputStream(sock.getInputStream());
-				out = new BufferedOutputStream(sock.getOutputStream());
 				clientHandshake(user, pwd, database, true);
 				oneShotForce = true;
 				if (!setSchema.equals("")) {
@@ -1611,24 +1732,14 @@ public class XGConnection implements Connection {
 				
 				sock = null;
 				try {
-					sock = new Socket();
-					sock.setReceiveBufferSize(4194304);
-					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(this.ip, this.portNum), networkTimeout);
+					connect(this.ip, this.portNum);
 				} catch (final Exception e) {
-					try {
-						sock.close();
-					} catch (final IOException f) {
-					}
-		
 					LOGGER.log(Level.WARNING,
 							String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
 					continue;
 				}
 		
 				try {
-					in = new BufferedInputStream(sock.getInputStream());
-					out = new BufferedOutputStream(sock.getOutputStream());
 					clientHandshake(user, pwd, database, true);
 					oneShotForce = true;
 					if (!setSchema.equals("")) {
