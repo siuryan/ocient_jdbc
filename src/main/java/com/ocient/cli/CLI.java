@@ -277,6 +277,8 @@ public class CLI {
 			executePlan(cmd);
 		} else if (startsWithIgnoreCase(cmd, "PLAN EXPLAIN")) {
 			explainPlan(cmd);
+		} else if (startsWithIgnoreCase(cmd, "SET MAXROWS")) {
+			setMaxRows(cmd);
 		} else if (startsWithIgnoreCase(cmd, "PLAN LIST")) {
 			listPlan();
 		} else if (startsWithIgnoreCase(cmd, "SOURCE")) {
@@ -858,6 +860,8 @@ public class CLI {
 		}
 	}
 
+
+
 	private static void select(final String cmd) {
 		long start = 0;
 		long end = 0;
@@ -1057,6 +1061,22 @@ public class CLI {
 			end = System.currentTimeMillis();
 
 			printTime(start, end);
+		} catch (final Exception e) {
+			System.out.println("CLI Error: " + e.getMessage());
+		}
+	}
+
+	private static void setMaxRows(final String cmd) {
+		long start = 0;
+		long end = 0;
+		if (!isConnected()) {
+			System.out.println("No database connection exists");
+			return;
+		}
+		try {
+			start = System.currentTimeMillis();
+			final int maxRows = Integer.parseInt(cmd.substring("SET MAXROWS ".length()).trim());
+			((XGStatement) stmt).setMaxRows(maxRows);
 		} catch (final Exception e) {
 			System.out.println("CLI Error: " + e.getMessage());
 		}
