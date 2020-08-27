@@ -447,6 +447,7 @@ public class XGConnection implements Connection {
   }
 
   private void connect(final String ip, int port) throws Exception {
+	LOGGER.log(Level.INFO,String.format("Trying to connect to IP: %s at port: %d", ip, port));
     try {
       switch (this.tls) {
       case OFF:
@@ -657,7 +658,7 @@ public class XGConnection implements Connection {
 			for (int i = 0; i < count; i++) {
 				cmdcomps.add(ccr2.getCmdcomps(i));
 			}
-			
+			LOGGER.log(Level.INFO,"Clearing and adding new secondary interfaces");
 			secondaryInterfaces.clear();
 			for (int i = 0; i < ccr2.getSecondaryCount(); i++)
 			{
@@ -707,6 +708,7 @@ public class XGConnection implements Connection {
 			}
 			
 			if (ccr2.getRedirect()) {
+				LOGGER.log(Level.INFO, "Redirect command in ClientConnection2Response from server");
 				final String host = ccr2.getRedirectHost();
 				final int port = ccr2.getRedirectPort();
 				redirect(host, port);
@@ -728,10 +730,12 @@ public class XGConnection implements Connection {
 		{
 			fetchServerVersion();
 		}
+		LOGGER.log(Level.INFO,"Handshake Fiinished");
 	}
 
 	private void fetchServerVersion() throws Exception
 	{
+		LOGGER.log(Level.INFO,"Attempting to fetch server version");
 		try{
 			XGStatement stmt = new XGStatement(this, false);
 			String version = stmt.fetchSystemMetadataString(
@@ -1333,7 +1337,7 @@ public class XGConnection implements Connection {
 		// Try to find any cmdcomp that we can connect to
 		// If we can't connect to any throw IOException
 
-		// There's any issue here that we don't want to force
+		// There's an issue here that we don't want to force
 		// But we could get redirected back to the dead node
 		// Until the heartbeat timeout happens
 		// Which could be up to 30 seconds
@@ -1348,7 +1352,6 @@ public class XGConnection implements Connection {
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
 		LOGGER.log(Level.INFO, "Enterred reconnect()");
-		
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {
@@ -1370,6 +1373,7 @@ public class XGConnection implements Connection {
 		}
 
 		if (force) {
+			LOGGER.log(Level.INFO, "Forced reconnection.");
 			sock = null;
 			try {
 				connect(this.ip, this.portNum);
@@ -1387,7 +1391,7 @@ public class XGConnection implements Connection {
 			}
 
 			try {
-				clientHandshake(user, pwd, database, true);
+				clientHandshake(user, pwd, database, shouldRequestVersion);
 				if (!setSchema.equals("")) {
 					setSchema(setSchema);
 				}
@@ -1425,6 +1429,7 @@ public class XGConnection implements Connection {
 		SQLException retVal = null;
 		if (secondaryIndex != -1)
 		{
+			LOGGER.log(Level.INFO, "reconnect() Trying secondary interfaces");
 			for (ArrayList<String> list : secondaryInterfaces)
 			{
 				String cmdcomp = list.get(secondaryIndex);
@@ -1488,6 +1493,7 @@ public class XGConnection implements Connection {
 		//We should just try them all
 		for (ArrayList<String> list : secondaryInterfaces)
 		{
+			LOGGER.log(Level.WARNING, "Trying secondary interfaces again");
 			int index = 0;
 			for (String cmdcomp : list)
 			{
@@ -1555,6 +1561,7 @@ public class XGConnection implements Connection {
 		this.ip = originalIp;
 		this.portNum = originalPort;
 		try {
+			LOGGER.log(Level.INFO, "reconnect() Trying original IP and port.");
 			connect(this.ip, this.portNum);
 		} catch (final Exception e) {
 			// reconnect failed so we are no longer connected
@@ -1608,7 +1615,7 @@ public class XGConnection implements Connection {
 	 * We have to told to redirect our request elsewhere.
 	 */
 	public void redirect(final String host, final int port) throws IOException, SQLException {
-		LOGGER.log(Level.INFO, "Enterred redirect()");
+		LOGGER.log(Level.INFO,String.format("redirect(). Getting redirected to host: %s and port: %d", host, port));
 		oneShotForce = true;
 
 		// Close current connection
