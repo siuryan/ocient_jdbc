@@ -675,7 +675,6 @@ public class XGConnection implements Connection {
 					{
 						connInfo = addr.toString().substring(addr.toString().indexOf('/') + 1)
 								+ ":" + connPort;
-						LOGGER.log(Level.INFO,String.format("Adding secondary interface conn info: %s", connInfo));
 						secondaryInterfaces.get(i).add(connInfo);
 					}
 				}
