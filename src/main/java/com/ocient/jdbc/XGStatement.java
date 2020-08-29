@@ -1182,6 +1182,7 @@ public class XGStatement implements Statement {
 
 	private Object sendAndReceive(String sql, final Request.RequestType requestType, final int val,
 			final boolean isInMb, final Optional<Function<Object, Void>> additionalPropertySetter) throws SQLException {
+		LOGGER.log(Level.INFO, "Entered sendAndReceive()");
 		clearWarnings();
 		if (conn.rs != null && !conn.rs.isClosed()) {
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
@@ -1274,6 +1275,7 @@ public class XGStatement implements Statement {
 				redirectFlag = false;
 				break;
 			default:
+				LOGGER.log(Level.WARNING, "sendAndReceive() Internal Error");
 				throw SQLStates.INTERNAL_ERROR.clone();
 			}
 			if (requestType != Request.RequestType.EXECUTE_INLINE_PLAN) {
@@ -1337,8 +1339,9 @@ public class XGStatement implements Statement {
 				}
 
 				return br;
-			} catch (SQLException | IOException e) {
+			} catch (SQLException | NullPointerException |IOException e ) {
 				if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e)) {
+					LOGGER.log(Level.WARNING, "sendAndReceive() SQL or IO Exception.");
 					throw e;
 				}
 				passUpCancel(false);
@@ -1347,8 +1350,10 @@ public class XGStatement implements Statement {
 			}
 		} catch (final Exception e) {
 			if (e instanceof SQLException) {
+				LOGGER.log(Level.WARNING, "sendAndReceive() throw SQLException e.");
 				throw (SQLException) e;
 			}
+			LOGGER.log(Level.WARNING, "sendAndReceive() throw new generic exception e");
 			throw SQLStates.newGenericException(e);
 		}
 	}
