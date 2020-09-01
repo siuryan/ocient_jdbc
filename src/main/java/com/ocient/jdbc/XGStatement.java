@@ -1762,8 +1762,6 @@ public class XGStatement implements Statement {
 			row.add(str);
 			rs.add(row);
 		}
-		System.out.println("A");
-		System.out.println("B");
 		result = conn.rs = new XGResultSet(conn, rs, this);
 
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();

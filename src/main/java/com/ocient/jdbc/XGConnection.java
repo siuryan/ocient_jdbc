@@ -1832,7 +1832,7 @@ public class XGConnection implements Connection {
 		b2.setType(ClientWireProtocol.Request.RequestType.SET_SCHEMA);
 		b2.setSetSchema(msg);
 		final Request wrapper = b2.build();
-		LOGGER.log(Level.INFO,String.format("Made it here A"));
+
 		try {
 			out.write(intToBytes(wrapper.getSerializedSize()));
 			wrapper.writeTo(out);
