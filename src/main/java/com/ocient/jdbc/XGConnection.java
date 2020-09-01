@@ -1065,6 +1065,7 @@ public class XGConnection implements Connection {
 		final ConfirmationResponse response = gsr.getResponse();
 		final ResponseType rType = response.getType();
 		processResponseType(rType, response);
+		LOGGER.log(Level.INFO, String.format("Got schema: %s from server", gsr.getSchema()));
 		return gsr.getSchema();
 	}
 
@@ -1823,7 +1824,7 @@ public class XGConnection implements Connection {
 
 	private void sendSetSchema(final String schema) throws Exception {
 		// send request
-		LOGGER.log(Level.INFO, "Sending set schema request to the server");
+		LOGGER.log(Level.INFO, String.format("Sending set schema (%s) request to the server", schema));
 		final ClientWireProtocol.SetSchema.Builder builder = ClientWireProtocol.SetSchema.newBuilder();
 		builder.setSchema(schema);
 		final SetSchema msg = builder.build();
@@ -1831,7 +1832,7 @@ public class XGConnection implements Connection {
 		b2.setType(ClientWireProtocol.Request.RequestType.SET_SCHEMA);
 		b2.setSetSchema(msg);
 		final Request wrapper = b2.build();
-
+		LOGGER.log(Level.INFO,String.format("Made it here A"));
 		try {
 			out.write(intToBytes(wrapper.getSerializedSize()));
 			wrapper.writeTo(out);
