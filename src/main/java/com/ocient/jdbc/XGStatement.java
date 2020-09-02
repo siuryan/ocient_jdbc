@@ -818,11 +818,11 @@ public class XGStatement implements Statement {
 		pos2Cols.put(8, "sql");
 
 		cols2Types.put("query_id", "CHAR");
-		cols2Types.put("user", "FLOAT");
-		cols2Types.put("importance", "INT");
-		cols2Types.put("estimated_time", "CHAR");
-		cols2Types.put("elapsed_time", "CHAR");
-		cols2Types.put("status", "INT");
+		cols2Types.put("user", "CHAR");
+		cols2Types.put("importance", "FLOAT");
+		cols2Types.put("estimated_time", "INT");
+		cols2Types.put("elapsed_time", "INT");
+		cols2Types.put("status", "CHAR");
 		cols2Types.put("server", "CHAR");
 		cols2Types.put("database", "CHAR");
 		cols2Types.put("sql", "CHAR");
