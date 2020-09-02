@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,10 +19,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.OptionalLong;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
@@ -431,7 +437,11 @@ public class XGStatement implements Statement {
 
 		try {
 			passUpCancel(false);
-			if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH")) {
+			if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH") || sql.toUpperCase().startsWith("EXPLAIN") ||
+			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
+			sql.toUpperCase().startsWith("LIST INDICES") || sql.toUpperCase().startsWith("LIST INDEXES") || sql.toUpperCase().startsWith("GET SCHEMA") || 
+			sql.toUpperCase().startsWith("DESCRIBE VIEW") || sql.toUpperCase().startsWith("DESCRIBE TABLE") || sql.toUpperCase().startsWith("PLAN EXECUTE") || 
+			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || sql.toUpperCase().startsWith("EXPORT TABLE")) {
 				this.result = (XGResultSet) executeQuery(sql);
 				return true;
 			} else {
@@ -485,45 +495,34 @@ public class XGStatement implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		LOGGER.log(Level.INFO, "Called executeQuery()");
-		String explain = "";
-		boolean isExplain = false;
+		LOGGER.log(Level.INFO, String.format("Called executeQuery() with sql : %s", sql));
 		sql = sql.trim();
-		if (startsWithIgnoreCase(sql, "EXPLAIN JSON")) {
-			final String sqlQuery = sql.substring("EXPLAIN JSON".length()).trim();
-			try {
-				// get the plan in proto format and convert it to its Json representation
-				LOGGER.log(Level.INFO, String.format("Doing a JSON explain of: %s", sqlQuery));
-				explain = explain(sqlQuery, ClientWireProtocol.ExplainFormat.JSON);
-			} catch (Exception e) {
-				throw SQLStates.newGenericException(e);
+		try{
+			if (startsWithIgnoreCase(sql, "EXPLAIN")) {
+				return explainSQL(sql);
+			} else if (startsWithIgnoreCase(sql, "LIST TABLES") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES")){
+				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES"));
+			} else if (startsWithIgnoreCase(sql, "LIST VIEWS")){
+				return listViews(sql);
+			} else if (startsWithIgnoreCase(sql, "LIST INDICES") || startsWithIgnoreCase(sql, "LIST INDEXES")){
+				return listIndexes(sql);
+			} else if (startsWithIgnoreCase(sql, "GET SCHEMA")){
+				return getSchema();
+			} else if(startsWithIgnoreCase(sql, "DESCRIBE TABLE")){
+				return describeTable(sql);
+			} else if(startsWithIgnoreCase(sql, "DESCRIBE VIEW")){
+				return describeView(sql);
+			} else if(startsWithIgnoreCase(sql, "PLAN EXECUTE")){
+				return executePlanSQL(sql);
+			} else if(startsWithIgnoreCase(sql, "PLAN EXPLAIN")){
+				return explainPlanSQL(sql);
+			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES")){
+				return listAllQueries();
+			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE")){
+				return exportTableSQL(sql);
 			}
-			isExplain = true;
-		} else if (startsWithIgnoreCase(sql, "EXPLAIN")) {
-			final String sqlQuery = sql.substring("EXPLAIN ".length()).trim();
-
-			LOGGER.log(Level.INFO, String.format("Doing an explain of: %s", sqlQuery));
-			// get the plan in proto format and convert it to its google proto buffer string
-			// representation
-			explain = explain(sqlQuery, ClientWireProtocol.ExplainFormat.PROTO);
-			isExplain = true;
-		}
-
-		if (isExplain) {
-			// split the proto string using the line break delimiter and build an one string
-			// column resultset.
-			ArrayList<Object> rs = new ArrayList<>();
-			String lines[] = explain.split("\\r?\\n");
-
-			for (int i = 0; i < lines.length; i++) {
-				String str = lines[i];
-				ArrayList<Object> row = new ArrayList<>();
-				row.add(str);
-				rs.add(row);
-			}
-			result = conn.rs = new XGResultSet(conn, rs, this);
-			this.updateCount = -1;
-			return result;
+		} catch (Exception e) {
+			throw SQLStates.newGenericException(e);
 		}
 
 		// Handle maxRows
@@ -558,7 +557,7 @@ public class XGStatement implements Statement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		LOGGER.log(Level.INFO, "Called executeUpdate()");
+		LOGGER.log(Level.INFO, String.format("Called executeUpdate() with sql: %s", sql));
 		// if this is a set command we just use a separately crafted proto message to
 		// make things simpler
 		sql = sql.trim();
@@ -594,6 +593,12 @@ public class XGStatement implements Statement {
 			}
 
 			return 0;
+		} else if(sql.toUpperCase().startsWith("KILL") || sql.toUpperCase().startsWith("CANCEL")){
+			return killCancelQuery(sql);
+		} else if (sql.toUpperCase().startsWith("SET MAXROWS")){
+			return setMaxRowsSQL(sql);
+		} else if(sql.toUpperCase().startsWith("SET SCHEMA")){
+			return setSchema(sql);
 		}
 
 		// otherwise we are handling a normal update command
@@ -662,7 +667,6 @@ public class XGStatement implements Statement {
 			return explainDeprecated(sql, format);
 		}
 
-
 		Function<Object, Void> typeSetter = (Object builder) -> {
 			ClientWireProtocol.ExecuteExplain.Builder typedBuilder = (ClientWireProtocol.ExecuteExplain.Builder) builder;
 			typedBuilder.setFormat(format);
@@ -702,8 +706,8 @@ public class XGStatement implements Statement {
 		return er.getPlan();
 	}
 
-	// used by CLI
 	public ResultSet executePlan(final String plan) throws SQLException {
+		LOGGER.log(Level.INFO, "executePlan()");
 		sendAndReceive(plan, Request.RequestType.EXECUTE_PLAN, 0, false, Optional.empty());
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
@@ -723,8 +727,8 @@ public class XGStatement implements Statement {
 		return result;
 	}
 
-	// used by CLI
 	public ResultSet executeInlinePlan(final String plan) throws SQLException {
+		LOGGER.log(Level.INFO, "executeInlinePlan()");
 		sendAndReceive(plan, Request.RequestType.EXECUTE_INLINE_PLAN, 0, false, Optional.empty());
 		try {
 			result = conn.rs = new XGResultSet(conn, fetchSize, this);
@@ -768,17 +772,67 @@ public class XGStatement implements Statement {
 		return;
 	}
 
-	// used by CLI
-	public ArrayList<SysQueriesRow> listAllQueries() throws SQLException {
+	private ResultSet listAllQueries() throws SQLException {
 		final ClientWireProtocol.SystemWideQueriesResponse.Builder er = (ClientWireProtocol.SystemWideQueriesResponse.Builder) sendAndReceive(
 				"", Request.RequestType.SYSTEM_WIDE_QUERIES, 0, false, Optional.empty());
 
-		ArrayList<SysQueriesRow> queries = new ArrayList<SysQueriesRow>(er.getRowsCount());
-		for (int i = 0; i < er.getRowsCount(); ++i) {
-			queries.add(er.getRows(i));
+		// Manufacture the result set.
+		ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
+		for(int i = 0; i < er.getRowsCount(); i++){
+			SysQueriesRow row = er.getRows(i);
+			ArrayList<Object> newRow = new ArrayList<>();
+			newRow.add(row.getQueryId());
+			newRow.add(row.getUserid());
+			newRow.add(row.getImportance());
+			newRow.add(row.getEstimatedTimeSec());
+			newRow.add(row.getElapsedTimeSec());
+			newRow.add(row.getStatus());
+			newRow.add(row.getQueryServer());
+			newRow.add(row.getDatabase());
+			newRow.add(row.getSqlText());
+			rs.add(newRow);
 		}
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		// Map the table metadata
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("query_id", 0);
+		cols2Pos.put("user", 1);
+		cols2Pos.put("importance", 2);
+		cols2Pos.put("estimated_time", 3);
+		cols2Pos.put("elapsed_time", 4);
+		cols2Pos.put("status", 5);
+		cols2Pos.put("server", 6);
+		cols2Pos.put("database", 7);
+		cols2Pos.put("sql", 8);
 
-		return queries;
+		pos2Cols.put(0, "query_id");
+		pos2Cols.put(1, "user");
+		pos2Cols.put(2, "importance");
+		pos2Cols.put(3, "estimated_time");
+		pos2Cols.put(4, "elapsed_time");
+		pos2Cols.put(5, "status");
+		pos2Cols.put(6, "server");
+		pos2Cols.put(7, "database");
+		pos2Cols.put(8, "sql");
+
+		cols2Types.put("query_id", "CHAR");
+		cols2Types.put("user", "CHAR");
+		cols2Types.put("importance", "FLOAT");
+		cols2Types.put("estimated_time", "INT");
+		cols2Types.put("elapsed_time", "INT");
+		cols2Types.put("status", "CHAR");
+		cols2Types.put("server", "CHAR");
+		cols2Types.put("database", "CHAR");
+		cols2Types.put("sql", "CHAR");
+
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		this.updateCount = -1;
+		return result;
 	}
 
 	// used by CLI
@@ -1571,4 +1625,308 @@ public class XGStatement implements Statement {
 		LOGGER.log(Level.WARNING, "unwrap() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
+	/*!
+	 * New functions which have been moved from the CLI into the driver.
+	 * TODO: move some of these utility functions into another file to clean this up a bit.
+	 */
+
+	// Generate a regex for an unquoted alphanumeric ([a-zA-Z0-9_]) or quoted free
+	// (.) token. Reluctant.
+	// Do not insert multiple regexes for tokens of the same name (or "q0" + another
+	// name) into a single pattern.
+	private static String tk(String name) {
+		return "(?<q0" + name + ">\"?)(?<" + name + ">(\\w+?|(?<=\").+?(?=\")))\\k<q0" + name + ">";
+	}
+
+	// Get a token from its generated regex according to SQL case-sensitivity rules
+	// (sensitive iff quoted).
+	// Do not call on a matcher that has not yet called matches().
+	private static String getTk(Matcher m, String name, String def) {
+		if (m.group(name) == null) {
+			return def;
+		}
+		if (m.group("q0" + name).length() == 0) {
+			return m.group(name).toLowerCase();
+		}
+		return m.group(name);
+	}
+
+	private static Pattern listTablesSyntax = Pattern.compile("list\\s+tables(?<verbose>\\s+verbose)?",
+			Pattern.CASE_INSENSITIVE);
+
+	private static Pattern listSystemTablesSyntax = Pattern.compile("list\\s+system\\s+tables(?<verbose>\\s+verbose)?",
+			Pattern.CASE_INSENSITIVE);
+
+	private ResultSet listTables(final String cmd, boolean isSystemTables) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's listTables()");
+		ResultSet rs = null;
+
+		final Matcher m = isSystemTables ? listSystemTablesSyntax.matcher(cmd) : listTablesSyntax.matcher(cmd);
+		if (!m.matches()) {
+			// this line will never be reached,
+			// but we have to call matches() anyway
+			LOGGER.log(Level.WARNING, "Driver's listTables() reached a line it shouldn't have.");
+			return rs;
+		}
+		final DatabaseMetaData dbmd = conn.getMetaData();
+		if (isSystemTables) {
+			final XGDatabaseMetaData xgdbmd = (XGDatabaseMetaData) dbmd;
+			rs = xgdbmd.getSystemTables("", "%", "%", new String[0]);
+		} else {
+			rs = dbmd.getTables("", "%", "%", new String[0]);
+		}
+		return rs;
+	}
+
+	private static Pattern listViewsSyntax = Pattern.compile("list\\s+views(?<verbose>\\s+verbose)?",
+			Pattern.CASE_INSENSITIVE);
+
+	private ResultSet listViews(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's listViews()");
+		ResultSet rs = null;
+
+		final Matcher m = listViewsSyntax.matcher(cmd);
+		if (!m.matches()) {
+			// this line will never be reached,
+			// but we have to call matches() anyway
+			LOGGER.log(Level.WARNING, "Driver's listViews() reached a line it shouldn't have.");
+			return rs;
+		}
+		final DatabaseMetaData md = conn.getMetaData();
+		final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
+
+		return dbmd.getViews("", "%", "%", new String[0]);
+	}
+
+	private static Pattern listIndexesSyntax = Pattern.compile(
+			"list\\s+ind(ic|ex)es\\s+((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose>\\s+verbose)?",
+			Pattern.CASE_INSENSITIVE);
+
+	private ResultSet listIndexes(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's listIndexes()");
+		ResultSet rs = null;
+		final Matcher m = listIndexesSyntax.matcher(cmd);
+	
+		if (!m.matches()) {
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(
+					"Syntax: list indexes (<schema>.)?<table>");
+		}
+		final DatabaseMetaData dbmd = conn.getMetaData();
+		return dbmd.getIndexInfo("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), false, false);
+	}
+
+	private ResultSet getSchema() throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's getSchema()");
+		String schema = conn.getSchema();
+		// Construct the result set.
+		// split the proto string using the line break delimiter and build a one string
+		// column resultset.
+		ArrayList<Object> rs = new ArrayList<>();
+		String lines[] = schema.split("\\r?\\n");
+		for (int i = 0; i < lines.length; i++) {
+			String str = lines[i];
+			ArrayList<Object> row = new ArrayList<>();
+			row.add(str);
+			rs.add(row);
+		}
+		result = conn.rs = new XGResultSet(conn, rs, this);
+
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("schema", 0);
+		pos2Cols.put(0, "schema");
+		cols2Types.put("schema", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	private static Pattern describeTableSyntax = Pattern.compile(
+			"describe(\\s+table\\s+)?((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose>\\s+verbose)?",
+			Pattern.CASE_INSENSITIVE);
+
+	private ResultSet describeTable(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's describeTable()");
+		ResultSet rs = null;
+		final Matcher m = describeTableSyntax.matcher(cmd);
+		if (!m.matches()) {
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(
+					"Syntax: describe (<schema>.)?<table>");
+		}
+		final DatabaseMetaData dbmd = conn.getMetaData();
+		return dbmd.getColumns("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), "%");
+	}
+
+	private static Pattern describeViewSyntax = Pattern.compile(
+		"describe(\\s+view\\s+)?((" + tk("schema") + ")\\.)?(" + tk("view") + ")(?<verbose>\\s+verbose)?",
+		Pattern.CASE_INSENSITIVE);
+
+	private ResultSet describeView(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's describeView()");
+		ResultSet rs = null;
+		final Matcher m = describeViewSyntax.matcher(cmd);
+		if (!m.matches()) {
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(
+					"Syntax: describe view (<schema>.)?<view>");
+		}
+		final DatabaseMetaData md = conn.getMetaData();
+		final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
+		return dbmd.getViews("", getTk(m, "schema", conn.getSchema()), getTk(m, "view", null), null);
+	}
+
+	private ResultSet executePlanSQL(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's executePlan()");
+		ResultSet rs = null;
+		String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
+
+		if(startsWithIgnoreCase(plan, "INLINE ")){
+			plan = plan.substring("INLINE ".length()).trim();
+			rs = executeInlinePlan(plan);
+		} else {
+			rs = executePlan(plan);
+		}
+		return rs;
+	}
+
+	private ResultSet explainPlanSQL(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Entered driver's explainPlan()");
+		String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
+		ClientWireProtocol.ExplainFormat format = ClientWireProtocol.ExplainFormat.PROTO;
+		if (startsWithIgnoreCase(plan, "JSON ")) {
+			plan = plan.substring("JSON ".length()).trim();
+			format = ClientWireProtocol.ExplainFormat.JSON;
+		}
+		String pm = explainPlan(plan, format);
+		ArrayList<Object> rs = new ArrayList<>();
+		String lines[] = pm.split("\\r?\\n");
+		for (int i = 0; i < lines.length; i++) {
+			String str = lines[i];
+			ArrayList<Object> row = new ArrayList<>();
+			row.add(str);
+			rs.add(row);
+		}
+
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("explain", 0);
+		pos2Cols.put(0, "explain");
+		cols2Types.put("explain", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	private ResultSet exportTableSQL(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Enetered driver's exportTable");
+		String exportStr = exportTable(cmd);
+		ArrayList<Object> rs = new ArrayList<>();
+		String lines[] = exportStr.split("\\r?\\n");
+		for (int i = 0; i < lines.length; i++) {
+			String str = lines[i];
+			ArrayList<Object> row = new ArrayList<>();
+			row.add(str);
+			rs.add(row);
+		}
+	
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("export", 0);
+		pos2Cols.put(0, "export");
+		cols2Types.put("export", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	private ResultSet explainSQL(final String cmd) throws SQLException {
+		LOGGER.log(Level.INFO, "Entered Driver's explainSQL()");
+
+		ClientWireProtocol.ExplainFormat format;
+		String sql = "";
+
+		if(startsWithIgnoreCase(cmd, "EXPLAIN JSON")){
+			format = ClientWireProtocol.ExplainFormat.JSON;
+			sql = cmd.substring("EXPLAIN JSON".length()).trim();
+		} else {
+			format = ClientWireProtocol.ExplainFormat.PROTO;
+			sql = cmd.substring("EXPLAIN".length()).trim();
+		}
+		String explainString = explain(sql, format);
+
+		ArrayList<Object> rs = new ArrayList<>();
+		String lines[] = explainString.split("\\r?\\n");
+		for (int i = 0; i < lines.length; i++) {
+			String str = lines[i];
+			ArrayList<Object> row = new ArrayList<>();
+			row.add(str);
+			rs.add(row);
+		}
+
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("explain", 0);
+		pos2Cols.put(0, "explain");
+		cols2Types.put("explain", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	/*!
+	 * Non result set custom functions.
+	 * The int values returned by these functions will indicate the number of modifed rows.
+	 */
+
+	private int killCancelQuery(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO,"Entered driver's killCancelQuery()");
+		String uuid;
+		if (startsWithIgnoreCase(cmd, "KILL ")) {
+			uuid = cmd.substring("KILL ".length()).trim();
+			killQuery(uuid);
+		} else {
+			// Cancel
+			uuid = cmd.substring("CANCEL ".length()).trim();
+			cancelQuery(uuid);
+		}
+		return 0;
+
+	}
+
+	private int setMaxRowsSQL(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO,"Entered driver's setMaxRows()");
+		final int maxRow = Integer.parseInt(cmd.substring("SET MAXROWS ".length()).trim());
+		setMaxRows(maxRow);
+		return 0;
+	}
+
+	private int setSchema(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO,"Entered driver's setSchema()");
+		String schema = cmd.substring(11).trim();
+		if (schema.startsWith("\"")) {
+			if (!schema.endsWith("\"")) {
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(
+					"Uncloseed Quotes!");
+			}
+
+			schema = schema.substring(1, schema.length() - 1);
+		}
+		conn.setSchema(schema);
+		return 0;
+	}
+
 }

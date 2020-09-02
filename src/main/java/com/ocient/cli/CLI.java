@@ -288,7 +288,7 @@ public class CLI {
 		} else if (startsWithIgnoreCase(cmd, "KILL")) {
 			killQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST ALL QUERIES")) {
-			listAllQueries();
+			listAllQueries(cmd);
 		} else if (startsWithIgnoreCase(cmd, "OUTPUT NEXT QUERY")) {
 			outputNextQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "FORCE EXTERNAL")) {
@@ -429,13 +429,21 @@ public class CLI {
 			return;
 		}
 
+		ResultSet rs = null;
 		try {
-			String schema = conn.getSchema();
-			if (!schema.toLowerCase().equals(schema)) {
-				schema = "\"" + schema + "\"";
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			while (rs.next()) {
+				String planLine = rs.getString(1);
+				System.out.println(planLine);
 			}
-			System.out.println(schema);
+			rs.close();
 		} catch (final Exception e) {
+			e.printStackTrace();
+			try {
+				rs.close();
+			} catch (Exception f) {
+			}
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -445,18 +453,8 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
-
 		try {
-			String schema = cmd.substring(11).trim();
-			if (schema.startsWith("\"")) {
-				if (!schema.endsWith("\"")) {
-					System.out.println("Unclosed quotes!");
-					return;
-				}
-
-				schema = schema.substring(1, schema.length() - 1);
-			}
-			conn.setSchema(schema);
+			stmt.execute(cmd);
 		} catch (final Exception e) {
 			System.out.println("Error: " + e.getMessage());
 		}
@@ -505,12 +503,8 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			if (isSystemTables) {
-				final XGDatabaseMetaData xgdbmd = (XGDatabaseMetaData) dbmd;
-				rs = xgdbmd.getSystemTables("", "%", "%", new String[0]);
-			} else {
-				rs = dbmd.getTables("", "%", "%", new String[0]);
-			}
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (m.group("verbose") != null) {
@@ -571,14 +565,24 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			System.out.println(((XGStatement) stmt).exportTable(cmd));
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			while (rs.next()) {
+				String exportLine = rs.getString(1);
+				System.out.println(exportLine);
+			}
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
+			rs.close();
 			printTime(start, end);
 		} catch (final Exception e) {
+			try{
+				rs.close();
+			} catch(final Exception f){
+			}
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -607,7 +611,8 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			rs = dbmd.getViews("", "%", "%", new String[0]);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (m.group("verbose") != null) {
@@ -664,8 +669,8 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData dbmd = conn.getMetaData();
-			rs = dbmd.getColumns("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), "%");
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (m.group("verbose") != null) {
@@ -745,9 +750,8 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData md = conn.getMetaData();
-			final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
-			rs = dbmd.getViews("", getTk(m, "schema", conn.getSchema()), getTk(m, "view", null), null);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (m.group("verbose") != null)
@@ -801,11 +805,12 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData dbmd = conn.getMetaData();
+			//final DatabaseMetaData dbmd = conn.getMetaData();
 			// this behavior is slightly different from the jdbc call itself--
 			// the call allows schema to be null, in which case it doesn't filter on it.
 			// we assume the current schema for convenience & to limit results to one table
-			rs = dbmd.getIndexInfo("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), false, false);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
 			if (m.group("verbose") != null) {
@@ -911,7 +916,8 @@ public class CLI {
 
 		try {
 			start = System.currentTimeMillis();
-			rs = stmt.executeQuery(cmd);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 
 			while (rs.next()) {
 				String planLine = rs.getString(1);
@@ -942,50 +948,26 @@ public class CLI {
 		ResultSet rs = null;
 		String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
 
-		if (startsWithIgnoreCase(plan, "INLINE ")) {
-			plan = plan.substring("INLINE ".length()).trim();
+		try {
+			start = System.currentTimeMillis();
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
 
+			printResultSet(rs, meta);
+			printWarnings(stmt);
+			printWarnings(rs);
+			end = System.currentTimeMillis();
+
+			rs.close();
+
+			printTime(start, end);
+		} catch (final Exception e) {
 			try {
-				start = System.currentTimeMillis();
-				rs = ((XGStatement) stmt).executeInlinePlan(plan);
-				final ResultSetMetaData meta = rs.getMetaData();
-
-				printResultSet(rs, meta);
-				printWarnings(stmt);
-				printWarnings(rs);
-				end = System.currentTimeMillis();
-
 				rs.close();
-
-				printTime(start, end);
-			} catch (final Exception e) {
-				try {
-					rs.close();
-				} catch (Exception f) {
-				}
-				System.out.println("Error: " + e.getMessage());
+			} catch (Exception f) {
 			}
-		} else {
-			try {
-				start = System.currentTimeMillis();
-				rs = ((XGStatement) stmt).executePlan(plan);
-				final ResultSetMetaData meta = rs.getMetaData();
-
-				printResultSet(rs, meta);
-				printWarnings(stmt);
-				printWarnings(rs);
-				end = System.currentTimeMillis();
-
-				rs.close();
-
-				printTime(start, end);
-			} catch (final Exception e) {
-				try {
-					rs.close();
-				} catch (Exception f) {
-				}
-				System.out.println("Error: " + e.getMessage());
-			}
+			System.out.println("Error: " + e.getMessage());
 		}
 	}
 
@@ -997,18 +979,17 @@ public class CLI {
 			return;
 		}
 
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 
-			ClientWireProtocol.ExplainFormat format = ClientWireProtocol.ExplainFormat.PROTO;
-			if (startsWithIgnoreCase(plan, "JSON ")) {
-				plan = plan.substring("JSON ".length()).trim();
-				format = ClientWireProtocol.ExplainFormat.JSON;
+			while (rs.next()) {
+				String planLine = rs.getString(1);
+				System.out.println(planLine);
 			}
-			final String pm = ((XGStatement) stmt).explainPlan(plan, format);
-
-			System.out.println(pm);
+			rs.close();
 			
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
@@ -1055,8 +1036,7 @@ public class CLI {
 		}
 		try {
 			start = System.currentTimeMillis();
-			final String uuid = cmd.substring("CANCEL ".length()).trim();
-			((XGStatement) stmt).cancelQuery(uuid);
+			stmt.execute(cmd);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
@@ -1075,8 +1055,7 @@ public class CLI {
 		}
 		try {
 			start = System.currentTimeMillis();
-			final int maxRows = Integer.parseInt(cmd.substring("SET MAXROWS ".length()).trim());
-			((XGStatement) stmt).setMaxRows(maxRows);
+			stmt.execute(cmd);
 		} catch (final Exception e) {
 			System.out.println("CLI Error: " + e.getMessage());
 		}
@@ -1109,8 +1088,7 @@ public class CLI {
 		}
 		try {
 			start = System.currentTimeMillis();
-			final String uuid = cmd.substring("KILL ".length()).trim();
-			((XGStatement) stmt).killQuery(uuid);
+			stmt.execute(cmd);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
@@ -1120,27 +1098,32 @@ public class CLI {
 		}
 	}
 
-	private static void listAllQueries() {
+	private static void listAllQueries(final String cmd) {
 		long start = 0;
 		long end = 0;
 		if (!isConnected()) {
 			System.out.println("No database connection exists");
 			return;
 		}
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			final ArrayList<SysQueriesRow> queryList = ((XGStatement) stmt).listAllQueries();
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			printResultSet(rs, meta);
 
-			if (queryList.size() > 0) {
-				printAllQueries(queryList);
-			}
-
-			printWarnings(stmt);
+			printWarnings(rs);
 			end = System.currentTimeMillis();
 
 			printTime(start, end);
+			rs.close();
 		} catch (final Exception e) {
-			System.out.println("CLI Error: " + e.getMessage());
+			try{
+				rs.close();
+			} catch (Exception f){	
+			}
+			System.out.println("Error: " + e.getMessage());
 		}
 	}
 

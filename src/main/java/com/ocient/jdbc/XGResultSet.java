@@ -2359,6 +2359,7 @@ public class XGResultSet implements ResultSet {
 	}
 
 	private void requestMetaData() throws Exception {
+		LOGGER.log(Level.INFO, "Called requestMetaData()");
 		stmt.passUpCancel(false);
 		try {
 			// send fetch metadata request
