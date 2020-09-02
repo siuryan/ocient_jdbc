@@ -990,7 +990,6 @@ public class CLI {
 				System.out.println(planLine);
 			}
 			rs.close();
-			//System.out.println(pm);
 			
 			printWarnings(stmt);
 			end = System.currentTimeMillis();

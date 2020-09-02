@@ -499,7 +499,7 @@ public class XGStatement implements Statement {
 		sql = sql.trim();
 		try{
 			if (startsWithIgnoreCase(sql, "EXPLAIN")) {
-				return explain(sql);
+				return explainSQL(sql);
 			} else if (startsWithIgnoreCase(sql, "LIST TABLES") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES")){
 				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES"));
 			} else if (startsWithIgnoreCase(sql, "LIST VIEWS")){
@@ -659,56 +659,23 @@ public class XGStatement implements Statement {
 		return planProtoToString(er.getPlan(), format);
 	}
 
-	private ResultSet explain(final String cmd) throws SQLException {
-		LOGGER.log(Level.INFO, "Entered Driver's explain()");
+	// used by CLI
+	public String explain(final String sql, final ClientWireProtocol.ExplainFormat format) throws SQLException {
 
-		ClientWireProtocol.ExplainFormat format;
-		String explainString;
-		String sql = "";
-
-		if(startsWithIgnoreCase(cmd, "EXPLAIN JSON")){
-			format = ClientWireProtocol.ExplainFormat.JSON;
-			sql = cmd.substring("EXPLAIN JSON".length()).trim();
-		} else {
-			format = ClientWireProtocol.ExplainFormat.PROTO;
-			sql = cmd.substring("EXPLAIN".length()).trim();
-		}
 		if(shouldDeprecatedExplain())
 		{
-			explainString = explainDeprecated(sql, format);
-		} else {
-			Function<Object, Void> typeSetter = (Object builder) -> {
-				ClientWireProtocol.ExecuteExplain.Builder typedBuilder = (ClientWireProtocol.ExecuteExplain.Builder) builder;
-				typedBuilder.setFormat(format);
-				return null;
-			};
-
-			final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
-					sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.of(typeSetter));
-			explainString = er.getPlan();
+			return explainDeprecated(sql, format);
 		}
 
-		ArrayList<Object> rs = new ArrayList<>();
-		String lines[] = explainString.split("\\r?\\n");
-		for (int i = 0; i < lines.length; i++) {
-			String str = lines[i];
-			ArrayList<Object> row = new ArrayList<>();
-			row.add(str);
-			rs.add(row);
-		}
+		Function<Object, Void> typeSetter = (Object builder) -> {
+			ClientWireProtocol.ExecuteExplain.Builder typedBuilder = (ClientWireProtocol.ExecuteExplain.Builder) builder;
+			typedBuilder.setFormat(format);
+			return null;
+		};
 
-		result = conn.rs = new XGResultSet(conn, rs, this);
-		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-		Map<String, String> cols2Types = new HashMap<String, String>();
-		cols2Pos.put("explain", 0);
-		pos2Cols.put(0, "explain");
-		cols2Types.put("explain", "CHAR");
-		result.setCols2Pos(cols2Pos);
-		result.setPos2Cols(pos2Cols);
-		result.setCols2Types(cols2Types);
-
-		return result;
+		final ClientWireProtocol.ExplainResponseStringPlan.Builder er = (ClientWireProtocol.ExplainResponseStringPlan.Builder) sendAndReceive(
+				sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.of(typeSetter));
+		return er.getPlan();
 	}
 
 	//Used before version 7.0.1
@@ -1875,6 +1842,44 @@ public class XGStatement implements Statement {
 		cols2Pos.put("export", 0);
 		pos2Cols.put(0, "export");
 		cols2Types.put("export", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	private ResultSet explainSQL(final String cmd) throws SQLException {
+		LOGGER.log(Level.INFO, "Entered Driver's explainSQL()");
+
+		ClientWireProtocol.ExplainFormat format;
+		String sql = "";
+
+		if(startsWithIgnoreCase(cmd, "EXPLAIN JSON")){
+			format = ClientWireProtocol.ExplainFormat.JSON;
+			sql = cmd.substring("EXPLAIN JSON".length()).trim();
+		} else {
+			format = ClientWireProtocol.ExplainFormat.PROTO;
+			sql = cmd.substring("EXPLAIN".length()).trim();
+		}
+		String explainString = explain(sql, format);
+
+		ArrayList<Object> rs = new ArrayList<>();
+		String lines[] = explainString.split("\\r?\\n");
+		for (int i = 0; i < lines.length; i++) {
+			String str = lines[i];
+			ArrayList<Object> row = new ArrayList<>();
+			row.add(str);
+			rs.add(row);
+		}
+
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("explain", 0);
+		pos2Cols.put(0, "explain");
+		cols2Types.put("explain", "CHAR");
 		result.setCols2Pos(cols2Pos);
 		result.setPos2Cols(pos2Cols);
 		result.setCols2Types(cols2Types);
