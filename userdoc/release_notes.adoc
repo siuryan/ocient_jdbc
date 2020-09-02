@@ -5,6 +5,14 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.40 (2020-08-14)
+
+New Features::
+
+  * Move some custom functionalities into the driver including: get/set schema, list (system) tables, list views, describe table/views, list indexes, 
+    execute/explain plan, cancel/kill query, list all queries, export table, set max rows, set pso.
+
+// tag::compact[]
 == 1.41 (2020-08-20)
 
 New Features::
