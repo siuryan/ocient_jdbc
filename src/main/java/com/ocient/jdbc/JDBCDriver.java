@@ -281,12 +281,12 @@ public class JDBCDriver implements Driver
 		{
 			String loglevel = props.getProperty("loglevel");
 			String logfile = props.getProperty("logfile");
-			if (loglevel == null || logfile == null || logfile.equals(""))
+			if (loglevel == null || logfile == null)
 			{
 				LOGGER.setLevel(Level.OFF);
 				return;
 			}
-			LOGGER.log(Level.INFO, String.format("New logger settigs. LogLevel: %s. LogFile: %s",loglevel, logfile));
+			LOGGER.log(Level.INFO, String.format("New logger settings. LogLevel: %s. LogFile: %s",loglevel, logfile));
 			
 			if (loglevel != null) {
 				if (loglevel.equalsIgnoreCase("OFF")) {
@@ -296,11 +296,7 @@ public class JDBCDriver implements Driver
 					LOGGER.setLevel(Level.ALL);
 				} else if (loglevel.equalsIgnoreCase("ERROR")) {
 					LOGGER.setLevel(Level.WARNING);
-				} else {
-					// Invalid argument.
-					LOGGER.setLevel(Level.OFF);
-					return;
-				}
+				} 
 			}
 	
 			/* If logfile hasn't changed, return */
