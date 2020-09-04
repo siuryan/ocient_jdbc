@@ -286,6 +286,7 @@ public class JDBCDriver implements Driver
 				LOGGER.setLevel(Level.OFF);
 				return;
 			}
+			LOGGER.log(Level.INFO, String.format("New logger settings. LogLevel: %s. LogFile: %s",loglevel, logfile));
 			
 			if (loglevel != null) {
 				if (loglevel.equalsIgnoreCase("OFF")) {
@@ -317,8 +318,11 @@ public class JDBCDriver implements Driver
 				logFileName = logfile;
 				LOGGER.addHandler(logHandler);
 				LOGGER.log(Level.INFO, "Enabling logger");
-			} catch (final IOException e) {
+			} catch (final IOException | IllegalArgumentException e) {
 				e.printStackTrace(System.err);
+				// An illegal file argument was entered most likely.
+				LOGGER.setLevel(Level.OFF);
+				return;
 			}
 		}
 	}
