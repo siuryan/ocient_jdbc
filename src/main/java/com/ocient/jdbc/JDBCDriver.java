@@ -296,7 +296,7 @@ public class JDBCDriver implements Driver
 					LOGGER.setLevel(Level.ALL);
 				} else if (loglevel.equalsIgnoreCase("ERROR")) {
 					LOGGER.setLevel(Level.WARNING);
-				} 
+				}
 			}
 	
 			/* If logfile hasn't changed, return */
