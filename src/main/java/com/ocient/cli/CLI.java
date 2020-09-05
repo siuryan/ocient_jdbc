@@ -1203,7 +1203,7 @@ public class CLI {
 						String cont = reader.readLine();
 						if (cont == null)
 							return quit;
-
+						line = cont;
 						cmd += scrubCommand(line + " ");
 					}
 				}
