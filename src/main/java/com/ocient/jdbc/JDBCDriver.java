@@ -286,7 +286,6 @@ public class JDBCDriver implements Driver
 				LOGGER.setLevel(Level.OFF);
 				return;
 			}
-			LOGGER.log(Level.INFO, String.format("New logger settings. LogLevel: %s. LogFile: %s",loglevel, logfile));
 			
 			if (loglevel != null) {
 				if (loglevel.equalsIgnoreCase("OFF")) {
