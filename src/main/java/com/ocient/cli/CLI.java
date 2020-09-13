@@ -433,9 +433,12 @@ public class CLI {
 		try {
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
-			while (rs.next()) {
-				String planLine = rs.getString(1);
-				System.out.println(planLine);
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			rs.close();
 		} catch (final Exception e) {
@@ -507,21 +510,26 @@ public class CLI {
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				ArrayList<String> tableNames = new ArrayList<>();
-				while (rs.next()) {
-					tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
-				}
-				if (!tableNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(tableNames);
-					for (String tableName : tableNames) {
-						System.out.println(tableName);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					ArrayList<String> tableNames = new ArrayList<>();
+					while (rs.next()) {
+						tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
+					}
+					if (!tableNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(tableNames);
+						for (String tableName : tableNames) {
+							System.out.println(tableName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -570,9 +578,12 @@ public class CLI {
 			start = System.currentTimeMillis();
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
-			while (rs.next()) {
-				String exportLine = rs.getString(1);
-				System.out.println(exportLine);
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
@@ -615,22 +626,28 @@ public class CLI {
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				ArrayList<String> viewNames = new ArrayList<>();
-				while (rs.next()) {
-					viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
-				}
-				if (!viewNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(viewNames);
-					for (String viewName : viewNames) {
-						System.out.println(viewName);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					ArrayList<String> viewNames = new ArrayList<>();
+					while (rs.next()) {
+						viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
+					}
+					if (!viewNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(viewNames);
+						for (String viewName : viewNames) {
+							System.out.println(viewName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
+
 			printWarnings(rs);
 			end = System.currentTimeMillis();
 
@@ -673,45 +690,51 @@ public class CLI {
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					final StringBuilder line = new StringBuilder(1024);
+					while (rs.next()) {
+						line.append(rs.getString("COLUMN_NAME"));
+						line.append(" (");
+						String type = rs.getString("TYPE_NAME");
+						if (type.equals("SHORT")) {
+							type = "SMALLINT";
+						} else if (type.equals("LONG")) {
+							type = "BIGINT";
+						}
+
+						line.append(type);
+						// TODO: figure out precision stuff
+						if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
+							line.append("(");
+							line.append(rs.getString("DECIMAL_PRECISION"));
+							line.append(",");
+							line.append(rs.getString("DECIMAL_SCALE"));
+							line.append(")");
+						} else if (rs.getString("TYPE_NAME").equals("VARCHAR") || rs.getString("TYPE_NAME").equals("BINARY")
+								|| rs.getString("TYPE_NAME").equals("HASH")) {
+							line.append("(");
+							line.append(rs.getString("COLUMN_SIZE"));
+							line.append(")");
+						}
+
+						line.append(")");
+						if (rs.getInt("NULLABLE") != 0) {
+							line.append(" nullable");
+						}
+						line.append("\n");
+					}
+					if (line.length() != 0) {
+						System.out.print(line);
+					}
+				}
 			} else {
-				final StringBuilder line = new StringBuilder(1024);
-				while (rs.next()) {
-					line.append(rs.getString("COLUMN_NAME"));
-					line.append(" (");
-					String type = rs.getString("TYPE_NAME");
-					if (type.equals("SHORT")) {
-						type = "SMALLINT";
-					} else if (type.equals("LONG")) {
-						type = "BIGINT";
-					}
-
-					line.append(type);
-					// TODO: figure out precision stuff
-					if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
-						line.append("(");
-						line.append(rs.getString("DECIMAL_PRECISION"));
-						line.append(",");
-						line.append(rs.getString("DECIMAL_SCALE"));
-						line.append(")");
-					} else if (rs.getString("TYPE_NAME").equals("VARCHAR") || rs.getString("TYPE_NAME").equals("BINARY")
-							|| rs.getString("TYPE_NAME").equals("HASH")) {
-						line.append("(");
-						line.append(rs.getString("COLUMN_SIZE"));
-						line.append(")");
-					}
-
-					line.append(")");
-					if (rs.getInt("NULLABLE") != 0) {
-						line.append(" nullable");
-					}
-					line.append("\n");
-				}
-				if (line.length() != 0) {
-					System.out.print(line);
-				}
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
+
 			printWarnings(rs);
 			end = System.currentTimeMillis();
 
@@ -753,20 +776,24 @@ public class CLI {
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null)
+					printResultSet(rs, meta);
 
-			if (m.group("verbose") != null)
-				printResultSet(rs, meta);
+				else {
+					final StringBuilder line = new StringBuilder(1024);
 
-			else {
-				final StringBuilder line = new StringBuilder(1024);
+					while (rs.next())
+						line.append(rs.getString("VIEW_QUERY_TEXT"));
 
-				while (rs.next())
-					line.append(rs.getString("VIEW_QUERY_TEXT"));
-
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					System.out.println(line);
+					if (line.length() != 0) {
+						line.setLength(line.length() - 2);
+						System.out.println(line);
+					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -813,41 +840,46 @@ public class CLI {
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				final StringBuilder line = new StringBuilder(1024);
-				ArrayList<String> indexNames = new ArrayList<>();
-				String currIndex = "";
-				while (rs.next()) {
-					final String nextIndex = rs.getString("INDEX_NAME");
-					if (!nextIndex.equals(currIndex)) {
-						currIndex = nextIndex;
-						if (line.length() > 0) {
-							line.setLength(line.length() - 2);
-							line.append(")");
-							indexNames.add(line.toString());
-							line.setLength(0);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					final StringBuilder line = new StringBuilder(1024);
+					ArrayList<String> indexNames = new ArrayList<>();
+					String currIndex = "";
+					while (rs.next()) {
+						final String nextIndex = rs.getString("INDEX_NAME");
+						if (!nextIndex.equals(currIndex)) {
+							currIndex = nextIndex;
+							if (line.length() > 0) {
+								line.setLength(line.length() - 2);
+								line.append(")");
+								indexNames.add(line.toString());
+								line.setLength(0);
+							}
+							line.append(currIndex);
+							line.append(" (");
 						}
-						line.append(currIndex);
-						line.append(" (");
+						line.append(rs.getString("COLUMN_NAME"));
+						line.append(", ");
 					}
-					line.append(rs.getString("COLUMN_NAME"));
-					line.append(", ");
-				}
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					line.append(")");
-					indexNames.add(line.toString());
-				}
-				if (!indexNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(indexNames);
-					for (String indexName : indexNames) {
-						System.out.println(indexName);
+					if (line.length() != 0) {
+						line.setLength(line.length() - 2);
+						line.append(")");
+						indexNames.add(line.toString());
+					}
+					if (!indexNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(indexNames);
+						for (String indexName : indexNames) {
+							System.out.println(indexName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 
 			printWarnings(rs);
@@ -919,9 +951,12 @@ public class CLI {
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
 
-			while (rs.next()) {
-				String planLine = rs.getString(1);
-				System.out.println(planLine);
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			end = System.currentTimeMillis();
 
@@ -954,7 +989,12 @@ public class CLI {
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			printResultSet(rs, meta);
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
+			}
 			printWarnings(stmt);
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -984,11 +1024,14 @@ public class CLI {
 			start = System.currentTimeMillis();
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
-
-			while (rs.next()) {
-				String planLine = rs.getString(1);
-				System.out.println(planLine);
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
+
 			rs.close();
 			
 			printWarnings(stmt);
@@ -1111,7 +1154,12 @@ public class CLI {
 			stmt.execute(cmd);
 			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
-			printResultSet(rs, meta);
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
+			}
 
 			printWarnings(rs);
 			end = System.currentTimeMillis();
