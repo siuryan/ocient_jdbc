@@ -1801,13 +1801,9 @@ public class XGStatement implements Statement {
 		}
 		String pm = explainPlan(plan, format);
 		ArrayList<Object> rs = new ArrayList<>();
-		String lines[] = pm.split("\\r?\\n");
-		for (int i = 0; i < lines.length; i++) {
-			String str = lines[i];
-			ArrayList<Object> row = new ArrayList<>();
-			row.add(str);
-			rs.add(row);
-		}
+		ArrayList<Object> row = new ArrayList<>();
+		row.add(pm);
+		rs.add(row);
 
 		result = conn.rs = new XGResultSet(conn, rs, this);
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
@@ -1827,13 +1823,9 @@ public class XGStatement implements Statement {
 		LOGGER.log(Level.INFO, "Enetered driver's exportTable");
 		String exportStr = exportTable(cmd);
 		ArrayList<Object> rs = new ArrayList<>();
-		String lines[] = exportStr.split("\\r?\\n");
-		for (int i = 0; i < lines.length; i++) {
-			String str = lines[i];
-			ArrayList<Object> row = new ArrayList<>();
-			row.add(str);
-			rs.add(row);
-		}
+		ArrayList<Object> row = new ArrayList<>();
+		row.add(exportStr);
+		rs.add(row);
 	
 		result = conn.rs = new XGResultSet(conn, rs, this);
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
@@ -1865,13 +1857,9 @@ public class XGStatement implements Statement {
 		String explainString = explain(sql, format);
 
 		ArrayList<Object> rs = new ArrayList<>();
-		String lines[] = explainString.split("\\r?\\n");
-		for (int i = 0; i < lines.length; i++) {
-			String str = lines[i];
-			ArrayList<Object> row = new ArrayList<>();
-			row.add(str);
-			rs.add(row);
-		}
+		ArrayList<Object> row = new ArrayList<>();
+		row.add(explainString);
+		rs.add(row);
 
 		result = conn.rs = new XGResultSet(conn, rs, this);
 		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
