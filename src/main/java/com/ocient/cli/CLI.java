@@ -259,7 +259,8 @@ public class CLI {
 			explain(cmd);
 		} else if (startsWithIgnoreCase(cmd, "CREATE") || startsWithIgnoreCase(cmd, "DROP")
 				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")
-				|| startsWithIgnoreCase(cmd, "SET PSO")) {
+				|| startsWithIgnoreCase(cmd, "SET PSO") || startsWithIgnoreCase(cmd, "GRANT")
+				|| startsWithIgnoreCase(cmd, "REVOKE")) {
 			update(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST TABLES")) {
 			listTables(cmd, false);
