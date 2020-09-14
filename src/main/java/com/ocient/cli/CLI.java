@@ -647,7 +647,6 @@ public class CLI {
 				outputResultSet(rs, meta);
 				outputCSVFile = "";
 			}
-
 			printWarnings(rs);
 			end = System.currentTimeMillis();
 
@@ -734,7 +733,6 @@ public class CLI {
 				outputResultSet(rs, meta);
 				outputCSVFile = "";
 			}
-
 			printWarnings(rs);
 			end = System.currentTimeMillis();
 
