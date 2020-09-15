@@ -25,6 +25,7 @@ public class SQLStates {
 	private static String INVALID_CURSOR = "24000";
 	private static String CURSOR_ALREADY_ASSIGNED_TO_RS = "24516";
 	private static String VALUE_TOO_LARGE_STATE = "24920";
+	private static String CONFLICT_STATE = "38H13";
 	private static String ST_POINT_INVALID_CONVERSION_FROM_NULL_STATE = "38SUP";
 	private static String AUTH_FAILURE = "42502";
 	private static String SYNTAX_ERROR_STATE = "42601";
@@ -126,6 +127,7 @@ public class SQLStates {
 	private static int INVALID_IMPLICIT_DESC_HANDLE_USE_CODE = -327;
 	private static int DIVIDE_BY_ZERO_CODE = -328;
 	private static int INVALID_FLOATING_POINT_OPERATION_CODE = -329;
+	private static int CONFLICT_CODE = -330;
 
 	// column and data type issues
 	private static int COLUMN_NOT_FOUND_CODE = -400;
@@ -180,10 +182,23 @@ public class SQLStates {
 
 	// table related issues
 	private static int TABLE_NOT_FOUND_CODE = -600;
-	private static int CONNECTION_ALREADY_EXISTS_CODE = -607;
-	private static int CONNECTION_NOT_FOUND_CODE = -608;
-	private static int TRANSLATION_NOT_FOUND_CODE = -609;
-	private static int TRANSLATION_ALREADY_EXISTS_CODE = -610;
+	private static int DATABASE_ALREADY_EXISTS_CODE = -601;
+	private static int TABLE_ALREADY_EXISTS_CODE = -602;
+	private static int VIEW_ALREADY_EXISTS_CODE = -602;
+	private static int VIEW_NOT_FOUND_CODE = -603;
+	private static int DATABASE_NOT_FOUND_CODE = -604;
+	private static int STORAGE_SPACE_NOT_FOUND_CODE = -605;
+	private static int STORAGESPACE_ALREADY_EXISTS_CODE = -606;
+	private static int USER_NOT_FOUND_CODE = -607;
+	private static int USER_ALREADY_EXISTS_CODE = -608;
+	private static int INVALID_NEW_USER_PWD_CODE = -609;
+	private static int GROUP_ALREADY_EXISTS_CODE = -610;
+	private static int GROUP_NOT_FOUND_CODE = -611;
+	private static int CONNECTION_ALREADY_EXISTS_CODE = -612;
+	private static int CONNECTION_NOT_FOUND_CODE = -613;
+	private static int TRANSLATION_NOT_FOUND_CODE = -614;
+	private static int TRANSLATION_ALREADY_EXISTS_CODE = -615;
+	private static int USER_NOT_IN_GROUP_CODE = -616;
 
 	// security related issues
 	private static int READ_TABLE_AUTH_FAILURE = -700;
@@ -221,6 +236,13 @@ public class SQLStates {
 	private static int NODE_NOT_FOUND_CODE = -1101;
 
 	private static int UNDEFINED_EXCEPTION_CODE = -9999; // for internal-use only
+
+	// DCL
+	private static int PRIVILEGE_ALREADY_POSSESSED_CODE = -1000;
+	private static int NO_GRANT_AUTH_CODE = -1001;
+	private static int PRIVILEGE_NOT_POSSESSED_CODE = -1002;
+	private static int ROLE_NOT_FOUND_CODE = -1003;
+	private static int ID_NOT_FOUND_CODE = -1004;
 
 	public static SQLStates INVALID_RESPONSE_TYPE = new SQLStates(
 			"Received a response from the server that was not ok, warning, or error", SYSTEM_ERROR,
@@ -289,6 +311,8 @@ public class SQLStates {
 			INVALID_ARGUMENT_STATE, INVALID_COMPARISON_CODE);
 	public static SQLStates NO_SUCH_DATABASE = new SQLStates("No database with that name exists", REJECTED_CONNECTION,
 			NO_SUCH_DATABASE_CODE);
+	public static SQLStates STORAGESPACE_ALREADY_EXISTS = new SQLStates("A storage space with that name exists",
+			DUPLICATE_OBJECT, STORAGESPACE_ALREADY_EXISTS_CODE);
 	public static SQLStates AGGREGATION_NOT_ALLOWED = new SQLStates(
 			"Aggregation was used in a context where it is not allowed (perhaps a predicate in the WHERE clause that belongs in the HAVING clause)",
 			SYNTAX_ERROR_STATE, AGGREGATION_NOT_ALLOWED_CODE);
@@ -302,6 +326,16 @@ public class SQLStates {
 			SELECT_AFTER_AGG_CODE);
 	public static SQLStates TABLE_NOT_FOUND = new SQLStates("The referenced table does not exist",
 			OBJECT_NOT_FOUND_STATE, TABLE_NOT_FOUND_CODE);
+	public static SQLStates DATABASE_ALREADY_EXISTS = new SQLStates("A database with that name exists",
+			DUPLICATE_OBJECT, DATABASE_ALREADY_EXISTS_CODE);
+	public static SQLStates TABLE_ALREADY_EXISTS = new SQLStates("A table with that name exists", DUPLICATE_OBJECT,
+			TABLE_ALREADY_EXISTS_CODE);
+	public static SQLStates VIEW_ALREADY_EXISTS = new SQLStates("A view with that name exists", DUPLICATE_OBJECT,
+			VIEW_ALREADY_EXISTS_CODE);
+	public static SQLStates USER_ALREADY_EXISTS = new SQLStates("A user with that name exists", DUPLICATE_OBJECT,
+			USER_ALREADY_EXISTS_CODE);
+	public static SQLStates GROUP_ALREADY_EXISTS = new SQLStates("A group with that name exists", DUPLICATE_OBJECT,
+			GROUP_ALREADY_EXISTS_CODE);
 	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection does not exist",
 			DUPLICATE_OBJECT, CONNECTION_ALREADY_EXISTS_CODE);
 	public static SQLStates CONNECTION_NOT_FOUND = new SQLStates("The referenced connection does not exist",
@@ -310,6 +344,18 @@ public class SQLStates {
 			OBJECT_NOT_FOUND_STATE, TRANSLATION_NOT_FOUND_CODE);
 	public static SQLStates TRANSLATION_ALREADY_EXISTS = new SQLStates("The referenced translation does not exist",
 			DUPLICATE_OBJECT, TRANSLATION_ALREADY_EXISTS_CODE);
+	public static SQLStates DATABASE_NOT_FOUND = new SQLStates("The referenced database does not exist",
+			OBJECT_NOT_FOUND_STATE, DATABASE_NOT_FOUND_CODE);
+	public static SQLStates STORAGE_SPACE_NOT_FOUND = new SQLStates("The referenced storage space does not exist",
+			OBJECT_NOT_FOUND_STATE, STORAGE_SPACE_NOT_FOUND_CODE);
+	public static SQLStates VIEW_NOT_FOUND = new SQLStates("The referenced view does not exist", OBJECT_NOT_FOUND_STATE,
+			VIEW_NOT_FOUND_CODE);
+	public static SQLStates USER_NOT_FOUND = new SQLStates("The referenced user does not exist", OBJECT_NOT_FOUND_STATE,
+			USER_NOT_FOUND_CODE);
+	public static SQLStates GROUP_NOT_FOUND = new SQLStates("The referenced group does not exist",
+			OBJECT_NOT_FOUND_STATE, GROUP_NOT_FOUND_CODE);
+	public static SQLStates USER_NOT_IN_GROUP = new SQLStates("The user is not in the specified group",
+			OBJECT_NOT_FOUND_STATE, USER_NOT_IN_GROUP_CODE);
 
 	public static SQLStates INVALID_ORDER_BY = new SQLStates("Invalid ORDER BY clause", INVALID_ORDER_BY_STATE,
 			INVALID_ORDER_BY_CODE);
@@ -327,12 +373,13 @@ public class SQLStates {
 			SQL_NOT_VALID_IN_CONTEXT_CODE);
 	public static SQLStates NO_READ_AUTH = new SQLStates("The userid does not have read authority on a required table",
 			AUTH_FAILURE, READ_TABLE_AUTH_FAILURE);
-	public static SQLStates NO_CREATE_CONNECTION_AUTH = new SQLStates("The user does not have the authority to create a connection.",
-			AUTH_FAILURE, CREATE_CONNECTION_AUTH_FAILURE);
-	public static SQLStates CREATE_TASK_FAILURE = new SQLStates("Failed to create task",
-			SYSTEM_ERROR, CREATE_TASK_FAILURE_CODE);
-	public static SQLStates NO_DROP_CONNECTION_AUTH = new SQLStates("The user does not have the authority to drop the connection", 
-			AUTH_FAILURE, DROP_CONNECTION_AUTH_FAILURE);
+	public static SQLStates NO_CREATE_CONNECTION_AUTH = new SQLStates(
+			"The user does not have the authority to create a connection.", AUTH_FAILURE,
+			CREATE_CONNECTION_AUTH_FAILURE);
+	public static SQLStates CREATE_TASK_FAILURE = new SQLStates("Failed to create task", SYSTEM_ERROR,
+			CREATE_TASK_FAILURE_CODE);
+	public static SQLStates NO_DROP_CONNECTION_AUTH = new SQLStates(
+			"The user does not have the authority to drop the connection", AUTH_FAILURE, DROP_CONNECTION_AUTH_FAILURE);
 	public static SQLStates NAKED_INTERVAL_TYPE = new SQLStates(
 			"If the result of an expression is a time interval type, it must be cast to an integral type",
 			BAD_DATA_TYPE, NAKED_INTERVAL_TYPE_CODE);
@@ -416,6 +463,8 @@ public class SQLStates {
 			NUMERIC_VALUE_OUT_OF_RANGE_CODE);
 	public static SQLStates INVALID_FLOATING_POINT_OPERATION = new SQLStates("Invalid floating point operation",
 			INVALID_FLOATING_POINT_OPERATION_STATE, INVALID_FLOATING_POINT_OPERATION_CODE);
+	public static SQLStates CONFLICT = new SQLStates("The action conflicts with the current state of the database",
+			CONFLICT_STATE, CONFLICT_CODE);
 	public static SQLStates OPERATION_CANCELED = new SQLStates("Operation was canceled or aborted",
 			OPERATION_CANCELED_STATE, OPERATION_CANCELED_CODE);
 	public static SQLStates INVALID_QUERY_PRIORITY = new SQLStates(
@@ -497,12 +546,24 @@ public class SQLStates {
 			CASE_WITHIN_CASE_CODE);
 	public static SQLStates OUT_OF_TEMP_DISK_SPACE = new SQLStates("Out of temporary disk space",
 			STORAGE_OR_DATABASE_RESOURCE_NOT_AVAILABLE_STATE, OUT_OF_TEMP_DISK_SPACE_CODE);
-	public static SQLStates NOT_AUTHORIZED = new SQLStates("Not authorized to take this action", 
-			AUTH_FAILURE, NOT_AUTHORIZED_CODE);
-	public static SQLStates NODE_NOT_FOUND = new SQLStates("Node not found",
-			OBJECT_NOT_FOUND_STATE, NODE_NOT_FOUND_CODE);
-	public static SQLStates TASK_ALREADY_IN_PROGRESS = new SQLStates("Task already in progress",
-			DUPLICATE_OBJECT, TASK_ALREADY_IN_PROGRESS_ERROR_CODE);
+	public static SQLStates INVALID_NEW_USER_PWD = new SQLStates("The supplied password for the new user is invalid",
+			SYNTAX_ERROR_STATE, INVALID_NEW_USER_PWD_CODE);
+	public static SQLStates PRIVILEGE_ALREADY_POSSESSED = new SQLStates(
+			"The privilege target already has the privilege.", DUPLICATE_OBJECT, PRIVILEGE_ALREADY_POSSESSED_CODE);
+	public static SQLStates PRIVILEGE_NOT_POSSESSED = new SQLStates(
+			"The privilege target does not have that privilege.", OBJECT_NOT_FOUND_STATE, PRIVILEGE_NOT_POSSESSED_CODE);
+	public static SQLStates NO_GRANT_AUTH = new SQLStates(
+			"The user does not have the authority to grant this privilege.", AUTH_FAILURE, NO_GRANT_AUTH_CODE);
+	public static SQLStates NOT_AUTHORIZED = new SQLStates("Not authorized to take this action", AUTH_FAILURE,
+			NOT_AUTHORIZED_CODE);
+	public static SQLStates NODE_NOT_FOUND = new SQLStates("Node not found", OBJECT_NOT_FOUND_STATE,
+			NODE_NOT_FOUND_CODE);
+	public static SQLStates TASK_ALREADY_IN_PROGRESS = new SQLStates("Task already in progress", DUPLICATE_OBJECT,
+			TASK_ALREADY_IN_PROGRESS_ERROR_CODE);
+	public static SQLStates ID_NOT_FOUND = new SQLStates("The provided object was not found", OBJECT_NOT_FOUND_STATE,
+			ID_NOT_FOUND_CODE);
+	public static SQLStates ROLE_NOT_FOUND = new SQLStates("The referenced role does not exist", OBJECT_NOT_FOUND_STATE,
+			ROLE_NOT_FOUND_CODE);
 
 	public static SQLException newGenericException(Exception e) {
 		String reason = e.getMessage();
