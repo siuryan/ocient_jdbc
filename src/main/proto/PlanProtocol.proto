@@ -1213,6 +1213,8 @@ message SystemConfigurationVirtualOperator
 {
 	// The security token of the logged-in user
 	securityToken security_token = 1;
+	// A string identifier that is the uuid of the database to which the query was submitted
+	string database_id = 2;
 }
 
 // Column info used for stats requests
