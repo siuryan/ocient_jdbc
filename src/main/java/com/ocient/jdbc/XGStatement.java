@@ -441,7 +441,8 @@ public class XGStatement implements Statement {
 			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
 			sql.toUpperCase().startsWith("LIST INDICES") || sql.toUpperCase().startsWith("LIST INDEXES") || sql.toUpperCase().startsWith("GET SCHEMA") || 
 			sql.toUpperCase().startsWith("DESCRIBE VIEW") || sql.toUpperCase().startsWith("DESCRIBE TABLE") || sql.toUpperCase().startsWith("PLAN EXECUTE") || 
-			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || sql.toUpperCase().startsWith("EXPORT TABLE")) {
+			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || sql.toUpperCase().startsWith("EXPORT TABLE") || 
+			sql.toUpperCase().startsWith("EXPORT TRANSLATION")) {
 				this.result = (XGResultSet) executeQuery(sql);
 				return true;
 			} else {
@@ -520,6 +521,8 @@ public class XGStatement implements Statement {
 				return listAllQueries();
 			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE")){
 				return exportTableSQL(sql);
+			} else if(startsWithIgnoreCase(sql, "EXPORT TRANSLATION")){
+				return exportTranslationSQL(sql);
 			}
 		} catch (Exception e) {
 			throw SQLStates.newGenericException(e);
@@ -1834,6 +1837,28 @@ public class XGStatement implements Statement {
 		cols2Pos.put("export", 0);
 		pos2Cols.put(0, "export");
 		cols2Types.put("export", "CHAR");
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		return result;
+	}
+
+	private ResultSet exportTranslationSQL(final String cmd) throws SQLException{
+		LOGGER.log(Level.INFO, "Enetered driver's exportTranslation");
+		String exportTranslationStr = exportTranslation(cmd);
+		ArrayList<Object> rs = new ArrayList<>();
+		ArrayList<Object> row = new ArrayList<>();
+		row.add(exportTranslationStr);
+		rs.add(row);
+	
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+		cols2Pos.put("translation", 0);
+		pos2Cols.put(0, "translation");
+		cols2Types.put("translation", "CHAR");
 		result.setCols2Pos(cols2Pos);
 		result.setPos2Cols(pos2Cols);
 		result.setCols2Types(cols2Types);

@@ -548,24 +548,33 @@ public class CLI {
 		}
 	}
 
-        private static void exportTranslation(final String cmd) {
-                long start = 0;
-                long end = 0;
-                if (!isConnected()) {
-                        System.out.println("No database connection exists");
-                        return;
-                }
-                try {
-                        start = System.currentTimeMillis();
-                        System.out.println(((XGStatement) stmt).exportTranslation(cmd));
-                        printWarnings(stmt);
-                        end = System.currentTimeMillis();
+	private static void exportTranslation(final String cmd) {
+			long start = 0;
+			long end = 0;
+			if (!isConnected()) {
+					System.out.println("No database connection exists");
+					return;
+			}
+			ResultSet rs = null;
+			try {
+					start = System.currentTimeMillis();
+					stmt.execute(cmd);
+					rs = stmt.getResultSet();
+					final ResultSetMetaData meta = rs.getMetaData();
+					if (outputCSVFile.isEmpty()) {
+						printResultSet(rs, meta);
+					} else {
+						outputResultSet(rs, meta);
+						outputCSVFile = "";
+					}
+					printWarnings(stmt);
+					end = System.currentTimeMillis();
 
-                        printTime(start, end);
-                } catch (final Exception e) {
-                        System.out.println("Error: " + e.getMessage());
-                }
-        }
+					printTime(start, end);
+			} catch (final Exception e) {
+					System.out.println("Error: " + e.getMessage());
+			}
+	}
 
 	private static void exportTable(final String cmd) {
 		long start = 0;
