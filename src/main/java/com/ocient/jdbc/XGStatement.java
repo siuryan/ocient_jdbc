@@ -855,6 +855,7 @@ public class XGStatement implements Statement {
 	private ClientWireProtocol.FetchSystemMetadataResponse.Builder fetchSystemMetadata(
 			final FetchSystemMetadata.SystemMetadataCall call, final String schema, final String table,
 			final String col, final boolean test) throws SQLException {
+		LOGGER.log(Level.INFO, "Entered fetchSystemMetadata()");
 		clearWarnings();
 		if (conn.rs != null && !conn.rs.isClosed()) {
 			throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
@@ -905,10 +906,14 @@ public class XGStatement implements Statement {
 				processResponseType(rType, response);
 
 				return br;
-			} catch (SQLException | IOException e) {
+			} catch (SQLException | NullPointerException | IOException e) {
 				LOGGER.log(Level.WARNING, "fetchSystemMetadataResponse: ", e);
 				if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e)) {
 					throw e;
+				}
+				if (e instanceof IOException){
+					// When its a socket exception like this, the query is not cancelled.
+					setQueryCancelled(false);
 				}
 				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
@@ -1400,6 +1405,10 @@ public class XGStatement implements Statement {
 				if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e)) {
 					LOGGER.log(Level.WARNING, "sendAndReceive() SQL or IO Exception.");
 					throw e;
+				}
+				if (e instanceof IOException){
+					// When its a socket exception like this, the query is not cancelled.
+					setQueryCancelled(false);
 				}
 				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure

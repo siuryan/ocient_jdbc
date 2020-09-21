@@ -1032,7 +1032,7 @@ public class XGConnection implements Connection {
 			out.write(intToBytes(wrapper.getSerializedSize()));
 			wrapper.writeTo(out);
 			out.flush();
-		} catch (final IOException e) {
+		} catch (final IOException | NullPointerException e) {
 			if (!setSchema.equals("")) {
 				return setSchema;
 			} else {
