@@ -480,7 +480,11 @@ public class XGStatement implements Statement {
 		LOGGER.log(Level.INFO, "Called executeQuery()");
 		String explain = "";
 		boolean isExplain = false;
-		sql = sql.trim();
+		if (sql.charAt(0) == ' ' || sql.charAt(sql.length() - 1) == ' ')
+		{
+			sql = sql.trim();
+		}
+		
 		if (startsWithIgnoreCase(sql, "EXPLAIN JSON")) {
 			final String sqlQuery = sql.substring("EXPLAIN JSON".length()).trim();
 			try {

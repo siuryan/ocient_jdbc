@@ -310,7 +310,13 @@ public class CLI {
 		while (firstNonParentheses < len && in.charAt(firstNonParentheses) == '(') {
 			firstNonParentheses++;
 		}
-		if (in.substring(firstNonParentheses).toUpperCase().startsWith(cmp.toUpperCase())) {
+		
+		if (firstNonParentheses + cmp.length() > in.length())
+		{
+			return false;
+		}
+		
+		if (in.substring(firstNonParentheses, firstNonParentheses + cmp.length()).toUpperCase().startsWith(cmp.toUpperCase())) {
 			return true;
 		}
 
