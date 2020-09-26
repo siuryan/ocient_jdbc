@@ -22,7 +22,7 @@ import java.util.logging.Level;
 public class JDBCDriver implements Driver
 {
 
-	private static String version = "7.0.0";
+	private static String version = "7.0.1";
 	private static final Logger LOGGER = Logger.getLogger( "com.ocient.jdbc" );
 	private static String logFileName;
 	private static FileHandler logHandler;
@@ -62,6 +62,9 @@ public class JDBCDriver implements Driver
 		String user = properties.getProperty("user");
 		String pwd = properties.getProperty("password");
 		String force = properties.getProperty("force");
+		String tlsStr = properties.getProperty("tls","OFF").toUpperCase();
+		XGConnection.Tls tls = XGConnection.Tls.valueOf(tlsStr);
+		XGConnection conn = null;
 		
 		try
 		{
@@ -72,13 +75,15 @@ public class JDBCDriver implements Driver
 			Throwable lastError = null;
 			for (InetAddress addr : addrs) {
 				try {
-					sock = new Socket();
-					sock.setReceiveBufferSize(4194304);
-					sock.setSendBufferSize(4194304);
-					sock.connect(new InetSocketAddress(addr, portNum), 10000);
+					final String url = "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
+					conn = new XGConnection(user, pwd, addr.getHostAddress(), portNum, url, database, version, force, tls);
+					LOGGER.log(Level.INFO,"About to attempt connection");
+					conn.connect();
+					LOGGER.log(Level.INFO,"Successfully connected");
 					connected = true;
 					break;
 				} catch (final Throwable e) {
+					conn = null;
 					lastError = e;
 					LOGGER.log(Level.WARNING, String.format(
 							"Failed connecting to %s with exception %s with message %s", addr.toString(), e.toString(), e.getMessage()));
@@ -91,37 +96,14 @@ public class JDBCDriver implements Driver
 		}
 		catch (final Throwable e)
 		{
-			try
-			{
-				sock.close();
-			}
-			catch (final IOException f)
-			{}
-
 			final SQLException g = SQLStates.FAILED_CONNECTION.clone();
-			final Exception connInfo = new Exception("Connection failed connecting to " + hostname + ":" + portNum);
+			final Exception connInfo = new Exception("Connection failed connecting to " + hostname + ":" + portNum + " - " + e.getMessage());
 			g.initCause(connInfo);
 			connInfo.initCause(e);
 			throw g;
 		}
 
-		try {
-			final String url = "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
-
-			XGConnection conn = new XGConnection(sock, user, pwd, portNum, url, database, version, force);
-			return conn;
-		}
-		catch (final Exception e)
-		{
-			LOGGER.log(Level.WARNING, String.format(
-					"After connecting, failed creating connection object with exception %s with message %s", e.toString(), e.getMessage()));
-			if (e instanceof SQLException)
-			{
-				throw (SQLException) e;
-			}
-
-			throw SQLStates.newGenericException(e);
-		}
+		return conn;
 	}
 
 	@Override
@@ -335,8 +317,11 @@ public class JDBCDriver implements Driver
 				logFileName = logfile;
 				LOGGER.addHandler(logHandler);
 				LOGGER.log(Level.INFO, "Enabling logger");
-			} catch (final IOException e) {
+			} catch (final IOException | IllegalArgumentException e) {
 				e.printStackTrace(System.err);
+				// An illegal file argument was entered most likely.
+				LOGGER.setLevel(Level.OFF);
+				return;
 			}
 		}
 	}

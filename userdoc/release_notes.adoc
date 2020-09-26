@@ -5,6 +5,56 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.46 (2020-09-21)
+
+New Features::
+
+ * Bug fix for driver not reconnecting when a previous result set is still open.
+
+// tag::compact[]
+== 1.45 (2020-09-16)
+
+New Features::
+
+ * Move export translation into result set.
+
+// tag::compact[]
+== 1.44 (2020-09-15)
+
+New Features::
+
+ * Support granting and revoking both privileges and role membership.
+
+// tag::compact[]
+== 1.43 (2020-09-14)
+
+New Features::
+
+  * Explain, listTables, listViews, getSchema, describeTable, describeView, explainPlan, listAllQueries, and exportTable.
+
+// tag::compact[]
+== 1.42 (2020-09-2)
+
+New Features::
+
+  * Move some custom functionalities into the driver including: get/set schema, list (system) tables, list views, describe table/views, list indexes, 
+    execute/explain plan, cancel/kill query, list all queries, export table, set max rows, set pso.
+
+// tag::compact[]
+== 1.41 (2020-08-20)
+
+New Features::
+
+  * Ability to set max output rows from the CLI
+
+// tag::compact[]
+== 1.40 (2020-08-14)
+
+New Features::
+
+  * SSL support. 
+
+// tag::compact[]
 == 1.37 (2020-07-26)
 
 New Features::

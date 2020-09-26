@@ -60,8 +60,8 @@ import com.ocient.jdbc.DataEndMarker;
 import com.ocient.jdbc.XGConnection;
 import com.ocient.jdbc.XGDatabaseMetaData;
 import com.ocient.jdbc.XGStatement;
+import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import java.util.TimeZone;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -259,7 +259,8 @@ public class CLI {
 			explain(cmd);
 		} else if (startsWithIgnoreCase(cmd, "CREATE") || startsWithIgnoreCase(cmd, "DROP")
 				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")
-				|| startsWithIgnoreCase(cmd, "SET PSO")) {
+				|| startsWithIgnoreCase(cmd, "SET PSO") || startsWithIgnoreCase(cmd, "GRANT")
+				|| startsWithIgnoreCase(cmd, "REVOKE")) {
 			update(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST TABLES")) {
 			listTables(cmd, false);
@@ -277,6 +278,8 @@ public class CLI {
 			executePlan(cmd);
 		} else if (startsWithIgnoreCase(cmd, "PLAN EXPLAIN")) {
 			explainPlan(cmd);
+		} else if (startsWithIgnoreCase(cmd, "SET MAXROWS")) {
+			setMaxRows(cmd);
 		} else if (startsWithIgnoreCase(cmd, "PLAN LIST")) {
 			listPlan();
 		} else if (startsWithIgnoreCase(cmd, "SOURCE")) {
@@ -286,7 +289,7 @@ public class CLI {
 		} else if (startsWithIgnoreCase(cmd, "KILL")) {
 			killQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST ALL QUERIES")) {
-			listAllQueries();
+			listAllQueries(cmd);
 		} else if (startsWithIgnoreCase(cmd, "OUTPUT NEXT QUERY")) {
 			outputNextQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "FORCE EXTERNAL")) {
@@ -395,6 +398,9 @@ public class CLI {
 				// No exception thrown means connection was successful, and connectTo may return
 				stmt = conn.createStatement();
 				return;
+			} catch (final SQLException e) {
+				System.out.println("Failed to connect to " + hosts + "(" + e.getCause().getMessage() + ")");
+				throw e;
 			} catch (final Exception e) {
 				System.out.println("Failed to connect to " + hosts);
 				throw e;
@@ -430,13 +436,24 @@ public class CLI {
 			return;
 		}
 
+		ResultSet rs = null;
 		try {
-			String schema = conn.getSchema();
-			if (!schema.toLowerCase().equals(schema)) {
-				schema = "\"" + schema + "\"";
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
-			System.out.println(schema);
+			rs.close();
 		} catch (final Exception e) {
+			e.printStackTrace();
+			try {
+				rs.close();
+			} catch (Exception f) {
+			}
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -446,18 +463,8 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
-
 		try {
-			String schema = cmd.substring(11).trim();
-			if (schema.startsWith("\"")) {
-				if (!schema.endsWith("\"")) {
-					System.out.println("Unclosed quotes!");
-					return;
-				}
-
-				schema = schema.substring(1, schema.length() - 1);
-			}
-			conn.setSchema(schema);
+			stmt.execute(cmd);
 		} catch (final Exception e) {
 			System.out.println("Error: " + e.getMessage());
 		}
@@ -506,29 +513,30 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			if (isSystemTables) {
-				final XGDatabaseMetaData xgdbmd = (XGDatabaseMetaData) dbmd;
-				rs = xgdbmd.getSystemTables("", "%", "%", new String[0]);
-			} else {
-				rs = dbmd.getTables("", "%", "%", new String[0]);
-			}
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				ArrayList<String> tableNames = new ArrayList<>();
-				while (rs.next()) {
-					tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
-				}
-				if (!tableNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(tableNames);
-					for (String tableName : tableNames) {
-						System.out.println(tableName);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					ArrayList<String> tableNames = new ArrayList<>();
+					while (rs.next()) {
+						tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
+					}
+					if (!tableNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(tableNames);
+						for (String tableName : tableNames) {
+							System.out.println(tableName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -546,24 +554,33 @@ public class CLI {
 		}
 	}
 
-        private static void exportTranslation(final String cmd) {
-                long start = 0;
-                long end = 0;
-                if (!isConnected()) {
-                        System.out.println("No database connection exists");
-                        return;
-                }
-                try {
-                        start = System.currentTimeMillis();
-                        System.out.println(((XGStatement) stmt).exportTranslation(cmd));
-                        printWarnings(stmt);
-                        end = System.currentTimeMillis();
+	private static void exportTranslation(final String cmd) {
+			long start = 0;
+			long end = 0;
+			if (!isConnected()) {
+					System.out.println("No database connection exists");
+					return;
+			}
+			ResultSet rs = null;
+			try {
+					start = System.currentTimeMillis();
+					stmt.execute(cmd);
+					rs = stmt.getResultSet();
+					final ResultSetMetaData meta = rs.getMetaData();
+					if (outputCSVFile.isEmpty()) {
+						printResultSet(rs, meta);
+					} else {
+						outputResultSet(rs, meta);
+						outputCSVFile = "";
+					}
+					printWarnings(stmt);
+					end = System.currentTimeMillis();
 
-                        printTime(start, end);
-                } catch (final Exception e) {
-                        System.out.println("Error: " + e.getMessage());
-                }
-        }
+					printTime(start, end);
+			} catch (final Exception e) {
+					System.out.println("Error: " + e.getMessage());
+			}
+	}
 
 	private static void exportTable(final String cmd) {
 		long start = 0;
@@ -572,14 +589,27 @@ public class CLI {
 			System.out.println("No database connection exists");
 			return;
 		}
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			System.out.println(((XGStatement) stmt).exportTable(cmd));
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
+			}
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
-
+			rs.close();
 			printTime(start, end);
 		} catch (final Exception e) {
+			try{
+				rs.close();
+			} catch(final Exception f){
+			}
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -608,24 +638,30 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			rs = dbmd.getViews("", "%", "%", new String[0]);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				ArrayList<String> viewNames = new ArrayList<>();
-				while (rs.next()) {
-					viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
-				}
-				if (!viewNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(viewNames);
-					for (String viewName : viewNames) {
-						System.out.println(viewName);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					ArrayList<String> viewNames = new ArrayList<>();
+					while (rs.next()) {
+						viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
+					}
+					if (!viewNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(viewNames);
+						for (String viewName : viewNames) {
+							System.out.println(viewName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -665,48 +701,53 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData dbmd = conn.getMetaData();
-			rs = dbmd.getColumns("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), "%");
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					final StringBuilder line = new StringBuilder(1024);
+					while (rs.next()) {
+						line.append(rs.getString("COLUMN_NAME"));
+						line.append(" (");
+						String type = rs.getString("TYPE_NAME");
+						if (type.equals("SHORT")) {
+							type = "SMALLINT";
+						} else if (type.equals("LONG")) {
+							type = "BIGINT";
+						}
+
+						line.append(type);
+						// TODO: figure out precision stuff
+						if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
+							line.append("(");
+							line.append(rs.getString("DECIMAL_PRECISION"));
+							line.append(",");
+							line.append(rs.getString("DECIMAL_SCALE"));
+							line.append(")");
+						} else if (rs.getString("TYPE_NAME").equals("VARCHAR") || rs.getString("TYPE_NAME").equals("BINARY")
+								|| rs.getString("TYPE_NAME").equals("HASH")) {
+							line.append("(");
+							line.append(rs.getString("COLUMN_SIZE"));
+							line.append(")");
+						}
+
+						line.append(")");
+						if (rs.getInt("NULLABLE") != 0) {
+							line.append(" nullable");
+						}
+						line.append("\n");
+					}
+					if (line.length() != 0) {
+						System.out.print(line);
+					}
+				}
 			} else {
-				final StringBuilder line = new StringBuilder(1024);
-				while (rs.next()) {
-					line.append(rs.getString("COLUMN_NAME"));
-					line.append(" (");
-					String type = rs.getString("TYPE_NAME");
-					if (type.equals("SHORT")) {
-						type = "SMALLINT";
-					} else if (type.equals("LONG")) {
-						type = "BIGINT";
-					}
-
-					line.append(type);
-					// TODO: figure out precision stuff
-					if (rs.getString("TYPE_NAME").equals("DECIMAL")) {
-						line.append("(");
-						line.append(rs.getString("DECIMAL_PRECISION"));
-						line.append(",");
-						line.append(rs.getString("DECIMAL_SCALE"));
-						line.append(")");
-					} else if (rs.getString("TYPE_NAME").equals("VARCHAR") || rs.getString("TYPE_NAME").equals("BINARY")
-							|| rs.getString("TYPE_NAME").equals("HASH")) {
-						line.append("(");
-						line.append(rs.getString("COLUMN_SIZE"));
-						line.append(")");
-					}
-
-					line.append(")");
-					if (rs.getInt("NULLABLE") != 0) {
-						line.append(" nullable");
-					}
-					line.append("\n");
-				}
-				if (line.length() != 0) {
-					System.out.print(line);
-				}
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -746,24 +787,27 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData md = conn.getMetaData();
-			final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
-			rs = dbmd.getViews("", getTk(m, "schema", conn.getSchema()), getTk(m, "view", null), null);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null)
+					printResultSet(rs, meta);
 
-			if (m.group("verbose") != null)
-				printResultSet(rs, meta);
+				else {
+					final StringBuilder line = new StringBuilder(1024);
 
-			else {
-				final StringBuilder line = new StringBuilder(1024);
+					while (rs.next())
+						line.append(rs.getString("VIEW_QUERY_TEXT"));
 
-				while (rs.next())
-					line.append(rs.getString("VIEW_QUERY_TEXT"));
-
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					System.out.println(line);
+					if (line.length() != 0) {
+						line.setLength(line.length() - 2);
+						System.out.println(line);
+					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			printWarnings(rs);
 			end = System.currentTimeMillis();
@@ -802,48 +846,54 @@ public class CLI {
 			}
 
 			start = System.currentTimeMillis();
-			final DatabaseMetaData dbmd = conn.getMetaData();
+			//final DatabaseMetaData dbmd = conn.getMetaData();
 			// this behavior is slightly different from the jdbc call itself--
 			// the call allows schema to be null, in which case it doesn't filter on it.
 			// we assume the current schema for convenience & to limit results to one table
-			rs = dbmd.getIndexInfo("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), false, false);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 			final ResultSetMetaData meta = rs.getMetaData();
 
-			if (m.group("verbose") != null) {
-				printResultSet(rs, meta);
-			} else {
-				final StringBuilder line = new StringBuilder(1024);
-				ArrayList<String> indexNames = new ArrayList<>();
-				String currIndex = "";
-				while (rs.next()) {
-					final String nextIndex = rs.getString("INDEX_NAME");
-					if (!nextIndex.equals(currIndex)) {
-						currIndex = nextIndex;
-						if (line.length() > 0) {
-							line.setLength(line.length() - 2);
-							line.append(")");
-							indexNames.add(line.toString());
-							line.setLength(0);
+			if (outputCSVFile.isEmpty()) {
+				if (m.group("verbose") != null) {
+					printResultSet(rs, meta);
+				} else {
+					final StringBuilder line = new StringBuilder(1024);
+					ArrayList<String> indexNames = new ArrayList<>();
+					String currIndex = "";
+					while (rs.next()) {
+						final String nextIndex = rs.getString("INDEX_NAME");
+						if (!nextIndex.equals(currIndex)) {
+							currIndex = nextIndex;
+							if (line.length() > 0) {
+								line.setLength(line.length() - 2);
+								line.append(")");
+								indexNames.add(line.toString());
+								line.setLength(0);
+							}
+							line.append(currIndex);
+							line.append(" (");
 						}
-						line.append(currIndex);
-						line.append(" (");
+						line.append(rs.getString("COLUMN_NAME"));
+						line.append(", ");
 					}
-					line.append(rs.getString("COLUMN_NAME"));
-					line.append(", ");
-				}
-				if (line.length() != 0) {
-					line.setLength(line.length() - 2);
-					line.append(")");
-					indexNames.add(line.toString());
-				}
-				if (!indexNames.isEmpty()) {
-					// TODO: This is a lexicographic sort. Clients ordering their tables by number
-					// will not see the ordering they expect.
-					Collections.sort(indexNames);
-					for (String indexName : indexNames) {
-						System.out.println(indexName);
+					if (line.length() != 0) {
+						line.setLength(line.length() - 2);
+						line.append(")");
+						indexNames.add(line.toString());
+					}
+					if (!indexNames.isEmpty()) {
+						// TODO: This is a lexicographic sort. Clients ordering their tables by number
+						// will not see the ordering they expect.
+						Collections.sort(indexNames);
+						for (String indexName : indexNames) {
+							System.out.println(indexName);
+						}
 					}
 				}
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 
 			printWarnings(rs);
@@ -860,6 +910,8 @@ public class CLI {
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
+
+
 
 	private static void select(final String cmd) {
 		long start = 0;
@@ -910,11 +962,15 @@ public class CLI {
 
 		try {
 			start = System.currentTimeMillis();
-			rs = stmt.executeQuery(cmd);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
 
-			while (rs.next()) {
-				String planLine = rs.getString(1);
-				System.out.println(planLine);
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 			end = System.currentTimeMillis();
 
@@ -941,50 +997,31 @@ public class CLI {
 		ResultSet rs = null;
 		String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
 
-		if (startsWithIgnoreCase(plan, "INLINE ")) {
-			plan = plan.substring("INLINE ".length()).trim();
+		try {
+			start = System.currentTimeMillis();
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
 
-			try {
-				start = System.currentTimeMillis();
-				rs = ((XGStatement) stmt).executeInlinePlan(plan);
-				final ResultSetMetaData meta = rs.getMetaData();
-
+			if (outputCSVFile.isEmpty()) {
 				printResultSet(rs, meta);
-				printWarnings(stmt);
-				printWarnings(rs);
-				end = System.currentTimeMillis();
-
-				rs.close();
-
-				printTime(start, end);
-			} catch (final Exception e) {
-				try {
-					rs.close();
-				} catch (Exception f) {
-				}
-				System.out.println("Error: " + e.getMessage());
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
-		} else {
+			printWarnings(stmt);
+			printWarnings(rs);
+			end = System.currentTimeMillis();
+
+			rs.close();
+
+			printTime(start, end);
+		} catch (final Exception e) {
 			try {
-				start = System.currentTimeMillis();
-				rs = ((XGStatement) stmt).executePlan(plan);
-				final ResultSetMetaData meta = rs.getMetaData();
-
-				printResultSet(rs, meta);
-				printWarnings(stmt);
-				printWarnings(rs);
-				end = System.currentTimeMillis();
-
 				rs.close();
-
-				printTime(start, end);
-			} catch (final Exception e) {
-				try {
-					rs.close();
-				} catch (Exception f) {
-				}
-				System.out.println("Error: " + e.getMessage());
+			} catch (Exception f) {
 			}
+			System.out.println("Error: " + e.getMessage());
 		}
 	}
 
@@ -996,23 +1033,21 @@ public class CLI {
 			return;
 		}
 
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			String plan = cmd.substring("PLAN EXPLAIN ".length()).trim();
-
-			boolean jsonFormat = false;
-			if (plan.substring(0, "JSON ".length()).equalsIgnoreCase("JSON ")) {
-				plan = plan.substring("JSON ".length()).trim();
-				jsonFormat = true;
-			}
-			final PlanMessage pm = ((XGStatement) stmt).explainPlan(plan);
-
-			if (jsonFormat) {
-				final String planJsonFormat = JsonFormat.printer().print(pm);
-				System.out.println(planJsonFormat);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
 			} else {
-				System.out.println(pm);
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
+
+			rs.close();
+			
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
@@ -1058,12 +1093,26 @@ public class CLI {
 		}
 		try {
 			start = System.currentTimeMillis();
-			final String uuid = cmd.substring("CANCEL ".length()).trim();
-			((XGStatement) stmt).cancelQuery(uuid);
+			stmt.execute(cmd);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
 			printTime(start, end);
+		} catch (final Exception e) {
+			System.out.println("CLI Error: " + e.getMessage());
+		}
+	}
+
+	private static void setMaxRows(final String cmd) {
+		long start = 0;
+		long end = 0;
+		if (!isConnected()) {
+			System.out.println("No database connection exists");
+			return;
+		}
+		try {
+			start = System.currentTimeMillis();
+			stmt.execute(cmd);
 		} catch (final Exception e) {
 			System.out.println("CLI Error: " + e.getMessage());
 		}
@@ -1096,8 +1145,7 @@ public class CLI {
 		}
 		try {
 			start = System.currentTimeMillis();
-			final String uuid = cmd.substring("KILL ".length()).trim();
-			((XGStatement) stmt).killQuery(uuid);
+			stmt.execute(cmd);
 			printWarnings(stmt);
 			end = System.currentTimeMillis();
 
@@ -1107,27 +1155,37 @@ public class CLI {
 		}
 	}
 
-	private static void listAllQueries() {
+	private static void listAllQueries(final String cmd) {
 		long start = 0;
 		long end = 0;
 		if (!isConnected()) {
 			System.out.println("No database connection exists");
 			return;
 		}
+		ResultSet rs = null;
 		try {
 			start = System.currentTimeMillis();
-			final ArrayList<SysQueriesRow> queryList = ((XGStatement) stmt).listAllQueries();
-
-			if (queryList.size() > 0) {
-				printAllQueries(queryList);
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
 			}
 
-			printWarnings(stmt);
+			printWarnings(rs);
 			end = System.currentTimeMillis();
 
 			printTime(start, end);
+			rs.close();
 		} catch (final Exception e) {
-			System.out.println("CLI Error: " + e.getMessage());
+			try{
+				rs.close();
+			} catch (Exception f){	
+			}
+			System.out.println("Error: " + e.getMessage());
 		}
 	}
 
@@ -1207,7 +1265,7 @@ public class CLI {
 						String cont = reader.readLine();
 						if (cont == null)
 							return quit;
-
+						line = cont;
 						cmd += scrubCommand(line + " ");
 					}
 				}
