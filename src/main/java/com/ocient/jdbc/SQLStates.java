@@ -184,21 +184,21 @@ public class SQLStates {
 	private static int TABLE_NOT_FOUND_CODE = -600;
 	private static int DATABASE_ALREADY_EXISTS_CODE = -601;
 	private static int TABLE_ALREADY_EXISTS_CODE = -602;
-	private static int VIEW_ALREADY_EXISTS_CODE = -602;
-	private static int VIEW_NOT_FOUND_CODE = -603;
-	private static int DATABASE_NOT_FOUND_CODE = -604;
-	private static int STORAGE_SPACE_NOT_FOUND_CODE = -605;
-	private static int STORAGESPACE_ALREADY_EXISTS_CODE = -606;
-	private static int USER_NOT_FOUND_CODE = -607;
-	private static int USER_ALREADY_EXISTS_CODE = -608;
-	private static int INVALID_NEW_USER_PWD_CODE = -609;
-	private static int GROUP_ALREADY_EXISTS_CODE = -610;
-	private static int GROUP_NOT_FOUND_CODE = -611;
-	private static int CONNECTION_ALREADY_EXISTS_CODE = -612;
-	private static int CONNECTION_NOT_FOUND_CODE = -613;
-	private static int TRANSLATION_NOT_FOUND_CODE = -614;
-	private static int TRANSLATION_ALREADY_EXISTS_CODE = -615;
-	private static int USER_NOT_IN_GROUP_CODE = -616;
+	private static int VIEW_ALREADY_EXISTS_CODE = -603;
+	private static int VIEW_NOT_FOUND_CODE = -604;
+	private static int DATABASE_NOT_FOUND_CODE = -605;
+	private static int STORAGE_SPACE_NOT_FOUND_CODE = -606;
+	private static int STORAGESPACE_ALREADY_EXISTS_CODE = -607;
+	private static int USER_NOT_FOUND_CODE = -608;
+	private static int USER_ALREADY_EXISTS_CODE = -609;
+	private static int INVALID_NEW_USER_PWD_CODE = -610;
+	private static int GROUP_ALREADY_EXISTS_CODE = -611;
+	private static int GROUP_NOT_FOUND_CODE = -612;
+	private static int CONNECTION_ALREADY_EXISTS_CODE = -613;
+	private static int CONNECTION_NOT_FOUND_CODE = -614;
+	private static int TRANSLATION_NOT_FOUND_CODE = -615;
+	private static int TRANSLATION_ALREADY_EXISTS_CODE = -616;
+	private static int USER_NOT_IN_GROUP_CODE = -617;
 
 	// security related issues
 	private static int READ_TABLE_AUTH_FAILURE = -700;
@@ -336,13 +336,13 @@ public class SQLStates {
 			USER_ALREADY_EXISTS_CODE);
 	public static SQLStates GROUP_ALREADY_EXISTS = new SQLStates("A group with that name exists", DUPLICATE_OBJECT,
 			GROUP_ALREADY_EXISTS_CODE);
-	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection does not exist",
+	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection already exist",
 			DUPLICATE_OBJECT, CONNECTION_ALREADY_EXISTS_CODE);
 	public static SQLStates CONNECTION_NOT_FOUND = new SQLStates("The referenced connection does not exist",
 			OBJECT_NOT_FOUND_STATE, CONNECTION_NOT_FOUND_CODE);
 	public static SQLStates TRANSLATION_NOT_FOUND = new SQLStates("The referenced translation does not exist",
 			OBJECT_NOT_FOUND_STATE, TRANSLATION_NOT_FOUND_CODE);
-	public static SQLStates TRANSLATION_ALREADY_EXISTS = new SQLStates("The referenced translation does not exist",
+	public static SQLStates TRANSLATION_ALREADY_EXISTS = new SQLStates("The referenced translation already exists",
 			DUPLICATE_OBJECT, TRANSLATION_ALREADY_EXISTS_CODE);
 	public static SQLStates DATABASE_NOT_FOUND = new SQLStates("The referenced database does not exist",
 			OBJECT_NOT_FOUND_STATE, DATABASE_NOT_FOUND_CODE);
