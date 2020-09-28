@@ -1499,6 +1499,11 @@ public class XGStatement implements Statement {
 	}
 
 	private String setParms(final String in) throws SQLException {
+		if (parms.size() == 0)
+		{
+			return in;
+		}
+		
 		String out = "";
 		int x = 0;
 		int i = 0;
