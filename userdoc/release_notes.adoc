@@ -9,6 +9,7 @@ Below is the release notes for every driver version that has customer implicatio
 
 New Features::
 
+ * Minor fix of SQLStates
  * setParms() does no work when there are no parameters
 
 // tag::compact[]
