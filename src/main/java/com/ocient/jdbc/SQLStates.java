@@ -336,7 +336,7 @@ public class SQLStates {
 			USER_ALREADY_EXISTS_CODE);
 	public static SQLStates GROUP_ALREADY_EXISTS = new SQLStates("A group with that name exists", DUPLICATE_OBJECT,
 			GROUP_ALREADY_EXISTS_CODE);
-	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection already exist",
+	public static SQLStates CONNECTION_ALREADY_EXISTS = new SQLStates("The referenced connection already exists",
 			DUPLICATE_OBJECT, CONNECTION_ALREADY_EXISTS_CODE);
 	public static SQLStates CONNECTION_NOT_FOUND = new SQLStates("The referenced connection does not exist",
 			OBJECT_NOT_FOUND_STATE, CONNECTION_NOT_FOUND_CODE);
