@@ -16,6 +16,7 @@ New Features::
 
 New Features::
 
+ * Minor fix of SQLStates
  * setParms() does no work when there are no parameters
 
 // tag::compact[]
