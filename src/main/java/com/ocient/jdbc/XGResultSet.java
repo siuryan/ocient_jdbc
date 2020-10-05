@@ -47,8 +47,18 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseTyp
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchData;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
+import org.jctools.queues.SpscLinkedQueue;
 
 public class XGResultSet implements ResultSet {
+	
+	public class XGResultSetThread implements Runnable
+	{
+		public void run()
+		{
+			
+		}
+	}
+	
 	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
 
 	private static int bytesToInt(final byte[] val) {
@@ -65,8 +75,7 @@ public class XGResultSet implements ResultSet {
 		return buff;
 	}
 
-	private ArrayList<Object> rs = new ArrayList<>();
-	private long firstRowIs = 0;
+	private SpscLinkedQueue<Object> rs = new SpscLinkedQueue<Object>();
 	private long position = -1;
 	private boolean closed = false;
 	private final XGConnection conn;
@@ -79,24 +88,37 @@ public class XGResultSet implements ResultSet {
 
 	// tell whether the resultset was constructed with a pre-defined dataset.
 	private boolean immutable = false;
+	
+	private boolean afterLast = false;
+	private boolean hadData = false;
 
 	private final XGStatement stmt;
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
+	
+	private Thread rsThread = null;
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
+		
+        rsThread = new Thread(new XGResultSetThread());
+        rsThread.start();
 	}
 
 	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt) {
 		this.conn = conn;
-		this.rs = rs;
 		this.stmt = stmt;
-		this.rs.add(new DataEndMarker());
 		this.immutable = true;
+		
+		for (Object o : rs)
+		{
+			this.rs.offer(o);
+		}
+		
+		this.rs.offer(new DataEndMarker());
 	}
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt,
@@ -106,6 +128,7 @@ public class XGResultSet implements ResultSet {
 		this.stmt = stmt;
 		requestMetaData();
 		mergeData(re);
+		this.immutable = true;
 	}
 
 	public void setCols2Pos(Map<String, Integer> cols2Pos) {
@@ -191,6 +214,21 @@ public class XGResultSet implements ResultSet {
 		}
 
 		stmt.cancel();
+		rsThread.interrupt();
+		
+		while (true)
+		{
+			try
+			{
+				rsThread.join();
+			}
+			catch(Exception e)
+			{
+				continue;
+			}
+			
+			break;
+		}
 
 		try {
 			closed = true;
@@ -244,13 +282,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getArray() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getArray() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -308,13 +347,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getBigDecimal() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -401,13 +441,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
-			LOGGER.log(Level.WARNING, "getBoolean() is throwing CALL_ON_CLOSED_OBJECT");
+		
+		if (position == -1 || afterLast)
+		{
+			LOGGER.log(Level.WARNING, "getBoolean() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -453,13 +494,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getByte() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getByte() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -507,13 +549,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getBytes() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getBytes() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -600,13 +643,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -642,13 +686,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getDate() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getDate() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -714,13 +759,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getDouble() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getDouble() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -764,13 +810,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getEntireRow() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		return (ArrayList<Object>) row;
 	}
 
@@ -804,13 +851,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getFloat() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getFloat() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -869,13 +917,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getInt() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getInt() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -942,13 +991,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getLong() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getLong() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1015,17 +1065,15 @@ public class XGResultSet implements ResultSet {
 	 * Returns true if it actually got data, false if it just received a zero size
 	 * (ping) block of data
 	 */
-	private boolean getMoreData() throws SQLException {
+	private void getMoreData() throws SQLException {
 		if (immutable) {
 			// no data to get as the resultset was prepopulate at construction time.
-			return false;
+			return;
 		}
-
-		LOGGER.log(Level.INFO, String.format("Fetching more data from the server. Requesting %d rows.", fetchSize));
-		final Optional<String> queryId = getQueryId();
-		stmt.passUpCancel(false);
-		stmt.setRunningQueryThread(Thread.currentThread());
+		
 		try {
+			final Optional<String> queryId = getQueryId();
+			stmt.passUpCancel(false);
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
 			builder.setFetchSize(fetchSize);
@@ -1034,38 +1082,48 @@ public class XGResultSet implements ResultSet {
 			b2.setType(ClientWireProtocol.Request.RequestType.FETCH_DATA);
 			b2.setFetchData(msg);
 			final Request wrapper = b2.build();
-			conn.out.write(intToBytes(wrapper.getSerializedSize()));
-			wrapper.writeTo(conn.out);
-			conn.out.flush();
-
-			// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
-			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
-
-			stmt.startTask(() -> {
-				// get confirmation and data (fetchSize rows or zero size result set or
-				// terminated early with a DataEndMarker)
-				final int length = getLength();
-				final byte[] data = new byte[length];
-				readBytes(data);
-				fdr.mergeFrom(data);
-			}, queryId, getTimeoutMillis());
-
-			final ConfirmationResponse response = fdr.getResponse();
-			final ResponseType rType = response.getType();
-			processResponseType(rType, response);
-			return mergeData(fdr.getResultSet());
+			
+			while (true)
+			{
+				while (rs.size() > 8 * fetchSize) 
+				{
+					Thread.sleep(1);
+				}
+				
+				conn.out.write(intToBytes(wrapper.getSerializedSize()));
+				wrapper.writeTo(conn.out);
+				conn.out.flush();
+	
+				// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
+				final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
+	
+				stmt.startTask(() -> {
+					// get confirmation and data (fetchSize rows or zero size result set or
+					// terminated early with a DataEndMarker)
+					final int length = getLength();
+					final byte[] data = new byte[length];
+					readBytes(data);
+					fdr.mergeFrom(data);
+				}, queryId, getTimeoutMillis());
+	
+				final ConfirmationResponse response = fdr.getResponse();
+				final ResponseType rType = response.getType();
+				processResponseType(rType, response);
+				if (!mergeData(fdr.getResultSet()))
+				{
+					return;
+				}
+			}
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
 					String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
-				throw (SQLException) e;
+				while (!rs.offer(e)) {}
 			}
 
-			throw SQLStates.newGenericException(e);
-		} finally {
-			stmt.setRunningQueryThread(null);
-			stmt.passUpCancel(true);
-		}
+			while (!rs.offer(SQLStates.newGenericException(e))) {}
+			return;
+		} 
 	}
 
 	@Override
@@ -1112,13 +1170,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1165,13 +1224,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1207,13 +1267,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getObject() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getObject() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1313,12 +1374,8 @@ public class XGResultSet implements ResultSet {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1) {
-			return 0;
-		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		if (position == -1 || afterLast)
+		{
 			return 0;
 		}
 
@@ -1345,13 +1402,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getShort() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getShort() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1432,13 +1490,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getString() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getString() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1483,13 +1542,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1520,13 +1580,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getTime() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getTime() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1587,13 +1648,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1629,13 +1691,14 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		
+		if (position == -1 || afterLast)
+		{
 			LOGGER.log(Level.WARNING, "getTimestamp() is throwing CURSOR_NOT_ON_ROW");
 			throw SQLStates.CURSOR_NOT_ON_ROW.clone();
 		}
 
+		final Object row = rs.peek();
 		final ArrayList<Object> alo = (ArrayList<Object>) row;
 
 		if (columnIndex < 1 || columnIndex > alo.size()) {
@@ -1765,26 +1828,8 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "isAfterLast() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		if (position == -1 && rs.size() == 0) {
-			while (!getMoreData()) {
-			}
-		}
-
-		final Object row = rs.get(rs.size() - 1);
-		if (!(row instanceof DataEndMarker)) {
-			return false;
-		}
-
-		if (position < firstRowIs + rs.size() - 1) {
-			return false;
-		}
-
-		if (position > 0) {
-			return true;
-		}
-
-		return false;
+		
+		return hadData && afterLast;
 	}
 
 	@Override
@@ -1795,21 +1840,23 @@ public class XGResultSet implements ResultSet {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position != -1) {
+		if (afterLast || hadData)
+		{
+			//Implies called next() already
 			return false;
 		}
-
-		if (rs.size() == 0) {
-			while (!getMoreData()) {
-			}
+		
+		Object row = rs.peek();
+		while (row == null)
+		{
+			row = rs.peek();
 		}
-
-		final Object row = rs.get(0);
+		
 		if (row instanceof DataEndMarker) {
 			return false;
+		} else {
+			return true;
 		}
-
-		return true;
 	}
 
 	@Override
@@ -1831,22 +1878,8 @@ public class XGResultSet implements ResultSet {
 			LOGGER.log(Level.WARNING, "isFirst() is throwing CALL_ON_CLOSED_OBJECT");
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
-
-		if (position != 0) {
-			return false;
-		}
-
-		if (rs.size() == 0) {
-			while (!getMoreData()) {
-			}
-		}
-
-		final Object row = rs.get(0);
-		if (row instanceof DataEndMarker) {
-			return false;
-		}
-
-		return true;
+		
+		return position == 0 && !afterLast;
 	}
 
 	@Override
@@ -2108,12 +2141,13 @@ public class XGResultSet implements ResultSet {
 	 */
 	private boolean mergeData(final ClientWireProtocol.ResultSet re)
 			throws SQLException, java.net.UnknownHostException {
+		boolean done = false;
 		final List<ByteString> buffers = re.getBlobsList();
-		this.rs.clear();
 		for (final ByteString buffer : buffers) {
 			ByteBuffer bb = buffer.asReadOnlyByteBuffer();
 			if (isBufferDem(bb)) {
-				rs.add(new DataEndMarker());
+				while (!rs.offer(new DataEndMarker())) {}
+				done = true;
 			} else {
 				int numRows = bb.getInt(0);
 				int offset = 4;
@@ -2253,13 +2287,12 @@ public class XGResultSet implements ResultSet {
 						}
 					}
 
-					rs.add(alo);
+					while (!rs.offer(alo)) {}
 				}
 			}
 		}
 
-		LOGGER.log(Level.INFO, String.format("Received %d rows.", rs.size()));
-		return rs.size() > 0;
+		return !done;
 	}
 
 	@Override
@@ -2281,26 +2314,53 @@ public class XGResultSet implements ResultSet {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
+		if (afterLast)
+		{
+			return false;
+		}
+		
 		position++;
 
-		if (firstRowIs - 1 + rs.size() < position) {
-			if (rs.size() > 0) {
-				final Object row = rs.get(rs.size() - 1);
-				if (row instanceof DataEndMarker) {
-					return false;
+		if (position > 0)
+		{
+			stmt.passUpCancel(false);
+			stmt.setRunningQueryThread(Thread.currentThread());
+			
+			try
+			{
+				while (rs.poll() == null)
+				{}
+			}
+			catch (final Exception e) {
+				LOGGER.log(Level.WARNING,
+					String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+				if (e instanceof SQLException) {
+					throw (SQLException) e;
 				}
-			}
 
-			// call to get more data
-			while (!getMoreData()) {
+				throw SQLStates.newGenericException(e);
+			} finally {
+				stmt.passUpCancel(true);
 			}
-			firstRowIs = position;
+			
+			stmt.setRunningQueryThread(null);
 		}
 
-		final Object row = rs.get((int) (position - firstRowIs));
-		if (row instanceof DataEndMarker) {
+		Object row = rs.peek();
+		while (row == null)
+		{
+			row = rs.peek();
+		}
+		
+		if (row instanceof SQLException)
+		{
+			throw (SQLException)row;
+		}
+		else if (row instanceof DataEndMarker) {
+			afterLast = true;
 			return false;
 		} else {
+			hadData = true;
 			return true;
 		}
 	}
