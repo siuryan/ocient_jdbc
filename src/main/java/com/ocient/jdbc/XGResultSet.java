@@ -55,7 +55,7 @@ public class XGResultSet implements ResultSet {
 	{
 		public void run()
 		{
-			
+			getMoreData();
 		}
 	}
 	
@@ -214,20 +214,26 @@ public class XGResultSet implements ResultSet {
 		}
 
 		stmt.cancel();
-		rsThread.interrupt();
 		
-		while (true)
+		if (rsThread != null)
 		{
-			try
+			rsThread.interrupt();
+			
+			while (true)
 			{
-				rsThread.join();
-			}
-			catch(Exception e)
-			{
-				continue;
+				try
+				{
+					rsThread.join();
+				}
+				catch(Exception e)
+				{
+					continue;
+				}
+				
+				break;
 			}
 			
-			break;
+			rsThread = null;
 		}
 
 		try {
@@ -1065,7 +1071,7 @@ public class XGResultSet implements ResultSet {
 	 * Returns true if it actually got data, false if it just received a zero size
 	 * (ping) block of data
 	 */
-	private void getMoreData() throws SQLException {
+	private void getMoreData() {
 		if (immutable) {
 			// no data to get as the resultset was prepopulate at construction time.
 			return;
@@ -1846,10 +1852,28 @@ public class XGResultSet implements ResultSet {
 			return false;
 		}
 		
-		Object row = rs.peek();
-		while (row == null)
+		Object row = null;
+		try
 		{
+			stmt.passUpCancel(false);
+			stmt.setRunningQueryThread(Thread.currentThread());
+		
 			row = rs.peek();
+			while (row == null)
+			{
+				row = rs.peek();
+			}
+		}
+		catch (final Exception e) {
+			LOGGER.log(Level.WARNING,
+				String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+			if (e instanceof SQLException) {
+				throw (SQLException) e;
+			}
+
+			throw SQLStates.newGenericException(e);
+		} finally {
+			stmt.passUpCancel(true);
 		}
 		
 		if (row instanceof DataEndMarker) {
@@ -2322,14 +2346,15 @@ public class XGResultSet implements ResultSet {
 		position++;
 
 		if (position > 0)
-		{
-			stmt.passUpCancel(false);
-			stmt.setRunningQueryThread(Thread.currentThread());
-			
+		{	
 			try
 			{
+				stmt.passUpCancel(false);
+				stmt.setRunningQueryThread(Thread.currentThread());
+			
 				while (rs.poll() == null)
 				{}
+				stmt.setRunningQueryThread(null);
 			}
 			catch (final Exception e) {
 				LOGGER.log(Level.WARNING,
@@ -2342,14 +2367,30 @@ public class XGResultSet implements ResultSet {
 			} finally {
 				stmt.passUpCancel(true);
 			}
-			
-			stmt.setRunningQueryThread(null);
 		}
 
-		Object row = rs.peek();
-		while (row == null)
+		Object row = null;
+		try
 		{
+			stmt.passUpCancel(false);
+			stmt.setRunningQueryThread(Thread.currentThread());
+		
 			row = rs.peek();
+			while (row == null)
+			{
+				row = rs.peek();
+			}
+		}
+		catch (final Exception e) {
+			LOGGER.log(Level.WARNING,
+				String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+			if (e instanceof SQLException) {
+				throw (SQLException) e;
+			}
+
+			throw SQLStates.newGenericException(e);
+		} finally {
+			stmt.passUpCancel(true);
 		}
 		
 		if (row instanceof SQLException)
