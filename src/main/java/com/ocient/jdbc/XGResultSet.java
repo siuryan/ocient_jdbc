@@ -2196,6 +2196,7 @@ public class XGResultSet implements ResultSet {
 				while (!rs.offer(new DataEndMarker())) {}
 				done = true;
 			} else {
+				/*
 				int numRows = bb.getInt(0);
 				int offset = 4;
 				for (int i = 0; i < numRows; i++) {
@@ -2336,6 +2337,7 @@ public class XGResultSet implements ResultSet {
 
 					while (!rs.offer(alo)) {}
 				}
+				*/
 			}
 		}
 
