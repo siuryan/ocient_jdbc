@@ -47,7 +47,7 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseTyp
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchData;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
-import org.jctools.queues.SpscLinkedQueue;
+import org.jctools.queues.SpscArrayQueue;
 
 public class XGResultSet implements ResultSet {
 	
@@ -56,6 +56,25 @@ public class XGResultSet implements ResultSet {
 		public void run()
 		{
 			getMoreData();
+		}
+	}
+	
+	public class XGLocalResultSetThread implements Runnable
+	{
+		private final ClientWireProtocol.ResultSet re;
+		
+		public XGLocalResultSetThread(final ClientWireProtocol.ResultSet re)
+		{
+			this.re = re;
+		}
+		
+		public void run()
+		{
+			try
+			{
+				mergeData(re);
+			}
+			catch(Exception e) {}
 		}
 	}
 	
@@ -75,7 +94,7 @@ public class XGResultSet implements ResultSet {
 		return buff;
 	}
 
-	private SpscLinkedQueue<Object> rs = new SpscLinkedQueue<Object>();
+	private SpscArrayQueue<Object> rs = new SpscArrayQueue<Object>(30000 * 8);
 	private long position = -1;
 	private boolean closed = false;
 	private final XGConnection conn;
@@ -127,8 +146,9 @@ public class XGResultSet implements ResultSet {
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
-		mergeData(re);
-		this.immutable = true;
+		
+		rsThread = new Thread(new XGLocalResultSetThread(re));
+        rsThread.start();
 	}
 
 	public void setCols2Pos(Map<String, Integer> cols2Pos) {
@@ -1091,11 +1111,6 @@ public class XGResultSet implements ResultSet {
 			
 			while (true)
 			{
-				while (rs.size() > 8 * fetchSize) 
-				{
-					Thread.sleep(1);
-				}
-				
 				conn.out.write(intToBytes(wrapper.getSerializedSize()));
 				wrapper.writeTo(conn.out);
 				conn.out.flush();
@@ -1126,8 +1141,16 @@ public class XGResultSet implements ResultSet {
 			if (e instanceof SQLException) {
 				while (!rs.offer(e)) {}
 			}
-
-			while (!rs.offer(SQLStates.newGenericException(e))) {}
+			
+			if (e instanceof InterruptedException)
+			{
+				rs.offer(e);
+			}
+			else
+			{
+				while (!rs.offer(SQLStates.newGenericException(e))) {}
+			}
+			
 			return;
 		} 
 	}
