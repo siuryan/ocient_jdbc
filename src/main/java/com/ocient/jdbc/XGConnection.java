@@ -579,7 +579,7 @@ public class XGConnection implements Connection {
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING,
 						String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
-				throw new Exception(e);
+				throw e;
 			}
 
 			final byte[] iv = ivString.toByteArray();
