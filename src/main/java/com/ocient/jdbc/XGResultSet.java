@@ -66,9 +66,10 @@ public class XGResultSet implements ResultSet {
 	{
 		public void run()
 		{
+			XGConnection newConn = null;
 			try {
 				LOGGER.log(Level.INFO, "Started secondary result set thread");
-				XGConnection newConn = conn.copy(true, true);
+				newConn = conn.copy(true, true);
 				String queryId = getQueryId().get();
 				attachToQuery(newConn, queryId);
 				
@@ -87,7 +88,11 @@ public class XGResultSet implements ResultSet {
 			
 			try
 			{
-				conn.close();
+				if (newConn != null)
+				{
+					newConn.close();
+				}
+				
 				LOGGER.log(Level.INFO, "Closed connection for secondary result set thread");
 			}
 			catch(Exception e) {}
