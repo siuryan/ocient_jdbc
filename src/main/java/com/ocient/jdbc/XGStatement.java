@@ -93,6 +93,7 @@ public class XGStatement implements Statement {
 	private int fetchSize = defaultFetchSize;
 	protected ArrayList<Object> parms = new ArrayList<>();
 	private int maxRows = 0;
+	private int numClientThreads = 0;
 
 	// not thread safe because individual queries are single threaded
 	// The queryId is set on the initial call to executeQuery()
@@ -203,7 +204,7 @@ public class XGStatement implements Statement {
 		this.queryId = null;
 	}
 
-	protected Optional<String> getQueryId() {
+	public Optional<String> getQueryId() {
 		return Optional.ofNullable(queryId).filter(s -> !s.isEmpty());
 	}
 
@@ -436,7 +437,7 @@ public class XGStatement implements Statement {
 		}
 
 		try {
-			passUpCancel(false);
+			passUpCancel(true);
 			if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH") || sql.toUpperCase().startsWith("EXPLAIN") ||
 			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
 			sql.toUpperCase().startsWith("LIST INDICES") || sql.toUpperCase().startsWith("LIST INDEXES") || sql.toUpperCase().startsWith("GET SCHEMA") || 
@@ -545,9 +546,16 @@ public class XGStatement implements Statement {
 		}
 
 		LOGGER.log(Level.INFO, String.format("Executing query: %s", sql));
+		passUpCancel(true);
 		sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false, Optional.empty());
 		try {
-			result = conn.rs = new XGResultSet(conn, fetchSize, this);
+			if (numClientThreads == 0)
+			{
+				numClientThreads = 1;
+			}
+			
+			LOGGER.log(Level.INFO, "Creating result set for query with " + numClientThreads + " result set threads");
+			result = conn.rs = new XGResultSet(conn, fetchSize, this, numClientThreads);
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
 					String.format("Exception %s occurred during executeQuery() with message %s", e.toString(), e.getMessage()));
@@ -573,6 +581,7 @@ public class XGStatement implements Statement {
 		LOGGER.log(Level.INFO, String.format("Called executeUpdate() with sql: %s", sql));
 		// if this is a set command we just use a separately crafted proto message to
 		// make things simpler
+		passUpCancel(true);
 		sql = sql.trim();
 		if (sql.toUpperCase().startsWith("SET PSO")) {
 			String ending = sql.toUpperCase().substring("SET PSO".length());
@@ -1268,6 +1277,7 @@ public class XGStatement implements Statement {
 			boolean forceFlag = true;
 			boolean redirectFlag = true;
 			boolean hasQueryId = false; // set to true if the query ID is encoded in the response message
+			numClientThreads = 0;
 			switch (requestType) {
 			case EXECUTE_QUERY:
 				c = ExecuteQuery.class;
@@ -1406,8 +1416,12 @@ public class XGStatement implements Statement {
 					final Method getQueryId = br.getClass().getMethod("getQueryId");
 					final String recvQueryId = ((String) getQueryId.invoke(br));
 					if (!recvQueryId.isEmpty()) {
+						LOGGER.log(Level.INFO, "Query ID is " + recvQueryId);
 						associateQuery(recvQueryId);
 					}
+					
+					final Method getNumClientThreads = br.getClass().getMethod("getNumClientThreads");
+					numClientThreads = ((int)getNumClientThreads.invoke(br));
 				}
 
 				return br;

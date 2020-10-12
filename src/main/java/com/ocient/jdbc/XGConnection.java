@@ -288,7 +288,6 @@ public class XGConnection implements Connection {
 		this.url = url;
 		this.user = user;
 		this.pwd = pwd;
-		this.sock = sock;
 		this.ip = ip;
 		this.portNum = portNum;
 		this.database = database;
@@ -316,12 +315,22 @@ public class XGConnection implements Connection {
 	}
 
 	public XGConnection copy() throws SQLException{
-		return copy(true);
+		return copy(true, false);
+	}
+	
+	public XGConnection copy(final boolean shouldRequestVersion) throws SQLException {
+		return copy(shouldRequestVersion, false);
 	}
 
 	@SuppressWarnings("unchecked")
-	public XGConnection copy(final boolean shouldRequestVersion) throws SQLException{
-		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, force, tls);
+	public XGConnection copy(final boolean shouldRequestVersion, boolean noRedirect) throws SQLException{
+		boolean doForce = force;
+		if (noRedirect)
+		{
+			doForce = true;
+		}
+		
+		XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, doForce, tls);
 		try {
 			retval.connected = false;
 			retval.setSchema = setSchema;

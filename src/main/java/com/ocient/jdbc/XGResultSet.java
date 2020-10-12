@@ -35,12 +35,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
 import com.ocient.jdbc.proto.ClientWireProtocol;
+import com.ocient.jdbc.proto.ClientWireProtocol.AttachToQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.CloseResultSet;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseType;
@@ -49,6 +53,47 @@ import com.ocient.jdbc.proto.ClientWireProtocol.FetchMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 
 public class XGResultSet implements ResultSet {
+	
+	public class XGResultSetThread implements Runnable
+	{
+		public void run()
+		{
+			getMoreData();
+		}
+	}
+	
+	public class SecondaryResultSetThread implements Runnable
+	{
+		public void run()
+		{
+			try {
+				LOGGER.log(Level.INFO, "Started secondary result set thread");
+				XGConnection newConn = conn.copy(true, true);
+				String queryId = getQueryId().get();
+				attachToQuery(newConn, queryId);
+				
+				//First fetch has to come from main thread
+				while (!didFirstFetch.get())
+				{
+					Thread.sleep(1);
+				}
+				
+				LOGGER.log(Level.INFO, "Calling getMoreData() on secondary result set thread");
+				getMoreData(newConn);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred in SecondaryResultSetThread with message %s", e.toString(), e.getMessage()));
+			}
+			
+			try
+			{
+				conn.close();
+				LOGGER.log(Level.INFO, "Closed connection for secondary result set thread");
+			}
+			catch(Exception e) {}
+		}
+	}
+	
 	private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
 
 	private static int bytesToInt(final byte[] val) {
@@ -65,7 +110,7 @@ public class XGResultSet implements ResultSet {
 		return buff;
 	}
 
-	private ArrayList<Object> rs = new ArrayList<>();
+	private ArrayList<Object> rs = null;
 	private long firstRowIs = 0;
 	private long position = -1;
 	private boolean closed = false;
@@ -83,12 +128,38 @@ public class XGResultSet implements ResultSet {
 	private final XGStatement stmt;
 
 	private final ArrayList<SQLWarning> warnings = new ArrayList<>();
+	
+	private LinkedBlockingQueue<ArrayList<Object>> rsQueue = new LinkedBlockingQueue<ArrayList<Object>>(64);
+	
+	private ArrayList<Thread> fetchThreads = new ArrayList<Thread>();
+	
+	private AtomicBoolean didFirstFetch = new AtomicBoolean(false);
 
+	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt, final int numClientThreads) throws Exception {
+		this.conn = conn;
+		this.fetchSize = fetchSize;
+		this.stmt = stmt;
+		requestMetaData();
+		Thread t = new Thread(new XGResultSetThread());
+		fetchThreads.add(t);
+		t.start();
+		
+		for (int i = 1; i < numClientThreads; i++)
+		{
+			t = new Thread(new SecondaryResultSetThread());
+			fetchThreads.add(t);
+			t.start();
+		}
+	}
+	
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt) throws Exception {
 		this.conn = conn;
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
+		Thread t = new Thread(new XGResultSetThread());
+		fetchThreads.add(t);
+		t.start();
 	}
 
 	public XGResultSet(final XGConnection conn, final ArrayList<Object> rs, final XGStatement stmt) {
@@ -105,7 +176,7 @@ public class XGResultSet implements ResultSet {
 		this.fetchSize = fetchSize;
 		this.stmt = stmt;
 		requestMetaData();
-		mergeData(re);
+		mergeData(re); 
 	}
 
 	public void setCols2Pos(Map<String, Integer> cols2Pos) {
@@ -131,7 +202,7 @@ public class XGResultSet implements ResultSet {
 	private Optional<String> getQueryId() {
 		// TODO The query id should be known when the result set is created (on
 		// executeQuery())
-		// but this would require some additional server side work, so we'll do this hac
+		// but this would require some additional server side work, so we'll do this hack
 		// for now
 		return stmt.getQueryId();
 	}
@@ -191,6 +262,24 @@ public class XGResultSet implements ResultSet {
 		}
 
 		stmt.cancel();
+		
+		for (Thread t : fetchThreads)
+		{
+			t.interrupt();
+		}
+		
+		for (Thread t : fetchThreads)
+		{
+			while (true)
+			{
+				try
+				{
+					t.join();
+					break;
+				}
+				catch(Exception e ) {}
+			}
+		}
 
 		try {
 			closed = true;
@@ -913,14 +1002,18 @@ public class XGResultSet implements ResultSet {
 
 		return getInt(pos + 1);
 	}
-
+	
 	private int getLength() throws Exception {
+		return getLength(this.conn);
+	}
+
+	private int getLength(XGConnection newConn) throws Exception {
 		final byte[] inMsg = new byte[4];
 
 		int count = 0;
 		while (count < 4) {
 			try {
-				final int temp = conn.in.read(inMsg, count, 4 - count);
+				final int temp = newConn.in.read(inMsg, count, 4 - count);
 				if (temp == -1) {
 					throw SQLStates.UNEXPECTED_EOF.clone();
 				}
@@ -1010,22 +1103,44 @@ public class XGResultSet implements ResultSet {
 			stmt.passUpCancel(true);
 		}
 	}
+	
+	/*
+	 * Attach a secondary result set fetch thread to a query
+	 */
+	private void attachToQuery(XGConnection newConn, String queryId) throws Exception {
+		stmt.passUpCancel(false);
+		
+		final ClientWireProtocol.AttachToQuery.Builder builder = ClientWireProtocol.AttachToQuery.newBuilder();
+		builder.setQueryId(queryId);
+		final AttachToQuery msg = builder.build();
+		final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
+		b2.setType(ClientWireProtocol.Request.RequestType.ATTACH_TO_QUERY);
+		b2.setAttachToQuery(msg);
+		final Request wrapper = b2.build();
+		
+		newConn.out.write(intToBytes(wrapper.getSerializedSize()));
+		wrapper.writeTo(newConn.out);
+		newConn.out.flush();
+		getStandardResponse(newConn);
+	}
+	
+	private void getMoreData()
+	{
+		getMoreData(this.conn);
+	}
 
 	/*
-	 * Returns true if it actually got data, false if it just received a zero size
-	 * (ping) block of data
+	 * Fetch data from server, parse result sets, place on queue
 	 */
-	private boolean getMoreData() throws SQLException {
+	private void getMoreData(XGConnection newConn) {
 		if (immutable) {
 			// no data to get as the resultset was prepopulate at construction time.
-			return false;
+			return;
 		}
 
-		LOGGER.log(Level.INFO, String.format("Fetching more data from the server. Requesting %d rows.", fetchSize));
-		final Optional<String> queryId = getQueryId();
-		stmt.passUpCancel(false);
-		stmt.setRunningQueryThread(Thread.currentThread());
 		try {
+			final Optional<String> queryId = getQueryId();
+			stmt.passUpCancel(false);
 			// send FetchData request with fetchSize parameter
 			final ClientWireProtocol.FetchData.Builder builder = ClientWireProtocol.FetchData.newBuilder();
 			builder.setFetchSize(fetchSize);
@@ -1034,38 +1149,48 @@ public class XGResultSet implements ResultSet {
 			b2.setType(ClientWireProtocol.Request.RequestType.FETCH_DATA);
 			b2.setFetchData(msg);
 			final Request wrapper = b2.build();
-			conn.out.write(intToBytes(wrapper.getSerializedSize()));
-			wrapper.writeTo(conn.out);
-			conn.out.flush();
-
-			// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
-			final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
-
-			stmt.startTask(() -> {
-				// get confirmation and data (fetchSize rows or zero size result set or
-				// terminated early with a DataEndMarker)
-				final int length = getLength();
-				final byte[] data = new byte[length];
-				readBytes(data);
-				fdr.mergeFrom(data);
-			}, queryId, getTimeoutMillis());
-
-			final ConfirmationResponse response = fdr.getResponse();
-			final ResponseType rType = response.getType();
-			processResponseType(rType, response);
-			return mergeData(fdr.getResultSet());
+			
+			while (true)
+			{
+				newConn.out.write(intToBytes(wrapper.getSerializedSize()));
+				wrapper.writeTo(newConn.out);
+				newConn.out.flush();
+	
+				// Kind of ugly, but doesn't violate JMM (startTask() is synchronous)
+				final ClientWireProtocol.FetchDataResponse.Builder fdr = ClientWireProtocol.FetchDataResponse.newBuilder();
+	
+				stmt.startTask(() -> {
+					// get confirmation and data (fetchSize rows or zero size result set or
+					// terminated early with a DataEndMarker)
+					final int length = getLength(newConn);
+					final byte[] data = new byte[length];
+					readBytes(data, newConn);
+					fdr.mergeFrom(data);
+				}, queryId, getTimeoutMillis());
+	
+				final ConfirmationResponse response = fdr.getResponse();
+				final ResponseType rType = response.getType();
+				processResponseType(rType, response);
+				if (!mergeData(fdr.getResultSet()))
+				{
+					return;
+				}
+			}
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
 					String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
 			if (e instanceof SQLException) {
-				throw (SQLException) e;
+				ArrayList<Object> alo = new ArrayList<Object>();
+				alo.add(e);
+				rsQueue.add(alo);
+				return;
 			}
 
-			throw SQLStates.newGenericException(e);
-		} finally {
-			stmt.setRunningQueryThread(null);
-			stmt.passUpCancel(true);
-		}
+			ArrayList<Object> alo = new ArrayList<Object>();
+			alo.add(SQLStates.newGenericException(e));
+			rsQueue.add(alo);
+			return;
+		} 
 	}
 
 	@Override
@@ -1402,11 +1527,15 @@ public class XGResultSet implements ResultSet {
 		LOGGER.log(Level.WARNING, "getSQLXML() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
 	}
-
+	
 	private void getStandardResponse() throws Exception {
-		final int length = getLength();
+		getStandardResponse(this.conn);
+	}
+
+	private void getStandardResponse(XGConnection newConn) throws Exception {
+		final int length = getLength(newConn);
 		final byte[] data = new byte[length];
-		readBytes(data);
+		readBytes(data, newConn);
 		final ConfirmationResponse.Builder rBuild = ConfirmationResponse.newBuilder();
 		rBuild.mergeFrom(data);
 		final ResponseType rType = rBuild.getType();
@@ -1766,8 +1895,33 @@ public class XGResultSet implements ResultSet {
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		if (position == -1 && rs.size() == 0) {
-			while (!getMoreData()) {
+		if (position == -1 && rs == null) {
+			try
+			{
+				//handle possible interrupt and get a result set from the queue
+				stmt.passUpCancel(false);
+				stmt.setRunningQueryThread(Thread.currentThread());
+				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				
+				if (rs.get(0) instanceof SQLException)
+				{
+					throw (SQLException)rs.get(0);
+				}
+			}
+			catch(Exception e)
+			{
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+				if (e instanceof SQLException) {
+					throw (SQLException) e;
+				}
+
+				throw SQLStates.newGenericException(e);
+			}
+			finally
+			{
+				stmt.setRunningQueryThread(null);
+				stmt.passUpCancel(true);
 			}
 		}
 
@@ -1799,8 +1953,33 @@ public class XGResultSet implements ResultSet {
 			return false;
 		}
 
-		if (rs.size() == 0) {
-			while (!getMoreData()) {
+		if (rs == null) {
+			try
+			{
+				//handle possible interrupt and get a result set from the queue
+				stmt.passUpCancel(false);
+				stmt.setRunningQueryThread(Thread.currentThread());
+				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				
+				if (rs.get(0) instanceof SQLException)
+				{
+					throw (SQLException)rs.get(0);
+				}
+			}
+			catch(Exception e)
+			{
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+				if (e instanceof SQLException) {
+					throw (SQLException) e;
+				}
+
+				throw SQLStates.newGenericException(e);
+			}
+			finally
+			{
+				stmt.setRunningQueryThread(null);
+				stmt.passUpCancel(true);
 			}
 		}
 
@@ -1836,8 +2015,33 @@ public class XGResultSet implements ResultSet {
 			return false;
 		}
 
-		if (rs.size() == 0) {
-			while (!getMoreData()) {
+		if (rs == null) {
+			try
+			{
+				//handle possible interrupt and get a result set from the queue
+				stmt.passUpCancel(false);
+				stmt.setRunningQueryThread(Thread.currentThread());
+				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				
+				if (rs.get(0) instanceof SQLException)
+				{
+					throw (SQLException)rs.get(0);
+				}
+			}
+			catch(Exception e)
+			{
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+				if (e instanceof SQLException) {
+					throw (SQLException) e;
+				}
+
+				throw SQLStates.newGenericException(e);
+			}
+			finally
+			{
+				stmt.setRunningQueryThread(null);
+				stmt.passUpCancel(true);
 			}
 		}
 
@@ -2108,16 +2312,20 @@ public class XGResultSet implements ResultSet {
 	 */
 	private boolean mergeData(final ClientWireProtocol.ResultSet re)
 			throws SQLException, java.net.UnknownHostException {
+		boolean done = false;
+		boolean didProcessRows = false;
 		final List<ByteString> buffers = re.getBlobsList();
-		this.rs.clear();
+		ArrayList<Object> newRs = new ArrayList<Object>();
 		for (final ByteString buffer : buffers) {
 			ByteBuffer bb = buffer.asReadOnlyByteBuffer();
 			if (isBufferDem(bb)) {
-				rs.add(new DataEndMarker());
+				newRs.add(new DataEndMarker());
+				done = true;
 			} else {
 				int numRows = bb.getInt(0);
 				int offset = 4;
 				for (int i = 0; i < numRows; i++) {
+					didProcessRows = true;
 					// Process this row
 					final ArrayList<Object> alo = new ArrayList<>();
 					int rowLength = bb.getInt(offset);
@@ -2253,13 +2461,23 @@ public class XGResultSet implements ResultSet {
 						}
 					}
 
-					rs.add(alo);
+					newRs.add(alo);
 				}
 			}
 		}
+		
+		if (didProcessRows)
+		{
+			didFirstFetch.set(true);
+		}
 
-		LOGGER.log(Level.INFO, String.format("Received %d rows.", rs.size()));
-		return rs.size() > 0;
+		LOGGER.log(Level.INFO, String.format("Received %d rows.", newRs.size()));
+		if (!newRs.isEmpty())
+		{
+			rsQueue.add(newRs);
+		}
+		
+		return !done;
 	}
 
 	@Override
@@ -2283,17 +2501,42 @@ public class XGResultSet implements ResultSet {
 
 		position++;
 
-		if (firstRowIs - 1 + rs.size() < position) {
-			if (rs.size() > 0) {
+		if (rs == null || firstRowIs - 1 + rs.size() < position) {
+			if (rs != null) {
 				final Object row = rs.get(rs.size() - 1);
 				if (row instanceof DataEndMarker) {
 					return false;
 				}
 			}
 
-			// call to get more data
-			while (!getMoreData()) {
+			try
+			{
+				//handle possible interrupt and get a result set from the queue
+				stmt.passUpCancel(false);
+				stmt.setRunningQueryThread(Thread.currentThread());
+				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				
+				if (rs.get(0) instanceof SQLException)
+				{
+					throw (SQLException)rs.get(0);
+				}
 			}
+			catch(Exception e)
+			{
+				LOGGER.log(Level.WARNING,
+						String.format("Exception %s occurred while fetching data with message %s", e.toString(), e.getMessage()));
+				if (e instanceof SQLException) {
+					throw (SQLException) e;
+				}
+
+				throw SQLStates.newGenericException(e);
+			}
+			finally
+			{
+				stmt.setRunningQueryThread(null);
+				stmt.passUpCancel(true);
+			}
+			
 			firstRowIs = position;
 		}
 
@@ -2330,12 +2573,16 @@ public class XGResultSet implements ResultSet {
 			warnings.add(new SQLWarning(reason, sqlState, code));
 		}
 	}
-
+	
 	private void readBytes(final byte[] bytes) throws Exception {
+		readBytes(bytes, this.conn);
+	}
+
+	private void readBytes(final byte[] bytes, XGConnection newConn) throws Exception {
 		int count = 0;
 		final int size = bytes.length;
 		while (count < size) {
-			final int temp = conn.in.read(bytes, count, bytes.length - count);
+			final int temp = newConn.in.read(bytes, count, bytes.length - count);
 			if (temp == -1) {
 				throw SQLStates.UNEXPECTED_EOF.clone();
 			} else {

@@ -67,6 +67,11 @@ message TestConnection
 {
 }
 
+message AttachToQuery
+{
+	string queryId = 1; //This is the UUID of the query in string form (e.g. 123e4567-e89b-12d3-a456-426655440000)
+}
+
 message FetchData
 {
 	sfixed32 fetch_size = 1;
@@ -161,6 +166,7 @@ message ExecuteQueryResponse
 	string redirectHost = 3;
 	fixed32 redirectPort = 4;
 	string queryId = 5; // The query ID (generated server side) can be used by a client to cancel/kill
+	fixed32 numClientThreads = 6; //How many threads should the client use to fetch?
 }
 
 message ExecuteUpdate
@@ -312,6 +318,7 @@ message Request
 		SET_PSO = 26;
 		// 27 used above
 		// 28 used above
+		ATTACH_TO_QUERY = 29;
     }
 
     RequestType type = 1;
@@ -348,6 +355,7 @@ message Request
 		SetPSO set_pso = 27;
 		// 28 is defined above
 		// 29 is defined above
+		AttachToQuery attach_to_query = 30;
     }
 }
 
