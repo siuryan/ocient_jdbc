@@ -553,6 +553,10 @@ public class XGStatement implements Statement {
 			{
 				numClientThreads = 1;
 			}
+			else if (numClientThreads > Runtime.getRuntime().availableProcessors())
+			{
+				numClientThreads = Runtime.getRuntime().availableProcessors();
+			}
 			
 			LOGGER.log(Level.INFO, "Creating result set for query with " + numClientThreads + " result set threads");
 			result = conn.rs = new XGResultSet(conn, fetchSize, this, numClientThreads);
