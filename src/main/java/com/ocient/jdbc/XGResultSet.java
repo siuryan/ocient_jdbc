@@ -134,6 +134,7 @@ public class XGResultSet implements ResultSet {
 	private ArrayList<Thread> fetchThreads = new ArrayList<Thread>();
 	
 	private AtomicBoolean didFirstFetch = new AtomicBoolean(false);
+	private AtomicBoolean demReceived = new AtomicBoolean(false);
 
 	public XGResultSet(final XGConnection conn, final int fetchSize, final XGStatement stmt, final int numClientThreads) throws Exception {
 		this.conn = conn;
@@ -1152,6 +1153,11 @@ public class XGResultSet implements ResultSet {
 			
 			while (true)
 			{
+				if (demReceived.get())
+				{
+					return;
+				}
+				
 				newConn.out.write(intToBytes(wrapper.getSerializedSize()));
 				wrapper.writeTo(newConn.out);
 				newConn.out.flush();
@@ -2320,6 +2326,7 @@ public class XGResultSet implements ResultSet {
 			ByteBuffer bb = buffer.asReadOnlyByteBuffer();
 			if (isBufferDem(bb)) {
 				newRs.add(new DataEndMarker());
+				demReceived.set(true);
 				done = true;
 			} else {
 				int numRows = bb.getInt(0);
@@ -2469,6 +2476,26 @@ public class XGResultSet implements ResultSet {
 		if (didProcessRows)
 		{
 			didFirstFetch.set(true);
+		}
+		
+		if (done && didFirstFetch.get())
+		{
+			//Spin and wait for other threads
+			for (Thread t : fetchThreads)
+			{
+				if (!t.equals(Thread.currentThread()))
+				{
+					while (true)
+					{
+						try
+						{
+							t.join();
+							break;
+						}
+						catch(InterruptedException ie) {}
+					}
+				}
+			}
 		}
 
 		LOGGER.log(Level.INFO, String.format("Received %d rows.", newRs.size()));
