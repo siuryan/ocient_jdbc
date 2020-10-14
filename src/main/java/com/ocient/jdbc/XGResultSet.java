@@ -1193,13 +1193,43 @@ public class XGResultSet implements ResultSet {
 			if (e instanceof SQLException) {
 				ArrayList<Object> alo = new ArrayList<Object>();
 				alo.add(e);
-				rsQueue.add(alo);
+				try
+				{
+					rsQueue.put(alo);
+				}
+				catch(InterruptedException f)
+				{
+					ArrayList<Object> alo2 = new ArrayList<Object>();
+					alo2.add(SQLStates.newGenericException(f));
+					rsQueue.offer(alo2);
+					return;
+				}
+				
 				return;
 			}
 
+			if (e instanceof InterruptedException)
+			{
+				ArrayList<Object> alo = new ArrayList<Object>();
+				alo.add(SQLStates.newGenericException(e));
+				rsQueue.offer(alo);
+				return;
+			}
+			
 			ArrayList<Object> alo = new ArrayList<Object>();
 			alo.add(SQLStates.newGenericException(e));
-			rsQueue.add(alo);
+			try
+			{
+				rsQueue.put(alo);
+			}
+			catch(InterruptedException f)
+			{
+				ArrayList<Object> alo2 = new ArrayList<Object>();
+				alo2.add(SQLStates.newGenericException(f));
+				rsQueue.offer(alo2);
+				return;
+			}
+			
 			return;
 		} 
 	}
@@ -1912,7 +1942,7 @@ public class XGResultSet implements ResultSet {
 				//handle possible interrupt and get a result set from the queue
 				stmt.passUpCancel(false);
 				stmt.setRunningQueryThread(Thread.currentThread());
-				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				rs = rsQueue.take();
 				
 				if (rs.get(0) instanceof SQLException)
 				{
@@ -1970,7 +2000,7 @@ public class XGResultSet implements ResultSet {
 				//handle possible interrupt and get a result set from the queue
 				stmt.passUpCancel(false);
 				stmt.setRunningQueryThread(Thread.currentThread());
-				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				rs = rsQueue.take();
 				
 				if (rs.get(0) instanceof SQLException)
 				{
@@ -2032,7 +2062,7 @@ public class XGResultSet implements ResultSet {
 				//handle possible interrupt and get a result set from the queue
 				stmt.passUpCancel(false);
 				stmt.setRunningQueryThread(Thread.currentThread());
-				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				rs = rsQueue.take();
 				
 				if (rs.get(0) instanceof SQLException)
 				{
@@ -2322,7 +2352,7 @@ public class XGResultSet implements ResultSet {
 	 * merge
 	 */
 	private boolean mergeData(final ClientWireProtocol.ResultSet re)
-			throws SQLException, java.net.UnknownHostException {
+			throws Exception {
 		boolean done = false;
 		boolean didProcessRows = false;
 		final List<ByteString> buffers = re.getBlobsList();
@@ -2490,15 +2520,7 @@ public class XGResultSet implements ResultSet {
 			{
 				if (!t.equals(Thread.currentThread()))
 				{
-					while (true)
-					{
-						try
-						{
-							t.join();
-							break;
-						}
-						catch(InterruptedException ie) {}
-					}
+					t.join();
 				}
 			}
 		}
@@ -2506,7 +2528,7 @@ public class XGResultSet implements ResultSet {
 		LOGGER.log(Level.INFO, String.format("Received %d rows.", newRs.size()));
 		if (!newRs.isEmpty())
 		{
-			rsQueue.add(newRs);
+			rsQueue.put(newRs);
 		}
 		
 		return !done;
@@ -2546,7 +2568,7 @@ public class XGResultSet implements ResultSet {
 				//handle possible interrupt and get a result set from the queue
 				stmt.passUpCancel(false);
 				stmt.setRunningQueryThread(Thread.currentThread());
-				rs = rsQueue.poll(50000, TimeUnit.DAYS);
+				rs = rsQueue.take();
 				
 				if (rs.get(0) instanceof SQLException)
 				{
