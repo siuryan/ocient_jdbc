@@ -252,6 +252,11 @@ message LocalQueries
 	}
 	
 	string database = 3;
+	bytes token = 4;
+	bytes signature = 5;
+	bytes issuer_certificate = 6;
+	bytes issuer_fingerprint = 7;
+	bytes username = 8;
 }
 
 message LocalQueriesResponse
