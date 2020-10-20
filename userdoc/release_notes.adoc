@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.52 (2020-10-19)
+
+New Features::
+
+ * executeQuery will not rerun query after reconnect.
+
+// tag::compact[]
 == 1.51 (2020-10-11)
 
 New Features::

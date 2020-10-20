@@ -573,8 +573,9 @@ public class XGStatement implements Statement {
 				}
 				throw SQLStates.newGenericException(reconnectException);
 			}
-
-			return executeQuery(sql);
+			LOGGER.log(Level.WARNING,
+				String.format("Execute query resulted in an error. Reconnected but not rerunning query"));
+			throw SQLStates.NETWORK_COMMS_ERROR.cloneAndSpecify("Execute query resulted in an error. Reconnected but not rerunning query");
 		}
 		this.updateCount = -1;
 		return result;
