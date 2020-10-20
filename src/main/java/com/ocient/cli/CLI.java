@@ -297,7 +297,7 @@ public class CLI {
 		} else if (startsWithIgnoreCase(cmd, "EXPORT TABLE")) {
 			exportTable(cmd);
 		} else if (startsWithIgnoreCase(cmd, "EXPORT TRANSLATION")) {
-				exportTranslation(cmd);
+			exportTranslation(cmd);
 		} else if (startsWithIgnoreCase(cmd, "SET TIMEOUT")) {
 			setQueryTimeout(cmd);
 		} else {
