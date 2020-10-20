@@ -296,8 +296,8 @@ public class CLI {
 			forceExternal(cmd);
 		} else if (startsWithIgnoreCase(cmd, "EXPORT TABLE")) {
 			exportTable(cmd);
-                } else if (startsWithIgnoreCase(cmd, "EXPORT TRANSLATION")) {
-                        exportTranslation(cmd);
+		} else if (startsWithIgnoreCase(cmd, "EXPORT TRANSLATION")) {
+			exportTranslation(cmd);
 		} else if (startsWithIgnoreCase(cmd, "SET TIMEOUT")) {
 			setQueryTimeout(cmd);
 		} else {
@@ -563,20 +563,21 @@ public class CLI {
 			}
 			ResultSet rs = null;
 			try {
-					start = System.currentTimeMillis();
-					stmt.execute(cmd);
-					rs = stmt.getResultSet();
-					final ResultSetMetaData meta = rs.getMetaData();
-					if (outputCSVFile.isEmpty()) {
-						printResultSet(rs, meta);
-					} else {
-						outputResultSet(rs, meta);
-						outputCSVFile = "";
-					}
-					printWarnings(stmt);
-					end = System.currentTimeMillis();
+				start = System.currentTimeMillis();
+				stmt.execute(cmd);
+				rs = stmt.getResultSet();
+				final ResultSetMetaData meta = rs.getMetaData();
+				if (outputCSVFile.isEmpty()) {
+					printResultSet(rs, meta);
+				} else {
+					outputResultSet(rs, meta);
+					outputCSVFile = "";
+				}
+				printWarnings(stmt);
+				end = System.currentTimeMillis();
+				rs.close();
 
-					printTime(start, end);
+				printTime(start, end);
 			} catch (final Exception e) {
 					System.out.println("Error: " + e.getMessage());
 			}
