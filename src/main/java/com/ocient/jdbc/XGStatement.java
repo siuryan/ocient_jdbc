@@ -1441,7 +1441,7 @@ public class XGStatement implements Statement {
 				}
 				passUpCancel(false);
 				reconnect(); // try this at most once--if every node is down, report failure
-				return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
+				throw SQLStates.NETWORK_COMMS_ERROR.cloneAndSpecify("Execute query resulted in an error. Reconnected but not rerunning query");
 			}
 		} catch (final Exception e) {
 			if (e instanceof SQLException) {

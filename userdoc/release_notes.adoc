@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.54 (2020-10-21)
+
+New Features::
+
+ * fix another spot where all the slq nodes can be brought down.
+
+// tag::compact[]
 == 1.53 (2020-10-20)
 
 New Features::
