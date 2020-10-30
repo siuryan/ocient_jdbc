@@ -260,7 +260,7 @@ public class CLI {
 		} else if (startsWithIgnoreCase(cmd, "CREATE") || startsWithIgnoreCase(cmd, "DROP")
 				|| startsWithIgnoreCase(cmd, "ALTER") || startsWithIgnoreCase(cmd, "TRUNCATE")
 				|| startsWithIgnoreCase(cmd, "SET PSO") || startsWithIgnoreCase(cmd, "GRANT")
-				|| startsWithIgnoreCase(cmd, "REVOKE")) {
+				|| startsWithIgnoreCase(cmd, "REVOKE") || startsWithIgnoreCase(cmd, "INVALIDATE STATS")) {
 			update(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST TABLES")) {
 			listTables(cmd, false);
