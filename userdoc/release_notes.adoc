@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 // tag::compact[]
+== 1.56 (2020-11-2)
+
+New Features::
+
+ * kill and cancel now throws syntax errors.
+
+// tag::compact[]
 == 1.55 (2020-10-28)
 
 New Features::

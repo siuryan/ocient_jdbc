@@ -28,6 +28,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.UUID;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
@@ -788,12 +789,22 @@ public class XGStatement implements Statement {
 
 	// used by CLI
 	public void cancelQuery(String uuid) throws SQLException {
+		try{
+			UUID.fromString(uuid);
+		}catch(IllegalArgumentException e){
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(String.format("Invalid uuid string: %s",uuid));
+		}
 		final ClientWireProtocol.CancelQueryResponse.Builder er = (ClientWireProtocol.CancelQueryResponse.Builder) sendAndReceive(
 				uuid, Request.RequestType.CANCEL_QUERY, 0, false, Optional.empty());
 		return;
 	}
 
 	public void killQuery(String uuid) throws SQLException {
+		try{
+			UUID.fromString(uuid);
+		}catch(IllegalArgumentException e){
+			throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(String.format("Invalid uuid string: %s",uuid));
+		}
 		final ClientWireProtocol.KillQueryResponse.Builder er = (ClientWireProtocol.KillQueryResponse.Builder) sendAndReceive(
 				uuid, Request.RequestType.KILL_QUERY, 0, false, Optional.empty());
 		return;
