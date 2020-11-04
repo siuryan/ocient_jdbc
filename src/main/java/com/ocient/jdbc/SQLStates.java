@@ -228,10 +228,6 @@ public class SQLStates {
 	private static int SYSTEM_INITIALIZING_CODE = -908;
 	private static int OUT_OF_TEMP_DISK_SPACE_CODE = -909;
 
-	// task related issues
-	private static int CREATE_TASK_FAILURE_CODE = -1001;
-	private static int TASK_ALREADY_IN_PROGRESS_ERROR_CODE = -1002;
-
 	// node related issues
 	private static int NODE_NOT_FOUND_CODE = -1101;
 
@@ -243,6 +239,10 @@ public class SQLStates {
 	private static int PRIVILEGE_NOT_POSSESSED_CODE = -1002;
 	private static int ROLE_NOT_FOUND_CODE = -1003;
 	private static int ID_NOT_FOUND_CODE = -1004;
+
+	// task related issues
+	private static int CREATE_TASK_FAILURE_CODE = -1005;
+	private static int TASK_ALREADY_IN_PROGRESS_ERROR_CODE = -1006;
 
 	public static SQLStates INVALID_RESPONSE_TYPE = new SQLStates(
 			"Received a response from the server that was not ok, warning, or error", SYSTEM_ERROR,
