@@ -1270,8 +1270,8 @@ public class XGStatement implements Statement {
 		return;
 	}
 
-	private void redirect(final String host, final int port) throws IOException, SQLException {
-		conn.redirect(host, port);
+	private void redirect(final String host, final int port, boolean shouldRequestVersion) throws IOException, SQLException {
+		conn.redirect(host, port, shouldRequestVersion);
 		oneShotForce = true;
 		conn.clearOneShotForce();
 		return;
@@ -1423,7 +1423,7 @@ public class XGStatement implements Statement {
 					if ((boolean) getRedirect.invoke(br)) {
 						final Method getRedirectHost = br.getClass().getMethod("getRedirectHost");
 						final Method getRedirectPort = br.getClass().getMethod("getRedirectPort");
-						redirect((String) getRedirectHost.invoke(br), (int) getRedirectPort.invoke(br));
+						redirect((String) getRedirectHost.invoke(br), (int) getRedirectPort.invoke(br), false);
 						return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
 					}
 				}

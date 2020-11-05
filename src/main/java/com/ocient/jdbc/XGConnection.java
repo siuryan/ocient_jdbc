@@ -720,7 +720,7 @@ public class XGConnection implements Connection {
 				LOGGER.log(Level.INFO, "Redirect command in ClientConnection2Response from server");
 				final String host = ccr2.getRedirectHost();
 				final int port = ccr2.getRedirectPort();
-				redirect(host, port);
+				redirect(host, port, shouldRequestVersion);
 			} 
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
@@ -1361,7 +1361,7 @@ public class XGConnection implements Connection {
 
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
-		LOGGER.log(Level.INFO, "Enterred reconnect()");
+		LOGGER.log(Level.INFO, String.format("Enterred reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {
@@ -1624,7 +1624,7 @@ public class XGConnection implements Connection {
 	/*
 	 * We have to told to redirect our request elsewhere.
 	 */
-	public void redirect(final String host, final int port) throws IOException, SQLException {
+	public void redirect(final String host, final int port, boolean shouldRequestVersion) throws IOException, SQLException {
 		LOGGER.log(Level.INFO,String.format("redirect(). Getting redirected to host: %s and port: %d", host, port));
 		oneShotForce = true;
 
@@ -1705,7 +1705,7 @@ public class XGConnection implements Connection {
 			}
 	
 			try {
-				clientHandshake(user, pwd, database, true);
+				clientHandshake(user, pwd, database, shouldRequestVersion);
 				oneShotForce = true;
 				if (!setSchema.equals("")) {
 					setSchema(setSchema);
@@ -1757,7 +1757,7 @@ public class XGConnection implements Connection {
 				}
 		
 				try {
-					clientHandshake(user, pwd, database, true);
+					clientHandshake(user, pwd, database, shouldRequestVersion);
 					oneShotForce = true;
 					if (!setSchema.equals("")) {
 						setSchema(setSchema);
