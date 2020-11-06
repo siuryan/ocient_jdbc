@@ -316,7 +316,7 @@ public class JDBCDriver implements Driver
 				logHandler.setFormatter(new ThreadFormatter());
 				logFileName = logfile;
 				LOGGER.addHandler(logHandler);
-				LOGGER.log(Level.INFO, "Enabling logger");
+				LOGGER.log(Level.INFO, String.format("Enabling logger with jdbc jar version: %s", getClass().getPackage().getImplementationVersion()));
 			} catch (final IOException | IllegalArgumentException e) {
 				e.printStackTrace(System.err);
 				// An illegal file argument was entered most likely.

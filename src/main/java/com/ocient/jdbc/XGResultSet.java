@@ -69,7 +69,7 @@ public class XGResultSet implements ResultSet {
 			XGConnection newConn = null;
 			try {
 				LOGGER.log(Level.INFO, "Started secondary result set thread");
-				newConn = conn.copy(true, true);
+				newConn = conn.copy(false, true);
 				String queryId = getQueryId().get();
 				attachToQuery(newConn, queryId);
 				

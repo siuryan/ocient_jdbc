@@ -315,7 +315,7 @@ public class XGConnection implements Connection {
 	}
 
 	public XGConnection copy() throws SQLException{
-		return copy(true, false);
+		return copy(false, false);
 	}
 	
 	public XGConnection copy(final boolean shouldRequestVersion) throws SQLException {
@@ -343,6 +343,7 @@ public class XGConnection implements Connection {
 			retval.originalIp = originalIp;
 			retval.originalPort = originalPort;
 			retval.tls = tls;
+			retval.serverVersion = serverVersion;
 			retval.reconnect(shouldRequestVersion);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE,
@@ -721,6 +722,12 @@ public class XGConnection implements Connection {
 				final String host = ccr2.getRedirectHost();
 				final int port = ccr2.getRedirectPort();
 				redirect(host, port, shouldRequestVersion);
+				// We have a lot of dangerous circular function calls.
+				// If we were redirected, then we already have the server version. We need to return here.
+				if(getVersion() != ""){
+					LOGGER.log(Level.WARNING, String.format("Returning in redirect because we were redirected with address: %s",serverVersion));
+					return;
+				}
 			} 
 		} catch (final Exception e) {
 			LOGGER.log(Level.WARNING,
@@ -749,6 +756,7 @@ public class XGConnection implements Connection {
 			XGStatement stmt = new XGStatement(this, false);
 			String version = stmt.fetchSystemMetadataString(
 				ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
+			LOGGER.log(Level.INFO,String.format("Fetched server version: %s", version));
 			setServerVersion(version);
 		}
 		catch (final Exception e)
@@ -1337,7 +1345,7 @@ public class XGConnection implements Connection {
 
 	public void reconnect() throws IOException, SQLException
 	{
-		reconnect(true);
+		reconnect(false);
 	}
 
 	/*
