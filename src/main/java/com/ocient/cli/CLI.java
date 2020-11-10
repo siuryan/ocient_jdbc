@@ -714,12 +714,7 @@ public class CLI {
 					while (rs.next()) {
 						line.append(rs.getString("COLUMN_NAME"));
 						line.append(" (");
-						String type = rs.getString("TYPE_NAME");
-						if (type.equals("SHORT")) {
-							type = "SMALLINT";
-						} else if (type.equals("LONG")) {
-							type = "BIGINT";
-						}
+						String type = rs.getString("TYPE_NAME").replace("SHORT", "SMALLINT").replace("LONG", "BIGINT");
 
 						line.append(type);
 						// TODO: figure out precision stuff
