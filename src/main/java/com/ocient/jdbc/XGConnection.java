@@ -463,62 +463,66 @@ public class XGConnection implements Connection {
   private void connect(final String ip, int port) throws Exception {
 	LOGGER.log(Level.INFO,String.format("Trying to connect to IP: %s at port: %d", ip, port));
     try {
-      switch (this.tls) {
-      case OFF:
-		LOGGER.log(Level.INFO,"Unencrypted connection");
-        sock = new Socket();
-        sock.setReceiveBufferSize(4194304);
-        sock.setSendBufferSize(4194304);
-        sock.connect(new InetSocketAddress(ip, port), networkTimeout);
-        in = new BufferedInputStream(sock.getInputStream());
-		out = new BufferedOutputStream(sock.getOutputStream());
-		connectedIp = ip;
-		connectedPort = port;
-        break;
+		switch (this.tls) {
+		case OFF:
+			LOGGER.log(Level.INFO,"Unencrypted connection");
+			sock = new Socket();
+			sock.setReceiveBufferSize(4194304);
+			sock.setSendBufferSize(4194304);
+			sock.connect(new InetSocketAddress(ip, port), networkTimeout);
+			in = new BufferedInputStream(sock.getInputStream());
+			out = new BufferedOutputStream(sock.getOutputStream());
+			connectedIp = ip;
+			connectedPort = port;
+			break;
 
-      case UNVERIFIED:
-	  case ON:
-	  case VERIFY:
+		case UNVERIFIED:
+		case ON:
+		case VERIFY:
 		  
-		LOGGER.log(Level.INFO,"TLS Connection "+tls.name());
-		SSLContext sc = SSLContext.getInstance("TLS");
+			LOGGER.log(Level.INFO,"TLS Connection "+tls.name());
+			SSLContext sc = SSLContext.getInstance("TLS");
 		  
-		TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
+			TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
 		
-		sc.init(null, tms, null);
-        SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
-		SSLSocket sslsock = (SSLSocket)sslsocketfactory.createSocket(ip, port);
-        sslsock.setReceiveBufferSize(4194304);
-        sslsock.setSendBufferSize(4194304);
-		sslsock.setUseClientMode(true);
-        sslsock.startHandshake();
-		sock = sslsock;
-        in = new BufferedInputStream(sock.getInputStream());
-		out = new BufferedOutputStream(sock.getOutputStream());
-		connectedIp = ip;
-		connectedPort = port;
-		break;
-      }
+			sc.init(null, tms, null);
+			SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
+			SSLSocket sslsock = (SSLSocket)sslsocketfactory.createSocket(ip, port);
+			sslsock.setReceiveBufferSize(4194304);
+			sslsock.setSendBufferSize(4194304);
+			sslsock.setUseClientMode(true);
+			sslsock.startHandshake();
+			sock = sslsock;
+			in = new BufferedInputStream(sock.getInputStream());
+			out = new BufferedOutputStream(sock.getOutputStream());
+			connectedIp = ip;
+			connectedPort = port;
+			break;
+      	}
     } catch (Exception e) {
-      try {
-        if (in != null)
-          in.close();
-          in = null;
-      } catch (final IOException f) {
-      }
-      try {
-        if (out != null)
-          out.close();
-          out = null;
-      } catch (final IOException f) {
-      }
-      try {
-        if (sock != null)
-          sock.close();
-          sock = null;
-      } catch (final IOException f) {
-      }
-      throw e;
+      	try {
+			if (in != null){
+				in.close();
+				in = null;
+			}
+
+      	} catch (final IOException f) {
+      	}
+		try {
+			if (out != null){
+				out.close();
+				out = null;
+			}
+		} catch (final IOException f) {
+		}
+      	try {
+			if (sock != null){
+				sock.close();
+				sock = null;
+			}
+      	} catch (final IOException f) {
+      	}
+      	throw e;
     }
   }
 	/*!
