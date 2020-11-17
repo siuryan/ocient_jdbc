@@ -247,7 +247,9 @@ public class XGConnection implements Connection {
 	protected final String url;
 	protected String ip;
 	protected String originalIp;
+	protected String connectedIp;
 	protected int originalPort;
+	protected int connectedPort;
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
@@ -341,6 +343,8 @@ public class XGConnection implements Connection {
 			retval.secondaryIndex = secondaryIndex;
 			retval.ip = ip;
 			retval.originalIp = originalIp;
+			retval.connectedIp = connectedIp;
+			retval.connectedPort = connectedPort;
 			retval.originalPort = originalPort;
 			retval.tls = tls;
 			retval.serverVersion = serverVersion;
@@ -459,60 +463,82 @@ public class XGConnection implements Connection {
   private void connect(final String ip, int port) throws Exception {
 	LOGGER.log(Level.INFO,String.format("Trying to connect to IP: %s at port: %d", ip, port));
     try {
-      switch (this.tls) {
-      case OFF:
-		LOGGER.log(Level.INFO,"Unencrypted connection");
-        sock = new Socket();
-        sock.setReceiveBufferSize(4194304);
-        sock.setSendBufferSize(4194304);
-        sock.connect(new InetSocketAddress(ip, port), networkTimeout);
-        in = new BufferedInputStream(sock.getInputStream());
-        out = new BufferedOutputStream(sock.getOutputStream());
-        break;
+		switch (this.tls) {
+		case OFF:
+			LOGGER.log(Level.INFO,"Unencrypted connection");
+			sock = new Socket();
+			sock.setReceiveBufferSize(4194304);
+			sock.setSendBufferSize(4194304);
+			sock.connect(new InetSocketAddress(ip, port), networkTimeout);
+			in = new BufferedInputStream(sock.getInputStream());
+			out = new BufferedOutputStream(sock.getOutputStream());
+			connectedIp = ip;
+			connectedPort = port;
+			break;
 
-      case UNVERIFIED:
-	  case ON:
-	  case VERIFY:
+		case UNVERIFIED:
+		case ON:
+		case VERIFY:
 		  
-		LOGGER.log(Level.INFO,"TLS Connection "+tls.name());
-		SSLContext sc = SSLContext.getInstance("TLS");
+			LOGGER.log(Level.INFO,"TLS Connection "+tls.name());
+			SSLContext sc = SSLContext.getInstance("TLS");
 		  
-		TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
+			TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
 		
-		sc.init(null, tms, null);
-        SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
-		SSLSocket sslsock = (SSLSocket)sslsocketfactory.createSocket(ip, port);
-        sslsock.setReceiveBufferSize(4194304);
-        sslsock.setSendBufferSize(4194304);
-		sslsock.setUseClientMode(true);
-        sslsock.startHandshake();
-		sock = sslsock;
-        in = new BufferedInputStream(sock.getInputStream());
-        out = new BufferedOutputStream(sock.getOutputStream());
-		break;
-      }
+			sc.init(null, tms, null);
+			SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
+			SSLSocket sslsock = (SSLSocket)sslsocketfactory.createSocket(ip, port);
+			sslsock.setReceiveBufferSize(4194304);
+			sslsock.setSendBufferSize(4194304);
+			sslsock.setUseClientMode(true);
+			sslsock.startHandshake();
+			sock = sslsock;
+			in = new BufferedInputStream(sock.getInputStream());
+			out = new BufferedOutputStream(sock.getOutputStream());
+			connectedIp = ip;
+			connectedPort = port;
+			break;
+      	}
     } catch (Exception e) {
-      try {
-        if (in != null)
-          in.close();
-          in = null;
-      } catch (final IOException f) {
-      }
-      try {
-        if (out != null)
-          out.close();
-          out = null;
-      } catch (final IOException f) {
-      }
-      try {
-        if (sock != null)
-          sock.close();
-          sock = null;
-      } catch (final IOException f) {
-      }
-      throw e;
+      	try {
+			if (in != null){
+				in.close();
+				in = null;
+			}
+
+      	} catch (final IOException f) {
+      	}
+		try {
+			if (out != null){
+				out.close();
+				out = null;
+			}
+		} catch (final IOException f) {
+		}
+      	try {
+			if (sock != null){
+				sock.close();
+				sock = null;
+			}
+      	} catch (final IOException f) {
+      	}
+      	throw e;
     }
   }
+	/*!
+	 * Utility for checking if the previously connected ip and port is still available.
+	 */ 
+  	boolean isSockConnected(){
+		try{
+			Socket testSocket = new Socket();
+			testSocket.connect(new InetSocketAddress(connectedIp, connectedPort), networkTimeout);
+			testSocket.close();
+			return true;
+		} catch (Exception e){
+			LOGGER.log(Level.WARNING,"isSockConnected() discovered connection is not working.");
+			return false;
+		}
+	}
 
   private void clientHandshake(final String userid, final String pwd, final String db, final boolean shouldRequestVersion) throws Exception {
 		try {
@@ -1369,7 +1395,7 @@ public class XGConnection implements Connection {
 
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
-		LOGGER.log(Level.INFO, String.format("Enterred reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
+		LOGGER.log(Level.INFO, String.format("Entered reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {

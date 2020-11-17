@@ -1451,8 +1451,15 @@ public class XGStatement implements Statement {
 					setQueryCancelled(false);
 				}
 				passUpCancel(false);
+				// Something went wrong. Did we kill the server with this query? If we did, then don't resend.
+				boolean safeToReSend = conn.isSockConnected();
 				reconnect(); // try this at most once--if every node is down, report failure
-				throw SQLStates.NETWORK_COMMS_ERROR.cloneAndSpecify("Execute query resulted in an error. Reconnected but not rerunning query");
+				if(safeToReSend){
+					LOGGER.log(Level.WARNING,"sendAndReceive() We were disconnected prior to running this query. Reconnected then rerunning.");
+					return sendAndReceive(sql, requestType, val, isInMb, additionalPropertySetter);
+				} else {
+					throw SQLStates.NETWORK_COMMS_ERROR.cloneAndSpecify("sendAndReceive resulted in an error. Reconnected but not rerunning query");
+				}
 			}
 		} catch (final Exception e) {
 			if (e instanceof SQLException) {
