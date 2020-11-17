@@ -247,7 +247,9 @@ public class XGConnection implements Connection {
 	protected final String url;
 	protected String ip;
 	protected String originalIp;
+	protected String connectedIp;
 	protected int originalPort;
+	protected int connectedPort;
 	protected String user;
 	protected String database;
 	protected String client = "jdbc";
@@ -341,6 +343,8 @@ public class XGConnection implements Connection {
 			retval.secondaryIndex = secondaryIndex;
 			retval.ip = ip;
 			retval.originalIp = originalIp;
+			retval.connectedIp = connectedIp;
+			retval.connectedPort = connectedPort;
 			retval.originalPort = originalPort;
 			retval.tls = tls;
 			retval.serverVersion = serverVersion;
@@ -467,7 +471,9 @@ public class XGConnection implements Connection {
         sock.setSendBufferSize(4194304);
         sock.connect(new InetSocketAddress(ip, port), networkTimeout);
         in = new BufferedInputStream(sock.getInputStream());
-        out = new BufferedOutputStream(sock.getOutputStream());
+		out = new BufferedOutputStream(sock.getOutputStream());
+		connectedIp = ip;
+		connectedPort = port;
         break;
 
       case UNVERIFIED:
@@ -488,7 +494,9 @@ public class XGConnection implements Connection {
         sslsock.startHandshake();
 		sock = sslsock;
         in = new BufferedInputStream(sock.getInputStream());
-        out = new BufferedOutputStream(sock.getOutputStream());
+		out = new BufferedOutputStream(sock.getOutputStream());
+		connectedIp = ip;
+		connectedPort = port;
 		break;
       }
     } catch (Exception e) {
@@ -513,6 +521,20 @@ public class XGConnection implements Connection {
       throw e;
     }
   }
+	/*!
+	 * Utility for checking if the previously connected ip and port is still available.
+	 */ 
+  	boolean isSockConnected(){
+		try{
+			Socket testSocket = new Socket();
+			testSocket.connect(new InetSocketAddress(connectedIp, connectedPort), networkTimeout);
+			testSocket.close();
+			return true;
+		} catch (Exception e){
+			LOGGER.log(Level.WARNING,"isSockConnected() discovered connection is not working.");
+			return false;
+		}
+	}
 
   private void clientHandshake(final String userid, final String pwd, final String db, final boolean shouldRequestVersion) throws Exception {
 		try {
@@ -1369,7 +1391,7 @@ public class XGConnection implements Connection {
 
 		// We solve this by delaying slightly, which will slow the rate
 		// of stack growth enough that we will be ok
-		LOGGER.log(Level.INFO, String.format("Enterred reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
+		LOGGER.log(Level.INFO, String.format("Entered reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
 		try {
 			Thread.sleep(250);
 		} catch (final InterruptedException e) {
