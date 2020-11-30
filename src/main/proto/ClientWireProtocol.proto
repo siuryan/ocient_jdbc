@@ -2,6 +2,7 @@ syntax = "proto3";
 
 //Deprecated jdbc version 1.38, plans are always strings
 import "PlanProtocol.proto";
+import "google/protobuf/wrappers.proto";
 package xg.cmdcomp;
 option java_package = "com.ocient.jdbc.proto";
 option java_outer_classname = "ClientWireProtocol";
@@ -257,6 +258,7 @@ message LocalQueries
 	bytes issuer_certificate = 6;
 	bytes issuer_fingerprint = 7;
 	bytes username = 8;
+	bool completed = 9; // true if we should return rows for completed queries
 }
 
 message LocalQueriesResponse
@@ -276,6 +278,30 @@ message SysQueriesRow
 	string status = 7;
 	string query_server = 8;
 	string database = 9;
+}
+
+message SystemWideCompletedQueries
+{
+} 
+
+message CompletedQueriesResponse
+{
+	ConfirmationResponse response = 1;
+	repeated CompletedQueriesRow rows = 2;
+}
+
+message CompletedQueriesRow
+{
+	string queryId = 1;          				// the query uuid
+    string userId = 2;            				// the uuid of the user that submitted the query
+    google.protobuf.StringValue databaseId = 3;	// the uuid of the target database
+    string text = 4;              				// the SQL test
+    string status = 5;            				// the status of the query
+    google.protobuf.UInt32Value errorCode = 6;  // the error which caused the query to fail, if one exists. Possibly 
+    int64 startTime = 7;              			// the timestamp the query began in ms since epoch
+    int64 endTime = 8;                			// the timestamp the query finished in ms since epoch
+    int64 tempDiskSpaceConsumed = 9;  			// the amount of temp disk space consumed by the query in bytes
+    int64 rowsReturned = 10;           			// the number of rows returned by the query
 }
 
 message LoadBroadcast
@@ -311,6 +337,7 @@ message Request
 		CANCEL_QUERY = 16;
 		LOCAL_CANCEL_QUERY = 27;
         SYSTEM_WIDE_QUERIES = 17;
+		SYSTEM_WIDE_COMPLETED_QUERIES = 30;
         LOCAL_QUERIES = 18;
         EXECUTE_PLAN = 19;
         EXPLAIN_PLAN = 20;
@@ -324,6 +351,7 @@ message Request
 		// 27 used above
 		// 28 used above
 		ATTACH_TO_QUERY = 29;
+		// 30 used above
     }
 
     RequestType type = 1;
@@ -349,6 +377,7 @@ message Request
 		LocalCancelQuery local_cancel_query = 28;
     	SystemWideQueries system_wide_queries = 18;
     	LocalQueries local_queries = 19;
+		SystemWideCompletedQueries system_wide_completed_queries = 31;
     	ExecutePlan execute_plan = 20;
     	ExplainPlan explain_plan = 21;
     	ListPlan list_plan = 22;
@@ -361,6 +390,7 @@ message Request
 		// 28 is defined above
 		// 29 is defined above
 		AttachToQuery attach_to_query = 30;
+		// 31 is defined above
     }
 }
 

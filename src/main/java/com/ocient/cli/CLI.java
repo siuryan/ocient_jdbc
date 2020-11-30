@@ -290,6 +290,8 @@ public class CLI {
 			killQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "LIST ALL QUERIES")) {
 			listAllQueries(cmd);
+		} else if (startsWithIgnoreCase(cmd, "LIST ALL COMPLETED QUERIES")) {
+			listAllCompletedQueries(cmd);
 		} else if (startsWithIgnoreCase(cmd, "OUTPUT NEXT QUERY")) {
 			outputNextQuery(cmd);
 		} else if (startsWithIgnoreCase(cmd, "FORCE EXTERNAL")) {
@@ -942,6 +944,7 @@ public class CLI {
 				rs.close();
 			} catch (Exception f) {
 			}
+			e.printStackTrace();
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -1181,6 +1184,41 @@ public class CLI {
 				rs.close();
 			} catch (Exception f){	
 			}
+			System.out.println("Error: " + e.getMessage());
+		}
+	}
+
+	private static void listAllCompletedQueries(final String cmd) {
+		long start = 0;
+		long end = 0;
+		if (!isConnected()) {
+			System.out.println("No database connection exists");
+			return;
+		}
+		ResultSet rs = null;
+		try {
+			start = System.currentTimeMillis();
+			stmt.execute(cmd);
+			rs = stmt.getResultSet();
+			final ResultSetMetaData meta = rs.getMetaData();
+			if (outputCSVFile.isEmpty()) {
+				printResultSet(rs, meta);
+			} else {
+				outputResultSet(rs, meta);
+				outputCSVFile = "";
+			}
+
+			printWarnings(rs);
+			end = System.currentTimeMillis();
+
+			printTime(start, end);
+			rs.close();
+		} catch (final Exception e) {
+			try{
+				rs.close();
+			} catch (Exception f){	
+			}
+			e.printStackTrace();
 			System.out.println("Error: " + e.getMessage());
 		}
 	}

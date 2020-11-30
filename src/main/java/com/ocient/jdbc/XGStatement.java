@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import java.util.UUID;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
+import com.ocient.jdbc.proto.ClientWireProtocol.CompletedQueriesRow;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse;
 import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseType;
 import com.ocient.jdbc.proto.ClientWireProtocol.ExecuteExplain;
@@ -45,6 +46,7 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ListPlan;
 import com.ocient.jdbc.proto.ClientWireProtocol.FetchSystemMetadata;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
+import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideCompletedQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.KillQuery;
 import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
@@ -443,8 +445,8 @@ public class XGStatement implements Statement {
 			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
 			sql.toUpperCase().startsWith("LIST INDICES") || sql.toUpperCase().startsWith("LIST INDEXES") || sql.toUpperCase().startsWith("GET SCHEMA") || 
 			sql.toUpperCase().startsWith("DESCRIBE VIEW") || sql.toUpperCase().startsWith("DESCRIBE TABLE") || sql.toUpperCase().startsWith("PLAN EXECUTE") || 
-			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || sql.toUpperCase().startsWith("EXPORT TABLE") || 
-			sql.toUpperCase().startsWith("EXPORT TRANSLATION")) {
+			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES") || 
+			sql.toUpperCase().startsWith("EXPORT TABLE") || sql.toUpperCase().startsWith("EXPORT TRANSLATION")) {
 				this.result = (XGResultSet) executeQuery(sql);
 				return true;
 			} else {
@@ -531,6 +533,8 @@ public class XGStatement implements Statement {
 				return explainPlanSQL(sql);
 			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES")){
 				return listAllQueries();
+			} else if(startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES")){
+				return listAllCompletedQueries();
 			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE")){
 				return exportTableSQL(sql);
 			} else if(startsWithIgnoreCase(sql, "EXPORT TRANSLATION")){
@@ -864,6 +868,75 @@ public class XGStatement implements Statement {
 		cols2Types.put("server", "CHAR");
 		cols2Types.put("database", "CHAR");
 		cols2Types.put("sql", "CHAR");
+
+		result.setCols2Pos(cols2Pos);
+		result.setPos2Cols(pos2Cols);
+		result.setCols2Types(cols2Types);
+
+		this.updateCount = -1;
+		return result;
+	}
+
+	private ResultSet listAllCompletedQueries() throws SQLException {
+		final ClientWireProtocol.CompletedQueriesResponse.Builder er = (ClientWireProtocol.CompletedQueriesResponse.Builder) sendAndReceive(
+				"", Request.RequestType.SYSTEM_WIDE_COMPLETED_QUERIES, 0, false, Optional.empty());
+
+		// Manufacture the result set.
+		ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
+		System.out.println("Got " + er.getRowsCount() + " rows");
+		for(int i = 0; i < er.getRowsCount(); i++){
+			CompletedQueriesRow row = er.getRows(i);
+			ArrayList<Object> newRow = new ArrayList<>();
+			newRow.add(row.getQueryId());
+			newRow.add(row.getUserId());
+			newRow.add(row.getDatabaseId());
+			newRow.add(row.getText());
+			newRow.add(row.getStatus());
+			newRow.add(row.getErrorCode());
+			newRow.add(row.getStartTime());
+			newRow.add(row.getEndTime());
+			newRow.add(row.getTempDiskSpaceConsumed());
+			newRow.add(row.getRowsReturned());
+			rs.add(newRow);
+		}
+		result = conn.rs = new XGResultSet(conn, rs, this);
+		// Map the table metadata
+		Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+		TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+		Map<String, String> cols2Types = new HashMap<String, String>();
+
+		cols2Pos.put("query_id", 0);
+		cols2Pos.put("user_id", 1);
+		cols2Pos.put("database_id", 2);
+		cols2Pos.put("text", 3);
+		cols2Pos.put("status", 4);
+		cols2Pos.put("error_code", 5);
+		cols2Pos.put("start_time", 6);
+		cols2Pos.put("end_time", 7);
+		cols2Pos.put("temp_disk_consumed", 8);
+		cols2Pos.put("rows_returned", 9);
+
+		pos2Cols.put(0, "query_id");
+		pos2Cols.put(1, "user_id");
+		pos2Cols.put(2, "database_id");
+		pos2Cols.put(3, "text");
+		pos2Cols.put(4, "status");
+		pos2Cols.put(5, "error_code");
+		pos2Cols.put(6, "start_time");
+		pos2Cols.put(7, "end_time");
+		pos2Cols.put(8, "temp_disk_consumed");
+		pos2Cols.put(9, "rows_returned");
+
+		cols2Types.put("query_id", "CHAR");
+		cols2Types.put("user_id", "CHAR");
+		cols2Types.put("database_id", "CHAR");
+		cols2Types.put("text", "CHAR");
+		cols2Types.put("status", "CHAR");
+		cols2Types.put("error_code", "INT");
+		cols2Types.put("start_time", "LONG");
+		cols2Types.put("end_time", "LONG");
+		cols2Types.put("temp_disk_consumed", "LONG");
+		cols2Types.put("rows_returned", "LONG");
 
 		result.setCols2Pos(cols2Pos);
 		result.setPos2Cols(pos2Cols);
@@ -1353,6 +1426,14 @@ public class XGStatement implements Statement {
 				b1 = SystemWideQueries.newBuilder();
 				br = ClientWireProtocol.SystemWideQueriesResponse.newBuilder();
 				setWrapped = b2.getClass().getMethod("setSystemWideQueries", c);
+				forceFlag = false;
+				redirectFlag = false;
+				break;
+			case SYSTEM_WIDE_COMPLETED_QUERIES:
+				c = SystemWideCompletedQueries.class;
+				b1 = SystemWideCompletedQueries.newBuilder();
+				br = ClientWireProtocol.CompletedQueriesResponse.newBuilder();
+				setWrapped = b2.getClass().getMethod("setSystemWideCompletedQueries", c);
 				forceFlag = false;
 				redirectFlag = false;
 				break;
