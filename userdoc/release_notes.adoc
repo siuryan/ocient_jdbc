@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 //tag::compact[]
+== 1.63 (2020-12-1)
+
+New Features::
+
+ * Don't print stack trace when select queries complete exceptionally.
+
+//tag::compact[]
 == 1.62 (2020-11-30)
 
 New Features::

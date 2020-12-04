@@ -944,7 +944,6 @@ public class CLI {
 				rs.close();
 			} catch (Exception f) {
 			}
-			e.printStackTrace();
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
@@ -1218,7 +1217,6 @@ public class CLI {
 				rs.close();
 			} catch (Exception f){	
 			}
-			e.printStackTrace();
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
