@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 //tag::compact[]
+== 1.64 (2020-12-7)
+
+New Features::
+
+ * Properly handle nullability for the LIST ALL COMPLETED QUERIES command.
+
+//tag::compact[]
 == 1.63 (2020-12-1)
 
 New Features::
