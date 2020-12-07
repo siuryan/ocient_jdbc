@@ -883,16 +883,23 @@ public class XGStatement implements Statement {
 
 		// Manufacture the result set.
 		ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
-		System.out.println("Got " + er.getRowsCount() + " rows");
 		for(int i = 0; i < er.getRowsCount(); i++){
 			CompletedQueriesRow row = er.getRows(i);
 			ArrayList<Object> newRow = new ArrayList<>();
 			newRow.add(row.getQueryId());
 			newRow.add(row.getUserId());
-			newRow.add(row.getDatabaseId());
+			if (row.hasDatabaseId()) {
+				newRow.add(row.getDatabaseId().getValue());
+			} else {
+				newRow.add(null);
+			}
 			newRow.add(row.getText());
 			newRow.add(row.getStatus());
-			newRow.add(row.getErrorCode());
+			if (row.hasErrorCode()) {
+				newRow.add(row.getErrorCode().getValue());
+			} else {
+				newRow.add(null);
+			}
 			newRow.add(row.getStartTime());
 			newRow.add(row.getEndTime());
 			newRow.add(row.getTempDiskSpaceConsumed());
