@@ -292,16 +292,30 @@ message CompletedQueriesResponse
 
 message CompletedQueriesRow
 {
-	string queryId = 1;          				// the query uuid
-    string userId = 2;            				// the uuid of the user that submitted the query
-    google.protobuf.StringValue databaseId = 3;	// the uuid of the target database
-    string text = 4;              				// the SQL test
-    string status = 5;            				// the status of the query
-    google.protobuf.UInt32Value errorCode = 6;  // the error which caused the query to fail, if one exists. Possibly 
-    int64 startTime = 7;              			// the timestamp the query began in ms since epoch
-    int64 endTime = 8;                			// the timestamp the query finished in ms since epoch
-    int64 tempDiskSpaceConsumed = 9;  			// the amount of temp disk space consumed by the query in bytes
-    int64 rowsReturned = 10;           			// the number of rows returned by the query
+	string user = 1;                                // the string representation of the user's uuid
+	google.protobuf.StringValue database_id = 2;    // the string representation of the database uuid the user was connected to
+	string client_version = 3;                      // the version of the connector used to submit the query	    
+	string client_ip = 4;                           // the IP of the client
+	string sql = 5;                                 // the sql text
+	uint64 timestamp_start = 6;                     // ms since epoch representation of the time the query was accepted by the sql node
+	string time_start = 7;                          // the string representation of the time the query was accepted by the sql node
+	uint64 timestamp_complete = 8;                  // ms since epoch representation of the time the query completed execution
+	string time_complete = 9;                       // the string representation of the time the query completed execution
+	int32 code = 10;                                // the SQL state code
+	string state = 11;                              // the string representation of the SQL state    
+	string reason = 12;                             // the reason
+	uint64 timestamp_exec_start = 13;               // ms since epoch representation of the time the query began execution
+	string time_exec_start = 14;                    // the string representation of the time the query began execution	    
+	string uuid = 15;                               // the query plan uuid
+	double plan_priority = 16;                      // the priority assigned to this plan
+	double cost_estimate = 17;                      // the plan cost estimate		    
+	uint32 plan_parallelism = 18;                   // the plan parallelism
+	double heuristic_cost = 19;                     // the plan heuristic cost
+	uint64 pso_threshold = 20;                      // the pso threshold used during plan optimization
+	uint64 rows_returned = 21;                      // the number of rows returned by the query
+	uint64 bytes_returned = 22;                     // the number of bytes returned by the query
+	uint64 runtime = 23;                            // the number of seconds take to complete the query    
+	uint64 temp_disk_space_consumed = 24;           // the total amount of temp disk space consumed in bytes
 }
 
 message LoadBroadcast
