@@ -5,6 +5,20 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 //tag::compact[]
+== 1.66 (2020-12-10)
+
+New Features::
+
+ * Add spaces to syntax parsing.
+
+//tag::compact[]
+== 1.65 (2020-12-9)
+
+New Features::
+
+ * Completed queries update.
+
+//tag::compact[]
 == 1.64 (2020-12-7)
 
 New Features::
