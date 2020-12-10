@@ -441,12 +441,12 @@ public class XGStatement implements Statement {
 
 		try {
 			passUpCancel(true);
-			if (sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH") || sql.toUpperCase().startsWith("EXPLAIN") ||
-			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
-			sql.toUpperCase().startsWith("LIST INDICES") || sql.toUpperCase().startsWith("LIST INDEXES") || sql.toUpperCase().startsWith("GET SCHEMA") || 
-			sql.toUpperCase().startsWith("DESCRIBE VIEW") || sql.toUpperCase().startsWith("DESCRIBE TABLE") || sql.toUpperCase().startsWith("PLAN EXECUTE") || 
-			sql.toUpperCase().startsWith("PLAN EXPLAIN") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES") || 
-			sql.toUpperCase().startsWith("EXPORT TABLE") || sql.toUpperCase().startsWith("EXPORT TRANSLATION")) {
+			if (sql.toUpperCase().startsWith("SELECT ") || sql.toUpperCase().startsWith("WITH ") || sql.toUpperCase().startsWith("EXPLAIN ") ||
+			sql.toUpperCase().startsWith("LIST TABLES ") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES ") || sql.toUpperCase().startsWith("LIST VIEWS ") || 
+			sql.toUpperCase().startsWith("LIST INDICES ") || sql.toUpperCase().startsWith("LIST INDEXES ") || sql.toUpperCase().startsWith("GET SCHEMA ") || 
+			sql.toUpperCase().startsWith("DESCRIBE VIEW ") || sql.toUpperCase().startsWith("DESCRIBE TABLE ") || sql.toUpperCase().startsWith("PLAN EXECUTE ") || 
+			sql.toUpperCase().startsWith("PLAN EXPLAIN ") || sql.toUpperCase().startsWith("LIST ALL QUERIES ") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES ") || 
+			sql.toUpperCase().startsWith("EXPORT TABLE ") || sql.toUpperCase().startsWith("EXPORT TRANSLATION ")) {
 				this.result = (XGResultSet) executeQuery(sql);
 				return true;
 			} else {
@@ -513,31 +513,31 @@ public class XGStatement implements Statement {
 		}
 		
 		try{
-			if (startsWithIgnoreCase(sql, "EXPLAIN")) {
+			if (startsWithIgnoreCase(sql, "EXPLAIN ")) {
 				return explainSQL(sql);
-			} else if (startsWithIgnoreCase(sql, "LIST TABLES") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES")){
-				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES"));
-			} else if (startsWithIgnoreCase(sql, "LIST VIEWS")){
+			} else if (startsWithIgnoreCase(sql, "LIST TABLES ") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES ")){
+				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES "));
+			} else if (startsWithIgnoreCase(sql, "LIST VIEWS ")){
 				return listViews(sql);
-			} else if (startsWithIgnoreCase(sql, "LIST INDICES") || startsWithIgnoreCase(sql, "LIST INDEXES")){
+			} else if (startsWithIgnoreCase(sql, "LIST INDICES ") || startsWithIgnoreCase(sql, "LIST INDEXES ")){
 				return listIndexes(sql);
-			} else if (startsWithIgnoreCase(sql, "GET SCHEMA")){
+			} else if (startsWithIgnoreCase(sql, "GET SCHEMA ")){
 				return getSchema();
-			} else if(startsWithIgnoreCase(sql, "DESCRIBE TABLE")){
+			} else if(startsWithIgnoreCase(sql, "DESCRIBE TABLE ")){
 				return describeTable(sql);
-			} else if(startsWithIgnoreCase(sql, "DESCRIBE VIEW")){
+			} else if(startsWithIgnoreCase(sql, "DESCRIBE VIEW ")){
 				return describeView(sql);
-			} else if(startsWithIgnoreCase(sql, "PLAN EXECUTE")){
+			} else if(startsWithIgnoreCase(sql, "PLAN EXECUTE ")){
 				return executePlanSQL(sql);
-			} else if(startsWithIgnoreCase(sql, "PLAN EXPLAIN")){
+			} else if(startsWithIgnoreCase(sql, "PLAN EXPLAIN ")){
 				return explainPlanSQL(sql);
-			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES")){
+			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES ")){
 				return listAllQueries();
-			} else if(startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES")){
+			} else if(startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES ")){
 				return listAllCompletedQueries();
-			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE")){
+			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE ")){
 				return exportTableSQL(sql);
-			} else if(startsWithIgnoreCase(sql, "EXPORT TRANSLATION")){
+			} else if(startsWithIgnoreCase(sql, "EXPORT TRANSLATION ")){
 				return exportTranslationSQL(sql);
 			}
 		} catch (Exception e) {
@@ -593,8 +593,8 @@ public class XGStatement implements Statement {
 		// make things simpler
 		passUpCancel(true);
 		sql = sql.trim();
-		if (sql.toUpperCase().startsWith("SET PSO")) {
-			String ending = sql.toUpperCase().substring("SET PSO".length());
+		if (sql.toUpperCase().startsWith("SET PSO ")) {
+			String ending = sql.toUpperCase().substring("SET PSO ".length());
 			ending = ending.trim();
 			if (ending.equals("ON") || ending.equals("OFF")) {
 				try {
@@ -625,11 +625,11 @@ public class XGStatement implements Statement {
 			}
 
 			return 0;
-		} else if(sql.toUpperCase().startsWith("KILL") || sql.toUpperCase().startsWith("CANCEL")){
+		} else if(sql.toUpperCase().startsWith("KILL ") || sql.toUpperCase().startsWith("CANCEL ")){
 			return killCancelQuery(sql);
-		} else if (sql.toUpperCase().startsWith("SET MAXROWS")){
+		} else if (sql.toUpperCase().startsWith("SET MAXROWS ")){
 			return setMaxRowsSQL(sql);
-		} else if(sql.toUpperCase().startsWith("SET SCHEMA")){
+		} else if(sql.toUpperCase().startsWith("SET SCHEMA ")){
 			return setSchema(sql);
 		}
 
