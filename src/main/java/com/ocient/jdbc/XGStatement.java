@@ -442,10 +442,10 @@ public class XGStatement implements Statement {
 		try {
 			passUpCancel(true);
 			if (sql.toUpperCase().startsWith("SELECT ") || sql.toUpperCase().startsWith("WITH ") || sql.toUpperCase().startsWith("EXPLAIN ") ||
-			sql.toUpperCase().startsWith("LIST TABLES ") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES ") || sql.toUpperCase().startsWith("LIST VIEWS ") || 
-			sql.toUpperCase().startsWith("LIST INDICES ") || sql.toUpperCase().startsWith("LIST INDEXES ") || sql.toUpperCase().startsWith("GET SCHEMA ") || 
+			sql.toUpperCase().startsWith("LIST TABLES") || sql.toUpperCase().startsWith("LIST SYSTEM TABLES") || sql.toUpperCase().startsWith("LIST VIEWS") || 
+			sql.toUpperCase().startsWith("LIST INDICES ") || sql.toUpperCase().startsWith("LIST INDEXES ") || sql.toUpperCase().startsWith("GET SCHEMA") || 
 			sql.toUpperCase().startsWith("DESCRIBE VIEW ") || sql.toUpperCase().startsWith("DESCRIBE TABLE ") || sql.toUpperCase().startsWith("PLAN EXECUTE ") || 
-			sql.toUpperCase().startsWith("PLAN EXPLAIN ") || sql.toUpperCase().startsWith("LIST ALL QUERIES ") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES ") || 
+			sql.toUpperCase().startsWith("PLAN EXPLAIN ") || sql.toUpperCase().startsWith("LIST ALL QUERIES") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES") || 
 			sql.toUpperCase().startsWith("EXPORT TABLE ") || sql.toUpperCase().startsWith("EXPORT TRANSLATION ")) {
 				this.result = (XGResultSet) executeQuery(sql);
 				return true;
@@ -515,13 +515,13 @@ public class XGStatement implements Statement {
 		try{
 			if (startsWithIgnoreCase(sql, "EXPLAIN ")) {
 				return explainSQL(sql);
-			} else if (startsWithIgnoreCase(sql, "LIST TABLES ") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES ")){
-				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES "));
-			} else if (startsWithIgnoreCase(sql, "LIST VIEWS ")){
+			} else if (startsWithIgnoreCase(sql, "LIST TABLES") || startsWithIgnoreCase(sql, "LIST SYSTEM TABLES")){
+				return listTables(sql, startsWithIgnoreCase(sql, "LIST SYSTEM TABLES"));
+			} else if (startsWithIgnoreCase(sql, "LIST VIEWS")){
 				return listViews(sql);
 			} else if (startsWithIgnoreCase(sql, "LIST INDICES ") || startsWithIgnoreCase(sql, "LIST INDEXES ")){
 				return listIndexes(sql);
-			} else if (startsWithIgnoreCase(sql, "GET SCHEMA ")){
+			} else if (startsWithIgnoreCase(sql, "GET SCHEMA")){
 				return getSchema();
 			} else if(startsWithIgnoreCase(sql, "DESCRIBE TABLE ")){
 				return describeTable(sql);
@@ -531,9 +531,9 @@ public class XGStatement implements Statement {
 				return executePlanSQL(sql);
 			} else if(startsWithIgnoreCase(sql, "PLAN EXPLAIN ")){
 				return explainPlanSQL(sql);
-			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES ")){
+			} else if(startsWithIgnoreCase(sql, "LIST ALL QUERIES")){
 				return listAllQueries();
-			} else if(startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES ")){
+			} else if(startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES")){
 				return listAllCompletedQueries();
 			} else if(startsWithIgnoreCase(sql, "EXPORT TABLE ")){
 				return exportTableSQL(sql);
@@ -2073,12 +2073,12 @@ public class XGStatement implements Statement {
 		ClientWireProtocol.ExplainFormat format;
 		String sql = "";
 
-		if(startsWithIgnoreCase(cmd, "EXPLAIN JSON")){
+		if(startsWithIgnoreCase(cmd, "EXPLAIN JSON ")){
 			format = ClientWireProtocol.ExplainFormat.JSON;
-			sql = cmd.substring("EXPLAIN JSON".length()).trim();
+			sql = cmd.substring("EXPLAIN JSON ".length()).trim();
 		} else {
 			format = ClientWireProtocol.ExplainFormat.PROTO;
-			sql = cmd.substring("EXPLAIN".length()).trim();
+			sql = cmd.substring("EXPLAIN ".length()).trim();
 		}
 		String explainString = explain(sql, format);
 
