@@ -973,7 +973,7 @@ public class XGStatement implements Statement {
 		pos2Cols.put(23, "temp_disk_space_consumed");
 
 		cols2Types.put("user", "CHAR");
-		cols2Types.put("database", "CHAR");
+		cols2Types.put("database_id", "CHAR");
 		cols2Types.put("client_version", "CHAR");
 		cols2Types.put("client_ip", "CHAR");
 		cols2Types.put("sql", "CHAR");
@@ -987,9 +987,9 @@ public class XGStatement implements Statement {
 		cols2Types.put("timestamp_exec_start", "LONG");
 		cols2Types.put("time_exec_start", "CHAR");
 		cols2Types.put("uuid", "CHAR");
-		cols2Types.put("priority", "DOUBLE");
+		cols2Types.put("plan_priority", "DOUBLE");
 		cols2Types.put("cost_estimate", "DOUBLE");
-		cols2Types.put("parallelism", "INT");
+		cols2Types.put("plan_parallelism", "INT");
 		cols2Types.put("heuristic_cost", "DOUBLE");
 		cols2Types.put("pso_threshold", "LONG");
 		cols2Types.put("rows_returned", "LONG");
