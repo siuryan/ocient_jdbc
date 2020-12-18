@@ -14,151 +14,168 @@ public class XGDate extends Date {
   private static final long serialVersionUID = 4666058265622281223L;
 
   @Deprecated
-  public XGDate(int year, int month, int day) {
+  public XGDate(final int year, final int month, final int day) {
     super(UTC(year, month, day, 0, 0, 0));
   }
 
-  public XGDate(long date) {
+  public XGDate(final long date) {
     super(date);
   }
 
-  public XGDate(Date date) {
+  public XGDate(final Date date) {
     super(date.getTime());
   }
 
-  public XGDate(XGTimestamp ts) {
+  public XGDate(final XGTimestamp ts) {
     super(ts.getTime());
   }
 
-  public static Date valueOf(String s) {
+  public static Date valueOf(final String s) {
     return new XGDate(java.sql.Date.valueOf(s));
   }
 
-  public static Date valueOf(LocalDate date) {
+  public static Date valueOf(final LocalDate date) {
     return new XGDate(java.sql.Date.valueOf(date));
   }
 
   // Always returns //UTC string
+  @Override
   public String toString() {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
     return sdf.format(this);
   }
 
+  @Override
   public LocalDate toLocalDate() {
     return LocalDate.of(this.getYear() + 1900, this.getMonth() + 1, this.getDate());
   }
 
+  @Override
   public Instant toInstant() throws UnsupportedOperationException {
     throw new UnsupportedOperationException();
   }
 
   @Deprecated
-  public static long UTC(int year, int month, int date, int hrs, int min, int sec) {
-    GregorianCalendar cal = new GregorianCalendar(year + 1900, month, date, hrs, min, sec);
+  public static long UTC(
+      final int year,
+      final int month,
+      final int date,
+      final int hrs,
+      final int min,
+      final int sec) {
+    final GregorianCalendar cal = new GregorianCalendar(year + 1900, month, date, hrs, min, sec);
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     return cal.getTime().getTime();
   }
 
   @Deprecated
-  public static long parse(String s) {
+  public static long parse(final String s) {
     try {
-      DateFormat format = DateFormat.getDateInstance();
+      final DateFormat format = DateFormat.getDateInstance();
       format.setTimeZone(TimeZone.getDefault());
-      GregorianCalendar cal = new GregorianCalendar();
+      final GregorianCalendar cal = new GregorianCalendar();
       cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
       cal.setTimeZone(TimeZone.getDefault());
       format.setCalendar(cal);
-      java.util.Date date = format.parse(s);
+      final java.util.Date date = format.parse(s);
       return date.getTime();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return 0;
     }
   }
 
+  @Override
   @Deprecated
   public int getYear() {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this)) - 1900;
   }
 
+  @Override
   @Deprecated
-  public void setYear(int year) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setYear(final int year) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal = String.format("%04d", year + 1900) + current.substring(4);
+    final String current = sdf.format(this);
+    final String newVal = String.format("%04d", year + 1900) + current.substring(4);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getMonth() {
-    SimpleDateFormat sdf = new SimpleDateFormat("M");
+    final SimpleDateFormat sdf = new SimpleDateFormat("M");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this)) - 1;
   }
 
+  @Override
   @Deprecated
-  public void setMonth(int month) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setMonth(final int month) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal =
+    final String current = sdf.format(this);
+    final String newVal =
         current.substring(0, 5) + String.format("%02d", month + 1) + current.substring(7);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getDate() {
-    SimpleDateFormat sdf = new SimpleDateFormat("d");
+    final SimpleDateFormat sdf = new SimpleDateFormat("d");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this));
   }
 
+  @Override
   @Deprecated
-  public void setDate(int date) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setDate(final int date) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal = current.substring(0, 8) + String.format("%02d", date) + current.substring(10);
+    final String current = sdf.format(this);
+    final String newVal =
+        current.substring(0, 8) + String.format("%02d", date) + current.substring(10);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getDay() {
-    SimpleDateFormat sdf = new SimpleDateFormat("u");
+    final SimpleDateFormat sdf = new SimpleDateFormat("u");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
@@ -170,7 +187,8 @@ public class XGDate extends Date {
     return retval;
   }
 
-  public boolean equals(Object obj) {
+  @Override
+  public boolean equals(final Object obj) {
     if (obj instanceof java.util.Date) {
       return getTime() == ((java.util.Date) obj).getTime();
     }
@@ -178,28 +196,31 @@ public class XGDate extends Date {
     return false;
   }
 
+  @Override
   @Deprecated
   public String toLocaleString() {
-    DateFormat format = DateFormat.getDateInstance();
+    final DateFormat format = DateFormat.getDateInstance();
     format.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     format.setCalendar(cal);
     return format.format(this);
   }
 
+  @Override
   @Deprecated
   public String toGMTString() {
-    SimpleDateFormat sdf = new SimpleDateFormat("d MMM yyyy HH:mm:ss");
+    final SimpleDateFormat sdf = new SimpleDateFormat("d MMM yyyy HH:mm:ss");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
     return sdf.format(this) + " GMT";
   }
 
+  @Override
   @Deprecated
   public int getTimezoneOffset() {
     return (int)
@@ -214,7 +235,7 @@ public class XGDate extends Date {
             / (60 * 1000));
   }
 
-  public static Date from(Instant instant) {
+  public static Date from(final Instant instant) {
     return new XGDate(instant.toEpochMilli());
   }
 }

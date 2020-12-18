@@ -28,10 +28,10 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   }
 
   private void setCaseInsensitiveCols2Pos() {
-    caseInsensitiveCols2Pos = new HashMap<String, Integer>();
+    this.caseInsensitiveCols2Pos = new HashMap<String, Integer>();
 
-    for (final Map.Entry<String, Integer> entry : cols2Pos.entrySet()) {
-      caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
+    for (final Map.Entry<String, Integer> entry : this.cols2Pos.entrySet()) {
+      this.caseInsensitiveCols2Pos.put(entry.getKey().toLowerCase(), entry.getValue());
     }
   }
 
@@ -44,8 +44,8 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public String getColumnClassName(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnClassName()");
-    final String name = pos2Cols.get(column - 1);
-    final String type = cols2Types.get(name);
+    final String name = this.pos2Cols.get(column - 1);
+    final String type = this.cols2Types.get(name);
 
     if (type.equals("CHAR")) {
       return "java.lang.String";
@@ -90,14 +90,14 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public int getColumnCount() throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnCount()");
-    return cols2Pos.size();
+    return this.cols2Pos.size();
   }
 
   @Override
   public int getColumnDisplaySize(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnDisplaySize()");
-    final String name = pos2Cols.get(column - 1);
-    final String type = cols2Types.get(name);
+    final String name = this.pos2Cols.get(column - 1);
+    final String type = this.cols2Types.get(name);
     int retval = 0;
 
     if (type.equals("BYTE")) {
@@ -151,20 +151,20 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public String getColumnLabel(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnLabel()");
-    return pos2Cols.get(column - 1);
+    return this.pos2Cols.get(column - 1);
   }
 
   @Override
   public String getColumnName(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnName()");
-    return pos2Cols.get(column - 1);
+    return this.pos2Cols.get(column - 1);
   }
 
   @Override
   public int getColumnType(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnType()");
-    final String name = pos2Cols.get(column - 1);
-    final String type = cols2Types.get(name);
+    final String name = this.pos2Cols.get(column - 1);
+    final String type = this.cols2Types.get(name);
 
     if (type.equals("CHAR")) {
       return java.sql.Types.VARCHAR;
@@ -209,14 +209,14 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public String getColumnTypeName(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnTypeName()");
-    return cols2Types.get(pos2Cols.get(column - 1));
+    return this.cols2Types.get(this.pos2Cols.get(column - 1));
   }
 
   public int getPosition(final String name) throws Exception {
     LOGGER.log(Level.INFO, "Called getPosition()");
-    Integer retval = cols2Pos.get(name);
+    Integer retval = this.cols2Pos.get(name);
     if (retval == null) {
-      retval = caseInsensitiveCols2Pos.get(name.toLowerCase());
+      retval = this.caseInsensitiveCols2Pos.get(name.toLowerCase());
     }
 
     return retval;
@@ -225,8 +225,8 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public int getPrecision(final int column) throws SQLException {
     LOGGER.log(Level.INFO, "Called getPrecision()");
-    final String name = pos2Cols.get(column - 1);
-    final String type = cols2Types.get(name);
+    final String name = this.pos2Cols.get(column - 1);
+    final String type = this.cols2Types.get(name);
 
     if (type.equals("CHAR")) {
       return 128 * 1024;
@@ -351,7 +351,7 @@ public class XGResultSetMetaData implements ResultSetMetaData {
   @Override
   public String toString() {
     LOGGER.log(Level.INFO, "Called toString()");
-    return "Position -> column = " + pos2Cols + "\nColumn -> type = " + cols2Types;
+    return "Position -> column = " + this.pos2Cols + "\nColumn -> type = " + this.cols2Types;
   }
 
   @Override

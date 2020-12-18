@@ -66,7 +66,7 @@ public class CLI {
       if (cons == null) {
         echo = true;
       }
-      DefaultParser parser = new DefaultParser();
+      final DefaultParser parser = new DefaultParser();
       // Prevents \ from disappearing and \\ from converting to \.
       parser.setEscapeChars(null);
       terminal = TerminalBuilder.builder().system(true).build();
@@ -141,7 +141,7 @@ public class CLI {
             break;
           } else {
             // System.out.println("Current command text: '" + cmd + "'");
-            String line = reader.readLine("(cont)> ") + " ";
+            final String line = reader.readLine("(cont)> ") + " ";
             if (scrubCmd) {
               cmd += scrubCommand(line);
             } else {
@@ -157,12 +157,12 @@ public class CLI {
     }
   }
 
-  private static String scrubCommand(String cmd) {
+  private static String scrubCommand(final String cmd) {
     final StringBuilder out = new StringBuilder(256);
     int i = 0;
-    int length = cmd.length();
+    final int length = cmd.length();
     while (i < length) {
-      char c = cmd.charAt(i);
+      final char c = cmd.charAt(i);
       if (!comment) {
         if (quote == '\0' && (i + 1) != length) {
           if (c == '-' && cmd.charAt(i + 1) == '-') {
@@ -189,7 +189,7 @@ public class CLI {
     return out.toString();
   }
 
-  private static boolean processCommand(String cmd) {
+  private static boolean processCommand(final String cmd) {
     boolean quit = false;
     // System.out.println("processCommand(" + cmd + ")");
     if (cmd.equals("")) {
@@ -278,7 +278,7 @@ public class CLI {
 
   private static boolean startsWithIgnoreCase(final String in, final String cmp) {
     int firstNonParentheses = 0;
-    int len = in.length();
+    final int len = in.length();
     while (firstNonParentheses < len && in.charAt(firstNonParentheses) == '(') {
       firstNonParentheses++;
     }
@@ -304,7 +304,7 @@ public class CLI {
   // (.) token. Reluctant.
   // Do not insert multiple regexes for tokens of the same name (or "q0" + another
   // name) into a single pattern.
-  private static String tk(String name) {
+  private static String tk(final String name) {
     return "(?<q0" + name + ">\"?)(?<" + name + ">(\\w+?|(?<=\").+?(?=\")))\\k<q0" + name + ">";
   }
 
@@ -318,7 +318,7 @@ public class CLI {
   // Get a token from its generated regex according to SQL case-sensitivity rules
   // (sensitive iff quoted).
   // Do not call on a matcher that has not yet called matches().
-  private static String getTk(Matcher m, String name, String def) {
+  private static String getTk(final Matcher m, final String name, final String def) {
     if (m.group(name) == null) {
       return def;
     }
@@ -359,7 +359,7 @@ public class CLI {
       final String preurl = m.group("preurl");
       final String posturl = m.group("posturl");
 
-      Exception lastException = null;
+      final Exception lastException = null;
 
       final String url = preurl + hosts + posturl;
       try {
@@ -425,7 +425,7 @@ public class CLI {
       e.printStackTrace();
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -452,7 +452,7 @@ public class CLI {
       return;
     }
 
-    boolean force = cmd.toLowerCase().endsWith("on");
+    final boolean force = cmd.toLowerCase().endsWith("on");
     try {
       ((XGConnection) conn).forceExternal(force);
     } catch (final Exception e) {
@@ -466,7 +466,7 @@ public class CLI {
   private static Pattern listSystemTablesSyntax =
       Pattern.compile("list\\s+system\\s+tables(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
 
-  private static void listTables(final String cmd, boolean isSystemTables) {
+  private static void listTables(final String cmd, final boolean isSystemTables) {
     long start = 0;
     long end = 0;
     if (!isConnected()) {
@@ -495,7 +495,7 @@ public class CLI {
         if (m.group("verbose") != null) {
           printResultSet(rs, meta);
         } else {
-          ArrayList<String> tableNames = new ArrayList<>();
+          final ArrayList<String> tableNames = new ArrayList<>();
           while (rs.next()) {
             tableNames.add(rs.getString("TABLE_SCHEM") + "." + rs.getString("TABLE_NAME"));
           }
@@ -503,7 +503,7 @@ public class CLI {
             // TODO: This is a lexicographic sort. Clients ordering their tables by number
             // will not see the ordering they expect.
             Collections.sort(tableNames);
-            for (String tableName : tableNames) {
+            for (final String tableName : tableNames) {
               System.out.println(tableName);
             }
           }
@@ -521,7 +521,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
 
       System.out.println("Error: " + e.getMessage());
@@ -621,7 +621,7 @@ public class CLI {
         if (m.group("verbose") != null) {
           printResultSet(rs, meta);
         } else {
-          ArrayList<String> viewNames = new ArrayList<>();
+          final ArrayList<String> viewNames = new ArrayList<>();
           while (rs.next()) {
             viewNames.add(rs.getString("VIEW_SCHEM") + "." + rs.getString("VIEW_NAME"));
           }
@@ -629,7 +629,7 @@ public class CLI {
             // TODO: This is a lexicographic sort. Clients ordering their tables by number
             // will not see the ordering they expect.
             Collections.sort(viewNames);
-            for (String viewName : viewNames) {
+            for (final String viewName : viewNames) {
               System.out.println(viewName);
             }
           }
@@ -647,7 +647,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
 
       System.out.println("Error: " + e.getMessage());
@@ -693,7 +693,7 @@ public class CLI {
           while (rs.next()) {
             line.append(rs.getString("COLUMN_NAME"));
             line.append(" (");
-            String type =
+            final String type =
                 rs.getString("TYPE_NAME").replace("SHORT", "SMALLINT").replace("LONG", "BIGINT");
 
             line.append(type);
@@ -735,7 +735,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
 
       System.out.println("Error: " + e.getMessage());
@@ -796,7 +796,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
 
       System.out.println("Error: " + e.getMessage());
@@ -843,7 +843,7 @@ public class CLI {
           printResultSet(rs, meta);
         } else {
           final StringBuilder line = new StringBuilder(1024);
-          ArrayList<String> indexNames = new ArrayList<>();
+          final ArrayList<String> indexNames = new ArrayList<>();
           String currIndex = "";
           while (rs.next()) {
             final String nextIndex = rs.getString("INDEX_NAME");
@@ -870,7 +870,7 @@ public class CLI {
             // TODO: This is a lexicographic sort. Clients ordering their tables by number
             // will not see the ordering they expect.
             Collections.sort(indexNames);
-            for (String indexName : indexNames) {
+            for (final String indexName : indexNames) {
               System.out.println(indexName);
             }
           }
@@ -888,7 +888,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
 
       System.out.println("Error: " + e.getMessage());
@@ -926,7 +926,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -962,7 +962,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -977,7 +977,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
-    String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
+    final String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
 
     try {
       start = System.currentTimeMillis();
@@ -1001,7 +1001,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -1086,7 +1086,7 @@ public class CLI {
 
   private static void setMaxRows(final String cmd) {
     long start = 0;
-    long end = 0;
+    final long end = 0;
     if (!isConnected()) {
       System.out.println("No database connection exists");
       return;
@@ -1164,7 +1164,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -1198,7 +1198,7 @@ public class CLI {
     } catch (final Exception e) {
       try {
         rs.close();
-      } catch (Exception f) {
+      } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
     }
@@ -1228,7 +1228,7 @@ public class CLI {
         "database",
         "sql");
     System.out.println(new String(new char[170]).replace("\0", "-"));
-    for (SysQueriesRow row : queries) {
+    for (final SysQueriesRow row : queries) {
       System.out.format(
           "%-40s%-15s%-15s%-20s%-20s%-15s%-20s%-15s%s\n",
           row.getQueryId(),
@@ -1265,7 +1265,7 @@ public class CLI {
     }
   }
 
-  private static boolean sourceCommands(BufferedReader reader) throws IOException {
+  private static boolean sourceCommands(final BufferedReader reader) throws IOException {
     boolean quit = false;
 
     try {
@@ -1291,7 +1291,7 @@ public class CLI {
             if (trace && !endsWithIgnoreCase(cmd, " trace")) cmd = cmd + " trace";
             break;
           } else {
-            String cont = reader.readLine();
+            final String cont = reader.readLine();
             if (cont == null) return quit;
             line = cont;
             cmd += scrubCommand(line + " ");
@@ -1311,7 +1311,7 @@ public class CLI {
 
     boolean quit = false;
 
-    String[] tokens = cmd.split("\\s+");
+    final String[] tokens = cmd.split("\\s+");
     if (1 == tokens.length) {
       System.out.println(tokens[0] + " error: filename missing");
       return quit;
@@ -1322,30 +1322,30 @@ public class CLI {
       return quit;
     }
 
-    File file = new File(tokens[1]);
-    boolean added = sources.add(file);
+    final File file = new File(tokens[1]);
+    final boolean added = sources.add(file);
     if (!added) {
       System.out.println(tokens[0] + " error: " + file + " (source file already open)");
       return quit;
     }
 
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
 
     try {
-      Reader reader = new FileReader(file);
-      BufferedReader bufferedReader = new BufferedReader(reader);
+      final Reader reader = new FileReader(file);
+      final BufferedReader bufferedReader = new BufferedReader(reader);
 
-      char oldQuote = quote;
+      final char oldQuote = quote;
       quote = '\0';
 
-      boolean oldComment = comment;
+      final boolean oldComment = comment;
       comment = false;
 
       if (3 == tokens.length) System.out.println(tokens[0] + ": Sourcing " + tokens[1]);
 
       try {
         quit = sourceCommands(bufferedReader);
-      } catch (Throwable e) {
+      } catch (final Throwable e) {
       }
 
       if (3 == tokens.length) System.out.println(tokens[0] + ": Closing " + tokens[1]);
@@ -1355,23 +1355,23 @@ public class CLI {
 
       bufferedReader.close();
       reader.close();
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       System.out.println(tokens[0] + " error: " + e.getMessage());
     }
 
     printTime(start, System.currentTimeMillis());
 
-    boolean removed = sources.remove(file);
+    final boolean removed = sources.remove(file);
 
     return quit;
   }
 
   private static final char[] hexArray = "0123456789abcdef".toCharArray();
 
-  private static String bytesToHex(byte[] bytes) {
-    char[] hexChars = new char[bytes.length * 2];
+  private static String bytesToHex(final byte[] bytes) {
+    final char[] hexChars = new char[bytes.length * 2];
     for (int j = 0; j < bytes.length; j++) {
-      int v = bytes[j] & 0xFF;
+      final int v = bytes[j] & 0xFF;
       hexChars[j * 2] = hexArray[v >>> 4];
       hexChars[j * 2 + 1] = hexArray[v & 0x0F];
     }
@@ -1458,9 +1458,9 @@ public class CLI {
 
   private static void outputResultSet(final ResultSet rs, final ResultSetMetaData meta)
       throws Exception {
-    FileOutputStream out = new FileOutputStream(outputCSVFile);
+    final FileOutputStream out = new FileOutputStream(outputCSVFile);
     for (int i = 1; i <= meta.getColumnCount(); i++) {
-      String colType = meta.getColumnTypeName(i);
+      final String colType = meta.getColumnTypeName(i);
       if (colType != null) {
         out.write(colType.getBytes());
       }
@@ -1468,7 +1468,7 @@ public class CLI {
     }
     out.write('\n');
     for (int i = 1; i <= meta.getColumnCount(); i++) {
-      String colType = meta.getColumnLabel(i);
+      final String colType = meta.getColumnLabel(i);
       if (colType != null) {
         out.write(colType.getBytes());
       }
@@ -1479,7 +1479,7 @@ public class CLI {
     while (rs.next()) {
       for (int i = 1; i <= meta.getColumnCount(); i++) {
         out.write('"');
-        Object o = rs.getObject(i);
+        final Object o = rs.getObject(i);
         String valueString = "NULL";
         if (rs.wasNull()) {
           valueString = "NULL";
@@ -1521,7 +1521,7 @@ public class CLI {
     }
   }
 
-  private static void printTime(long start, long end) {
+  private static void printTime(final long start, final long end) {
     if (timing) {
       System.out.println("\nCommand took " + (end - start) / 1000.0 + " seconds");
     }

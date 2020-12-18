@@ -99,21 +99,21 @@ public class XGStatement implements Statement {
   private volatile AtomicReference<Thread> runningQueryThread = new AtomicReference<Thread>(null);
   private volatile AtomicBoolean queryCancelled = new AtomicBoolean(false);
 
-  public void setQueryCancelled(boolean b) {
-    queryCancelled.set(b);
+  public void setQueryCancelled(final boolean b) {
+    this.queryCancelled.set(b);
   }
 
-  public void setRunningQueryThread(Thread t) {
-    runningQueryThread.set(t);
+  public void setRunningQueryThread(final Thread t) {
+    this.runningQueryThread.set(t);
   }
 
-  public void passUpCancel(boolean clearCancelFlag) throws SQLException {
+  public void passUpCancel(final boolean clearCancelFlag) throws SQLException {
     synchronized (this) {
-      boolean cancelled = queryCancelled.get();
+      final boolean cancelled = this.queryCancelled.get();
       if (clearCancelFlag) {
-        queryCancelled.set(false);
+        this.queryCancelled.set(false);
       }
-      if (cancelled || conn.isClosed()) {
+      if (cancelled || this.conn.isClosed()) {
         LOGGER.log(Level.INFO, "Throwing OK - query cancelled");
         throw SQLStates.OK.cloneAndSpecify("Query cancelled");
       }
@@ -210,7 +210,7 @@ public class XGStatement implements Statement {
   }
 
   public Optional<String> getQueryId() {
-    return Optional.ofNullable(queryId).filter(s -> !s.isEmpty());
+    return Optional.ofNullable(this.queryId).filter(s -> !s.isEmpty());
   }
 
   /** Same as {@link Runnable} but can throw an exception */
@@ -229,7 +229,7 @@ public class XGStatement implements Statement {
    * @throws SQLTimeoutException if the timeout is reached before the call completes
    */
   protected void startTask(
-      ExceptionalRunnable task, final Optional<String> optQueryId, final long timeoutMillis)
+      final ExceptionalRunnable task, final Optional<String> optQueryId, final long timeoutMillis)
       throws Exception {
     Preconditions.checkArgument(timeoutMillis >= 0L);
 
@@ -281,15 +281,15 @@ public class XGStatement implements Statement {
               // on it (from the timed out request). We could add sequence numbers to our
               // protocol but that's a heavy handed solution. The easist thing to do here
               // is to tear down our current connection.
-              conn.reconnect();
+              XGStatement.this.conn.reconnect();
 
               // set the result set to null. We forego closing it because the server sql node
               // should clean up all resources related to this query.
-              conn.rs = null;
+              XGStatement.this.conn.rs = null;
 
               // send the kill query message to the server
               XGStatement.this.killQuery(optQueryId.get());
-            } catch (Exception e) {
+            } catch (final Exception e) {
               LOGGER.log(
                   Level.WARNING,
                   String.format(
@@ -310,7 +310,7 @@ public class XGStatement implements Statement {
           }
         };
 
-    conn.addTimeout(killQueryTask, timeoutMillis);
+    this.conn.addTimeout(killQueryTask, timeoutMillis);
 
     try {
       // run the task
@@ -320,13 +320,14 @@ public class XGStatement implements Statement {
       if (!killQueryTask.cancel()) {
         // this is ugly, but we're within the context of a synchronous framework so
         // whatever
-        SQLException e = killFuture.join(); // wait for the kill query response (don't interrupt)
+        final SQLException e =
+            killFuture.join(); // wait for the kill query response (don't interrupt)
         Thread.interrupted(); // clear interrupted condition
         throw e;
       } else {
         // Removes our canceled task (any those from any other connection) from the
         // timer task queue
-        conn.purgeTimeoutTasks();
+        this.conn.purgeTimeoutTasks();
       }
     }
   }
@@ -351,14 +352,15 @@ public class XGStatement implements Statement {
     synchronized (this) {
       // Only statements associated to a query may be cancelled
       // No need to cancel queries twice
-      if (queryId == null || queryCancelled.get()) {
+      if (this.queryId == null || this.queryCancelled.get()) {
         LOGGER.log(Level.INFO, "Cancel complete");
         return;
       }
       setQueryCancelled(true);
-      if (runningQueryThread.get() != null && runningQueryThread.get() != Thread.currentThread()) {
+      if (this.runningQueryThread.get() != null
+          && this.runningQueryThread.get() != Thread.currentThread()) {
         LOGGER.log(Level.WARNING, "Calling interrupt() on the running thread due to cancel()");
-        runningQueryThread.get().interrupt();
+        this.runningQueryThread.get().interrupt();
         needsReconnect = true;
       }
     }
@@ -368,10 +370,10 @@ public class XGStatement implements Statement {
     if (needsReconnect) {
       LOGGER.log(Level.INFO, "Cancel is initiating reconnect");
       try {
-        conn.reconnect();
-        conn.rs = null;
+        this.conn.reconnect();
+        this.conn.rs = null;
 
-        killQuery(queryId);
+        killQuery(this.queryId);
       } catch (IOException | SQLException e) {
         LOGGER.log(
             Level.SEVERE,
@@ -391,25 +393,25 @@ public class XGStatement implements Statement {
   @Override
   public void clearWarnings() throws SQLException {
     LOGGER.log(Level.INFO, "Called clearWarnings()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "clearWarnings() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    warnings.clear();
+    this.warnings.clear();
   }
 
   @Override
   public void close() throws SQLException {
     LOGGER.log(Level.INFO, "Called close()");
     if (this.result != null) {
-      result.close();
+      this.result.close();
     }
 
     dissociateQuery();
-    result = null;
-    closed = true;
-    conn.close(); // Since it's a clone, close this too.
+    this.result = null;
+    this.closed = true;
+    this.conn.close(); // Since it's a clone, close this too.
   }
 
   @Override
@@ -428,7 +430,7 @@ public class XGStatement implements Statement {
     while (sql.startsWith("--") || sql.startsWith("/*")) {
       if (sql.startsWith("--")) {
         // Single line comment
-        int index = sql.indexOf('\n');
+        final int index = sql.indexOf('\n');
 
         if (index == -1) {
           sql = "";
@@ -439,7 +441,7 @@ public class XGStatement implements Statement {
 
       if (sql.startsWith("/*")) {
         // Multi-line comment
-        int index = sql.indexOf("*/");
+        final int index = sql.indexOf("*/");
         if (index == -1) {
           sql = "";
         } else {
@@ -473,7 +475,7 @@ public class XGStatement implements Statement {
         this.executeUpdate(sql);
         return false;
       }
-    } catch (SQLException sqle) {
+    } catch (final SQLException sqle) {
       throw sqle;
     } finally {
       setRunningQueryThread(null);
@@ -507,7 +509,7 @@ public class XGStatement implements Statement {
 
   private static boolean startsWithIgnoreCase(final String in, final String cmp) {
     int firstNonParentheses = 0;
-    int len = in.length();
+    final int len = in.length();
     while (firstNonParentheses < len && in.charAt(firstNonParentheses) == '(') {
       firstNonParentheses++;
     }
@@ -562,33 +564,34 @@ public class XGStatement implements Statement {
       } else if (startsWithIgnoreCase(sql, "EXPORT TRANSLATION ")) {
         return exportTranslationSQL(sql);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw SQLStates.newGenericException(e);
     }
 
     // Handle maxRows
-    if (maxRows != 0) {
+    if (this.maxRows != 0) {
       sql =
           "WITH THE_USER_QUERY_TO_ADD_A_LIMIT_TO as ("
               + sql
               + ") SELECT * FROM THE_USER_QUERY_TO_ADD_A_LIMIT_TO LIMIT "
-              + maxRows;
+              + this.maxRows;
     }
 
     LOGGER.log(Level.INFO, String.format("Executing query: %s", sql));
     passUpCancel(true);
     sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false, Optional.empty());
     try {
-      if (numClientThreads == 0) {
-        numClientThreads = 1;
-      } else if (numClientThreads > Runtime.getRuntime().availableProcessors()) {
-        numClientThreads = Runtime.getRuntime().availableProcessors();
+      if (this.numClientThreads == 0) {
+        this.numClientThreads = 1;
+      } else if (this.numClientThreads > Runtime.getRuntime().availableProcessors()) {
+        this.numClientThreads = Runtime.getRuntime().availableProcessors();
       }
 
       LOGGER.log(
           Level.INFO,
-          "Creating result set for query with " + numClientThreads + " result set threads");
-      result = conn.rs = new XGResultSet(conn, fetchSize, this, numClientThreads);
+          "Creating result set for query with " + this.numClientThreads + " result set threads");
+      this.result =
+          this.conn.rs = new XGResultSet(this.conn, this.fetchSize, this, this.numClientThreads);
     } catch (final Exception e) {
       LOGGER.log(
           Level.WARNING,
@@ -612,7 +615,7 @@ public class XGStatement implements Statement {
           "Execute query resulted in an error. Reconnected but not rerunning query");
     }
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   @Override
@@ -627,7 +630,7 @@ public class XGStatement implements Statement {
       ending = ending.trim();
       if (ending.equals("ON") || ending.equals("OFF")) {
         try {
-          conn.setPSO(ending.equals("ON"));
+          this.conn.setPSO(ending.equals("ON"));
         } catch (final Exception e) {
           if (e instanceof SQLException) {
             throw (SQLException) e;
@@ -637,9 +640,9 @@ public class XGStatement implements Statement {
         }
       } else {
         try {
-          long threshold = Long.parseLong(ending);
+          final long threshold = Long.parseLong(ending);
           try {
-            conn.setPSO(threshold);
+            this.conn.setPSO(threshold);
           } catch (final Exception e) {
             if (e instanceof SQLException) {
               throw (SQLException) e;
@@ -689,7 +692,7 @@ public class XGStatement implements Statement {
   }
 
   private boolean shouldDeprecatedExplain() {
-    return conn.getServerVersion().compareTo("7.0.1") == -1;
+    return this.conn.getServerVersion().compareTo("7.0.1") == -1;
   }
 
   private String planProtoToString(
@@ -700,7 +703,7 @@ public class XGStatement implements Statement {
     {
       try {
         return JsonFormat.printer().print(plan);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw SQLStates.newGenericException(e);
       }
     }
@@ -724,9 +727,9 @@ public class XGStatement implements Statement {
       return explainDeprecated(sql, format);
     }
 
-    Function<Object, Void> typeSetter =
-        (Object builder) -> {
-          ClientWireProtocol.ExecuteExplain.Builder typedBuilder =
+    final Function<Object, Void> typeSetter =
+        (final Object builder) -> {
+          final ClientWireProtocol.ExecuteExplain.Builder typedBuilder =
               (ClientWireProtocol.ExecuteExplain.Builder) builder;
           typedBuilder.setFormat(format);
           return null;
@@ -757,9 +760,9 @@ public class XGStatement implements Statement {
       return explainPlanDeprecated(plan, format);
     }
 
-    Function<Object, Void> typeSetter =
-        (Object builder) -> {
-          ClientWireProtocol.ExplainPlan.Builder typedBuilder =
+    final Function<Object, Void> typeSetter =
+        (final Object builder) -> {
+          final ClientWireProtocol.ExplainPlan.Builder typedBuilder =
               (ClientWireProtocol.ExplainPlan.Builder) builder;
           typedBuilder.setFormat(format);
           return null;
@@ -776,7 +779,7 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "executePlan()");
     sendAndReceive(plan, Request.RequestType.EXECUTE_PLAN, 0, false, Optional.empty());
     try {
-      result = conn.rs = new XGResultSet(conn, fetchSize, this);
+      this.result = this.conn.rs = new XGResultSet(this.conn, this.fetchSize, this);
     } catch (final Exception e) {
       passUpCancel(false);
       try {
@@ -790,14 +793,14 @@ public class XGStatement implements Statement {
       return executePlan(plan);
     }
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   public ResultSet executeInlinePlan(final String plan) throws SQLException {
     LOGGER.log(Level.INFO, "executeInlinePlan()");
     sendAndReceive(plan, Request.RequestType.EXECUTE_INLINE_PLAN, 0, false, Optional.empty());
     try {
-      result = conn.rs = new XGResultSet(conn, fetchSize, this);
+      this.result = this.conn.rs = new XGResultSet(this.conn, this.fetchSize, this);
     } catch (final Exception e) {
       passUpCancel(false);
       try {
@@ -811,7 +814,7 @@ public class XGStatement implements Statement {
       return executePlan(plan);
     }
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   // used by CLI
@@ -819,17 +822,17 @@ public class XGStatement implements Statement {
     final ClientWireProtocol.ListPlanResponse.Builder er =
         (ClientWireProtocol.ListPlanResponse.Builder)
             sendAndReceive("", Request.RequestType.LIST_PLAN, 0, false, Optional.empty());
-    ArrayList<String> planNames = new ArrayList<String>(er.getPlanNameCount());
+    final ArrayList<String> planNames = new ArrayList<String>(er.getPlanNameCount());
     for (int i = 0; i < er.getPlanNameCount(); ++i) planNames.add(er.getPlanName(i));
 
     return planNames;
   }
 
   // used by CLI
-  public void cancelQuery(String uuid) throws SQLException {
+  public void cancelQuery(final String uuid) throws SQLException {
     try {
       UUID.fromString(uuid);
-    } catch (IllegalArgumentException e) {
+    } catch (final IllegalArgumentException e) {
       throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(String.format("Invalid uuid string: %s", uuid));
     }
     final ClientWireProtocol.CancelQueryResponse.Builder er =
@@ -838,10 +841,10 @@ public class XGStatement implements Statement {
     return;
   }
 
-  public void killQuery(String uuid) throws SQLException {
+  public void killQuery(final String uuid) throws SQLException {
     try {
       UUID.fromString(uuid);
-    } catch (IllegalArgumentException e) {
+    } catch (final IllegalArgumentException e) {
       throw SQLStates.SYNTAX_ERROR.cloneAndSpecify(String.format("Invalid uuid string: %s", uuid));
     }
     final ClientWireProtocol.KillQueryResponse.Builder er =
@@ -856,10 +859,10 @@ public class XGStatement implements Statement {
             sendAndReceive("", Request.RequestType.SYSTEM_WIDE_QUERIES, 0, false, Optional.empty());
 
     // Manufacture the result set.
-    ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
+    final ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
     for (int i = 0; i < er.getRowsCount(); i++) {
-      SysQueriesRow row = er.getRows(i);
-      ArrayList<Object> newRow = new ArrayList<>();
+      final SysQueriesRow row = er.getRows(i);
+      final ArrayList<Object> newRow = new ArrayList<>();
       newRow.add(row.getQueryId());
       newRow.add(row.getUserid());
       newRow.add(row.getImportance());
@@ -871,11 +874,11 @@ public class XGStatement implements Statement {
       newRow.add(row.getSqlText());
       rs.add(newRow);
     }
-    result = conn.rs = new XGResultSet(conn, rs, this);
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
     // Map the table metadata
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("query_id", 0);
     cols2Pos.put("user", 1);
     cols2Pos.put("importance", 2);
@@ -906,12 +909,12 @@ public class XGStatement implements Statement {
     cols2Types.put("database", "CHAR");
     cols2Types.put("sql", "CHAR");
 
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   private ResultSet listAllCompletedQueries() throws SQLException {
@@ -921,10 +924,10 @@ public class XGStatement implements Statement {
                 "", Request.RequestType.SYSTEM_WIDE_COMPLETED_QUERIES, 0, false, Optional.empty());
 
     // Manufacture the result set.
-    ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
+    final ArrayList<Object> rs = new ArrayList<>(er.getRowsCount());
     for (int i = 0; i < er.getRowsCount(); i++) {
-      CompletedQueriesRow row = er.getRows(i);
-      ArrayList<Object> newRow = new ArrayList<>();
+      final CompletedQueriesRow row = er.getRows(i);
+      final ArrayList<Object> newRow = new ArrayList<>();
       newRow.add(row.getUser());
       if (row.hasDatabaseId()) {
         newRow.add(row.getDatabaseId().getValue());
@@ -955,11 +958,11 @@ public class XGStatement implements Statement {
       newRow.add(row.getTempDiskSpaceConsumed());
       rs.add(newRow);
     }
-    result = conn.rs = new XGResultSet(conn, rs, this);
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
     // Map the table metadata
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
 
     cols2Pos.put("user", 0);
     cols2Pos.put("database_id", 1);
@@ -1036,12 +1039,12 @@ public class XGStatement implements Statement {
     cols2Types.put("runtime", "LONG");
     cols2Types.put("temp_disk_space_consumed", "LONG");
 
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   // used by CLI
@@ -1069,7 +1072,7 @@ public class XGStatement implements Statement {
       throws SQLException {
     LOGGER.log(Level.INFO, "Entered fetchSystemMetadata()");
     clearWarnings();
-    if (conn.rs != null && !conn.rs.isClosed()) {
+    if (this.conn.rs != null && !this.conn.rs.isClosed()) {
       throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
     }
 
@@ -1105,9 +1108,9 @@ public class XGStatement implements Statement {
       final ClientWireProtocol.FetchSystemMetadataResponse.Builder br =
           ClientWireProtocol.FetchSystemMetadataResponse.newBuilder();
       try {
-        conn.out.write(intToBytes(wrapper.getSerializedSize()));
-        wrapper.writeTo(conn.out);
-        conn.out.flush();
+        this.conn.out.write(intToBytes(wrapper.getSerializedSize()));
+        wrapper.writeTo(this.conn.out);
+        this.conn.out.flush();
 
         // get confirmation
         final int length = getLength();
@@ -1155,16 +1158,16 @@ public class XGStatement implements Statement {
       final boolean test)
       throws SQLException {
     try {
-      conn.rs =
+      this.conn.rs =
           new XGResultSet(
-              conn,
-              fetchSize,
+              this.conn,
+              this.fetchSize,
               this,
               fetchSystemMetadata(call, schema, table, col, test).getResultSetVal());
       // DatabaseMetaData won't pass on the statement, only the result set,
       // so save any warnings there
-      conn.rs.addWarnings(warnings);
-      result = conn.rs;
+      this.conn.rs.addWarnings(this.warnings);
+      this.result = this.conn.rs;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "fetchSystemMetadataResultSet: ", e);
       passUpCancel(false);
@@ -1180,7 +1183,7 @@ public class XGStatement implements Statement {
       return fetchSystemMetadataResultSet(call, schema, table, col, test);
     }
     this.updateCount = -1;
-    return result;
+    return this.result;
   }
 
   public String fetchSystemMetadataString(final FetchSystemMetadata.SystemMetadataCall call)
@@ -1191,18 +1194,18 @@ public class XGStatement implements Statement {
   @Override
   public Connection getConnection() throws SQLException {
     LOGGER.log(Level.INFO, "Called getConnection()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getConnection() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return conn;
+    return this.conn;
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
     LOGGER.log(Level.INFO, "Called getFetchDirection()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1213,12 +1216,12 @@ public class XGStatement implements Statement {
   @Override
   public int getFetchSize() throws SQLException {
     LOGGER.log(Level.INFO, "Called getFetchSize()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return fetchSize;
+    return this.fetchSize;
   }
 
   @Override
@@ -1231,7 +1234,7 @@ public class XGStatement implements Statement {
     int count = 4;
     final byte[] data = new byte[4];
     while (count > 0) {
-      final int temp = conn.in.read(data, 4 - count, count);
+      final int temp = this.conn.in.read(data, 4 - count, count);
       if (temp == -1) {
         throw SQLStates.UNEXPECTED_EOF.clone();
       }
@@ -1245,7 +1248,7 @@ public class XGStatement implements Statement {
   @Override
   public int getMaxFieldSize() throws SQLException {
     LOGGER.log(Level.INFO, "Called getMaxFieldSize()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getMaxFieldSize() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1255,24 +1258,24 @@ public class XGStatement implements Statement {
   @Override
   public int getMaxRows() throws SQLException {
     LOGGER.log(Level.INFO, "Called getMaxRows()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getMaxRows() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return maxRows;
+    return this.maxRows;
   }
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getMoreResults() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    if (result != null) {
-      result.close();
-      result = null;
+    if (this.result != null) {
+      this.result.close();
+      this.result = null;
       dissociateQuery();
     }
 
@@ -1288,33 +1291,33 @@ public class XGStatement implements Statement {
   @Override
   public int getQueryTimeout() throws SQLException {
     LOGGER.log(Level.INFO, "Called getQueryTimeout()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getQueryTimeout() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return Math.toIntExact((int) (timeoutMillis / 1000));
+    return Math.toIntExact((int) (this.timeoutMillis / 1000));
   }
 
   protected long getQueryTimeoutMillis() {
-    return timeoutMillis;
+    return this.timeoutMillis;
   }
 
   @Override
   public ResultSet getResultSet() throws SQLException {
     LOGGER.log(Level.INFO, "Called getResultSet()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getResultSet() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return result;
+    return this.result;
   }
 
   @Override
   public int getResultSetConcurrency() throws SQLException {
     LOGGER.log(Level.INFO, "Called getResultSetConcurrency()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getResultSetConcurrency() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1325,7 +1328,7 @@ public class XGStatement implements Statement {
   @Override
   public int getResultSetHoldability() throws SQLException {
     LOGGER.log(Level.INFO, "Called getResultSetHoldability()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getResultSetHoldability() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1336,7 +1339,7 @@ public class XGStatement implements Statement {
   @Override
   public int getResultSetType() throws SQLException {
     LOGGER.log(Level.INFO, "Called getResultSetType()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getResultSetType() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1347,33 +1350,33 @@ public class XGStatement implements Statement {
   @Override
   public int getUpdateCount() throws SQLException {
     LOGGER.log(Level.INFO, "Called getUpdateCount()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "getUpdateCount() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return updateCount;
+    return this.updateCount;
   }
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
     LOGGER.log(Level.INFO, "Called getWarnings()");
-    if (closed) {
+    if (this.closed) {
 
       LOGGER.log(Level.WARNING, "getWarnings() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    if (warnings.size() == 0) {
+    if (this.warnings.size() == 0) {
       return null;
     }
 
-    final SQLWarning retval = warnings.get(0);
+    final SQLWarning retval = this.warnings.get(0);
     SQLWarning current = retval;
     int i = 1;
-    while (i < warnings.size()) {
-      current.setNextWarning(warnings.get(i));
-      current = warnings.get(i);
+    while (i < this.warnings.size()) {
+      current.setNextWarning(this.warnings.get(i));
+      current = this.warnings.get(i);
       i++;
     }
 
@@ -1383,19 +1386,19 @@ public class XGStatement implements Statement {
   @Override
   public boolean isClosed() throws SQLException {
     LOGGER.log(Level.INFO, "Called isClosed()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.INFO, "Returning true from isClosed()");
     } else {
       LOGGER.log(Level.INFO, "Returning false from isClosed()");
     }
 
-    return closed;
+    return this.closed;
   }
 
   @Override
   public boolean isCloseOnCompletion() throws SQLException {
     LOGGER.log(Level.INFO, "Called isCloseOnCompletion()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "isCloseOnCompletion() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1406,7 +1409,7 @@ public class XGStatement implements Statement {
   @Override
   public boolean isPoolable() throws SQLException {
     LOGGER.log(Level.INFO, "Called isPoolable()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "isPoolable() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1438,7 +1441,7 @@ public class XGStatement implements Statement {
       final String reason = response.getReason();
       final String sqlState = response.getSqlState();
       final int code = response.getVendorCode();
-      warnings.add(new SQLWarning(reason, sqlState, code));
+      this.warnings.add(new SQLWarning(reason, sqlState, code));
     }
   }
 
@@ -1446,7 +1449,7 @@ public class XGStatement implements Statement {
     int count = 0;
     final int size = bytes.length;
     while (count < size) {
-      final int temp = conn.in.read(bytes, count, bytes.length - count);
+      final int temp = this.conn.in.read(bytes, count, bytes.length - count);
       if (temp == -1) {
         throw SQLStates.UNEXPECTED_EOF.clone();
       } else {
@@ -1458,15 +1461,15 @@ public class XGStatement implements Statement {
   }
 
   private void reconnect() throws IOException, SQLException {
-    conn.reconnect();
+    this.conn.reconnect();
     return;
   }
 
-  private void redirect(final String host, final int port, boolean shouldRequestVersion)
+  private void redirect(final String host, final int port, final boolean shouldRequestVersion)
       throws IOException, SQLException {
-    conn.redirect(host, port, shouldRequestVersion);
-    oneShotForce = true;
-    conn.clearOneShotForce();
+    this.conn.redirect(host, port, shouldRequestVersion);
+    this.oneShotForce = true;
+    this.conn.clearOneShotForce();
     return;
   }
 
@@ -1479,7 +1482,7 @@ public class XGStatement implements Statement {
       throws SQLException {
     LOGGER.log(Level.INFO, "Entered sendAndReceive()");
     clearWarnings();
-    if (conn.rs != null && !conn.rs.isClosed()) {
+    if (this.conn.rs != null && !this.conn.rs.isClosed()) {
       throw SQLStates.PREVIOUS_RESULT_SET_STILL_OPEN.clone();
     }
     // Lord forgive us for our reflective ways, an abject abuse of power.
@@ -1491,7 +1494,7 @@ public class XGStatement implements Statement {
       boolean forceFlag = true;
       boolean redirectFlag = true;
       boolean hasQueryId = false; // set to true if the query ID is encoded in the response message
-      numClientThreads = 0;
+      this.numClientThreads = 0;
       switch (requestType) {
         case EXECUTE_QUERY:
           c = ExecuteQuery.class;
@@ -1597,10 +1600,10 @@ public class XGStatement implements Statement {
         b1.getClass().getMethod("setSql", String.class).invoke(b1, sql);
         if (forceFlag) {
           final Method setForce = b1.getClass().getMethod("setForce", boolean.class);
-          setForce.invoke(b1, force);
-          if (oneShotForce) {
+          setForce.invoke(b1, this.force);
+          if (this.oneShotForce) {
             setForce.invoke(b1, true);
-            oneShotForce = false;
+            this.oneShotForce = false;
           }
         }
       }
@@ -1615,9 +1618,9 @@ public class XGStatement implements Statement {
       setWrapped.invoke(b2, c.cast(b1.getClass().getMethod("build").invoke(b1)));
       final Request wrapper = (Request) b2.getClass().getMethod("build").invoke(b2);
       try {
-        conn.out.write(intToBytes(wrapper.getSerializedSize()));
-        wrapper.writeTo(conn.out);
-        conn.out.flush();
+        this.conn.out.write(intToBytes(wrapper.getSerializedSize()));
+        wrapper.writeTo(this.conn.out);
+        this.conn.out.flush();
         // get confirmation
         final int length = getLength();
         final byte[] data = new byte[length];
@@ -1648,7 +1651,7 @@ public class XGStatement implements Statement {
           }
 
           final Method getNumClientThreads = br.getClass().getMethod("getNumClientThreads");
-          numClientThreads = ((int) getNumClientThreads.invoke(br));
+          this.numClientThreads = ((int) getNumClientThreads.invoke(br));
         }
 
         return br;
@@ -1664,7 +1667,7 @@ public class XGStatement implements Statement {
         passUpCancel(false);
         // Something went wrong. Did we kill the server with this query? If we did, then don't
         // resend.
-        boolean safeToReSend = conn.isSockConnected();
+        final boolean safeToReSend = this.conn.isSockConnected();
         reconnect(); // try this at most once--if every node is down, report failure
         if (safeToReSend) {
           LOGGER.log(
@@ -1701,7 +1704,7 @@ public class XGStatement implements Statement {
   @Override
   public void setFetchDirection(final int direction) throws SQLException {
     LOGGER.log(Level.INFO, "Called setFetchDirection()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "setFetchDirection() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1715,7 +1718,7 @@ public class XGStatement implements Statement {
   @Override
   public void setFetchSize(final int rows) throws SQLException {
     LOGGER.log(Level.INFO, "Called setFetchSize()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "setFetchSize() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1727,9 +1730,9 @@ public class XGStatement implements Statement {
 
     if (rows == 0) {
       // switch back to the default settings
-      fetchSize = defaultFetchSize;
+      this.fetchSize = defaultFetchSize;
     } else {
-      fetchSize = rows;
+      this.fetchSize = rows;
     }
   }
 
@@ -1742,16 +1745,16 @@ public class XGStatement implements Statement {
   @Override
   public void setMaxRows(final int max) throws SQLException {
     LOGGER.log(Level.INFO, "Called setMaxRows()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "setMaxRows() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    maxRows = max;
+    this.maxRows = max;
   }
 
   private String setParms(final String in) throws SQLException {
-    if (parms.size() == 0) {
+    if (this.parms.size() == 0) {
       return in;
     }
 
@@ -1768,7 +1771,7 @@ public class XGStatement implements Statement {
         if (!quoted) {
           if (in.charAt(i) == '?') {
             try {
-              final Object parm = parms.get(x);
+              final Object parm = this.parms.get(x);
 
               // System.out.println("parm type: " + parm.getClass());
 
@@ -1780,7 +1783,7 @@ public class XGStatement implements Statement {
                 final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
                 final TimeZone utc = TimeZone.getTimeZone("UTC");
                 format.setTimeZone(utc);
-                GregorianCalendar cal = new GregorianCalendar();
+                final GregorianCalendar cal = new GregorianCalendar();
                 cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
                 format.setCalendar(cal);
                 out += ("TIMESTAMP('" + format.format((Timestamp) parm) + "')");
@@ -1793,7 +1796,7 @@ public class XGStatement implements Statement {
                 final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 final TimeZone utc = TimeZone.getTimeZone("UTC");
                 format.setTimeZone(utc);
-                GregorianCalendar cal = new GregorianCalendar();
+                final GregorianCalendar cal = new GregorianCalendar();
                 cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
                 format.setCalendar(cal);
                 out += ("DATE('" + format.format((Date) parm) + "')");
@@ -1801,7 +1804,7 @@ public class XGStatement implements Statement {
                 final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss.SSS");
                 final TimeZone utc = TimeZone.getTimeZone("UTC");
                 format.setTimeZone(utc);
-                GregorianCalendar cal = new GregorianCalendar();
+                final GregorianCalendar cal = new GregorianCalendar();
                 cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
                 format.setCalendar(cal);
                 out += ("TIME('" + format.format((Time) parm) + "')");
@@ -1893,7 +1896,7 @@ public class XGStatement implements Statement {
   @Override
   public void setQueryTimeout(final int seconds) throws SQLException {
     LOGGER.log(Level.INFO, "Called setQueryTimeout()");
-    if (closed) {
+    if (this.closed) {
       LOGGER.log(Level.WARNING, "setQueryTimeout() is throwing CALL_ON_CLOSED_OBJECT");
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
@@ -1901,7 +1904,7 @@ public class XGStatement implements Statement {
       LOGGER.log(Level.WARNING, "setQueryTimeout() is throwing SQLWarning");
       throw new SQLWarning(String.format("timeout value must be non-negative, was: %s", seconds));
     }
-    timeoutMillis = seconds * 1000;
+    this.timeoutMillis = seconds * 1000;
     LOGGER.log(Level.FINE, "Query timeout set to {} seconds", seconds);
   }
 
@@ -1919,14 +1922,14 @@ public class XGStatement implements Statement {
   // (.) token. Reluctant.
   // Do not insert multiple regexes for tokens of the same name (or "q0" + another
   // name) into a single pattern.
-  private static String tk(String name) {
+  private static String tk(final String name) {
     return "(?<q0" + name + ">\"?)(?<" + name + ">(\\w+?|(?<=\").+?(?=\")))\\k<q0" + name + ">";
   }
 
   // Get a token from its generated regex according to SQL case-sensitivity rules
   // (sensitive iff quoted).
   // Do not call on a matcher that has not yet called matches().
-  private static String getTk(Matcher m, String name, String def) {
+  private static String getTk(final Matcher m, final String name, final String def) {
     if (m.group(name) == null) {
       return def;
     }
@@ -1942,7 +1945,7 @@ public class XGStatement implements Statement {
   private static Pattern listSystemTablesSyntax =
       Pattern.compile("list\\s+system\\s+tables(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
 
-  private ResultSet listTables(final String cmd, boolean isSystemTables) throws SQLException {
+  private ResultSet listTables(final String cmd, final boolean isSystemTables) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's listTables()");
     ResultSet rs = null;
 
@@ -1954,7 +1957,7 @@ public class XGStatement implements Statement {
       LOGGER.log(Level.WARNING, "Driver's listTables() reached a line it shouldn't have.");
       return rs;
     }
-    final DatabaseMetaData dbmd = conn.getMetaData();
+    final DatabaseMetaData dbmd = this.conn.getMetaData();
     if (isSystemTables) {
       final XGDatabaseMetaData xgdbmd = (XGDatabaseMetaData) dbmd;
       rs = xgdbmd.getSystemTables("", "%", "%", new String[0]);
@@ -1969,7 +1972,7 @@ public class XGStatement implements Statement {
 
   private ResultSet listViews(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's listViews()");
-    ResultSet rs = null;
+    final ResultSet rs = null;
 
     final Matcher m = listViewsSyntax.matcher(cmd);
     if (!m.matches()) {
@@ -1978,7 +1981,7 @@ public class XGStatement implements Statement {
       LOGGER.log(Level.WARNING, "Driver's listViews() reached a line it shouldn't have.");
       return rs;
     }
-    final DatabaseMetaData md = conn.getMetaData();
+    final DatabaseMetaData md = this.conn.getMetaData();
     final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
 
     return dbmd.getViews("", "%", "%", new String[0]);
@@ -1995,44 +1998,44 @@ public class XGStatement implements Statement {
 
   private ResultSet listIndexes(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's listIndexes()");
-    ResultSet rs = null;
+    final ResultSet rs = null;
     final Matcher m = listIndexesSyntax.matcher(cmd);
 
     if (!m.matches()) {
       throw SQLStates.SYNTAX_ERROR.cloneAndSpecify("Syntax: list indexes (<schema>.)?<table>");
     }
-    final DatabaseMetaData dbmd = conn.getMetaData();
+    final DatabaseMetaData dbmd = this.conn.getMetaData();
     return dbmd.getIndexInfo(
-        "", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), false, false);
+        "", getTk(m, "schema", this.conn.getSchema()), getTk(m, "table", null), false, false);
   }
 
   private ResultSet getSchema() throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's getSchema()");
-    String schema = conn.getSchema();
+    final String schema = this.conn.getSchema();
     // Construct the result set.
     // split the proto string using the line break delimiter and build a one string
     // column resultset.
-    ArrayList<Object> rs = new ArrayList<>();
-    String lines[] = schema.split("\\r?\\n");
+    final ArrayList<Object> rs = new ArrayList<>();
+    final String lines[] = schema.split("\\r?\\n");
     for (int i = 0; i < lines.length; i++) {
-      String str = lines[i];
-      ArrayList<Object> row = new ArrayList<>();
+      final String str = lines[i];
+      final ArrayList<Object> row = new ArrayList<>();
       row.add(str);
       rs.add(row);
     }
-    result = conn.rs = new XGResultSet(conn, rs, this);
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("schema", 0);
     pos2Cols.put(0, "schema");
     cols2Types.put("schema", "CHAR");
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
-    return result;
+    return this.result;
   }
 
   private static Pattern describeTableSyntax =
@@ -2046,13 +2049,14 @@ public class XGStatement implements Statement {
 
   private ResultSet describeTable(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's describeTable()");
-    ResultSet rs = null;
+    final ResultSet rs = null;
     final Matcher m = describeTableSyntax.matcher(cmd);
     if (!m.matches()) {
       throw SQLStates.SYNTAX_ERROR.cloneAndSpecify("Syntax: describe (<schema>.)?<table>");
     }
-    final DatabaseMetaData dbmd = conn.getMetaData();
-    return dbmd.getColumns("", getTk(m, "schema", conn.getSchema()), getTk(m, "table", null), "%");
+    final DatabaseMetaData dbmd = this.conn.getMetaData();
+    return dbmd.getColumns(
+        "", getTk(m, "schema", this.conn.getSchema()), getTk(m, "table", null), "%");
   }
 
   private static Pattern describeViewSyntax =
@@ -2066,14 +2070,15 @@ public class XGStatement implements Statement {
 
   private ResultSet describeView(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's describeView()");
-    ResultSet rs = null;
+    final ResultSet rs = null;
     final Matcher m = describeViewSyntax.matcher(cmd);
     if (!m.matches()) {
       throw SQLStates.SYNTAX_ERROR.cloneAndSpecify("Syntax: describe view (<schema>.)?<view>");
     }
-    final DatabaseMetaData md = conn.getMetaData();
+    final DatabaseMetaData md = this.conn.getMetaData();
     final XGDatabaseMetaData dbmd = (XGDatabaseMetaData) md;
-    return dbmd.getViews("", getTk(m, "schema", conn.getSchema()), getTk(m, "view", null), null);
+    return dbmd.getViews(
+        "", getTk(m, "schema", this.conn.getSchema()), getTk(m, "view", null), null);
   }
 
   private ResultSet executePlanSQL(final String cmd) throws SQLException {
@@ -2098,68 +2103,68 @@ public class XGStatement implements Statement {
       plan = plan.substring("JSON ".length()).trim();
       format = ClientWireProtocol.ExplainFormat.JSON;
     }
-    String pm = explainPlan(plan, format);
-    ArrayList<Object> rs = new ArrayList<>();
-    ArrayList<Object> row = new ArrayList<>();
+    final String pm = explainPlan(plan, format);
+    final ArrayList<Object> rs = new ArrayList<>();
+    final ArrayList<Object> row = new ArrayList<>();
     row.add(pm);
     rs.add(row);
 
-    result = conn.rs = new XGResultSet(conn, rs, this);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("explain", 0);
     pos2Cols.put(0, "explain");
     cols2Types.put("explain", "CHAR");
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
-    return result;
+    return this.result;
   }
 
   private ResultSet exportTableSQL(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Enetered driver's exportTable");
-    String exportStr = exportTable(cmd);
-    ArrayList<Object> rs = new ArrayList<>();
-    ArrayList<Object> row = new ArrayList<>();
+    final String exportStr = exportTable(cmd);
+    final ArrayList<Object> rs = new ArrayList<>();
+    final ArrayList<Object> row = new ArrayList<>();
     row.add(exportStr);
     rs.add(row);
 
-    result = conn.rs = new XGResultSet(conn, rs, this);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("export", 0);
     pos2Cols.put(0, "export");
     cols2Types.put("export", "CHAR");
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
-    return result;
+    return this.result;
   }
 
   private ResultSet exportTranslationSQL(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Enetered driver's exportTranslation");
-    String exportTranslationStr = exportTranslation(cmd);
-    ArrayList<Object> rs = new ArrayList<>();
-    ArrayList<Object> row = new ArrayList<>();
+    final String exportTranslationStr = exportTranslation(cmd);
+    final ArrayList<Object> rs = new ArrayList<>();
+    final ArrayList<Object> row = new ArrayList<>();
     row.add(exportTranslationStr);
     rs.add(row);
 
-    result = conn.rs = new XGResultSet(conn, rs, this);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("translation", 0);
     pos2Cols.put(0, "translation");
     cols2Types.put("translation", "CHAR");
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
-    return result;
+    return this.result;
   }
 
   private ResultSet explainSQL(final String cmd) throws SQLException {
@@ -2175,25 +2180,25 @@ public class XGStatement implements Statement {
       format = ClientWireProtocol.ExplainFormat.PROTO;
       sql = cmd.substring("EXPLAIN ".length()).trim();
     }
-    String explainString = explain(sql, format);
+    final String explainString = explain(sql, format);
 
-    ArrayList<Object> rs = new ArrayList<>();
-    ArrayList<Object> row = new ArrayList<>();
+    final ArrayList<Object> rs = new ArrayList<>();
+    final ArrayList<Object> row = new ArrayList<>();
     row.add(explainString);
     rs.add(row);
 
-    result = conn.rs = new XGResultSet(conn, rs, this);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    this.result = this.conn.rs = new XGResultSet(this.conn, rs, this);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("explain", 0);
     pos2Cols.put(0, "explain");
     cols2Types.put("explain", "CHAR");
-    result.setCols2Pos(cols2Pos);
-    result.setPos2Cols(pos2Cols);
-    result.setCols2Types(cols2Types);
+    this.result.setCols2Pos(cols2Pos);
+    this.result.setPos2Cols(pos2Cols);
+    this.result.setCols2Types(cols2Types);
 
-    return result;
+    return this.result;
   }
 
   /*!
@@ -2232,7 +2237,7 @@ public class XGStatement implements Statement {
 
       schema = schema.substring(1, schema.length() - 1);
     }
-    conn.setSchema(schema);
+    this.conn.setSchema(schema);
     return 0;
   }
 }

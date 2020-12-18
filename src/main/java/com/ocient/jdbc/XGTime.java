@@ -16,29 +16,29 @@ public class XGTime extends Time {
   private int nanos;
 
   @Deprecated
-  public XGTime(int hour, int minute, int second) {
+  public XGTime(final int hour, final int minute, final int second) {
     super(hour, minute, second);
   }
 
-  public XGTime(long time) {
+  public XGTime(final long time) {
     super(time);
-    long seconds = time / 1000;
-    int ms = (int) (time - (seconds * 1000));
+    final long seconds = time / 1000;
+    final int ms = (int) (time - (seconds * 1000));
     setNanos(ms * 1000000);
   }
 
-  public XGTime(Time t) {
+  public XGTime(final Time t) {
     super(t.getTime());
-    long time = t.getTime();
-    long seconds = time / 1000;
-    int ms = (int) (time - (seconds * 1000));
+    final long time = t.getTime();
+    final long seconds = time / 1000;
+    final int ms = (int) (time - (seconds * 1000));
     setNanos(ms * 1000000);
   }
 
-  void setNanos(int nanos) {
+  void setNanos(final int nanos) {
     // We have to update time as well, unlike with timestamp
     // Get milliseconds
-    int ms = nanos / 1000000;
+    final int ms = nanos / 1000000;
 
     // Time needs to be set to this much past a second boundary
     this.setTime((this.getTime() / 1000) * 1000 + ms);
@@ -47,25 +47,26 @@ public class XGTime extends Time {
   }
 
   int getNanos() {
-    return nanos;
+    return this.nanos;
   }
 
-  public static Time valueOf(String s) {
+  public static Time valueOf(final String s) {
     return new XGTime(java.sql.Time.valueOf(s));
   }
 
-  public XGTime addMs(int ms) {
-    int fractionPastMs = getNanos() - (getNanos() / 1000000) * 1000000;
-    XGTime retval = new XGTime(getTime() + ms);
+  public XGTime addMs(final int ms) {
+    final int fractionPastMs = getNanos() - (getNanos() / 1000000) * 1000000;
+    final XGTime retval = new XGTime(getTime() + ms);
     retval.setNanos(retval.getNanos() + fractionPastMs);
     return retval;
   }
 
   // Always returns //UTC string
+  @Override
   public String toString() {
-    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+    final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
@@ -73,107 +74,121 @@ public class XGTime extends Time {
   }
 
   @Deprecated
-  public static long UTC(int year, int month, int date, int hrs, int min, int sec) {
-    GregorianCalendar cal = new GregorianCalendar(year + 1900, month, date, hrs, min, sec);
+  public static long UTC(
+      final int year,
+      final int month,
+      final int date,
+      final int hrs,
+      final int min,
+      final int sec) {
+    final GregorianCalendar cal = new GregorianCalendar(year + 1900, month, date, hrs, min, sec);
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     return cal.getTime().getTime();
   }
 
   @Deprecated
-  public static long parse(String s) {
+  public static long parse(final String s) {
     try {
-      DateFormat format = DateFormat.getDateInstance();
+      final DateFormat format = DateFormat.getDateInstance();
       format.setTimeZone(TimeZone.getDefault());
-      GregorianCalendar cal = new GregorianCalendar();
+      final GregorianCalendar cal = new GregorianCalendar();
       cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
       cal.setTimeZone(TimeZone.getDefault());
       format.setCalendar(cal);
-      java.util.Date date = format.parse(s);
+      final java.util.Date date = format.parse(s);
       return date.getTime();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return 0;
     }
   }
 
+  @Override
   @Deprecated
   public int getYear() {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this)) - 1900;
   }
 
+  @Override
   @Deprecated
-  public void setYear(int year) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setYear(final int year) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal = String.format("%04d", year + 1900) + current.substring(4);
+    final String current = sdf.format(this);
+    final String newVal = String.format("%04d", year + 1900) + current.substring(4);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getMonth() {
-    SimpleDateFormat sdf = new SimpleDateFormat("M");
+    final SimpleDateFormat sdf = new SimpleDateFormat("M");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this)) - 1;
   }
 
+  @Override
   @Deprecated
-  public void setMonth(int month) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setMonth(final int month) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal =
+    final String current = sdf.format(this);
+    final String newVal =
         current.substring(0, 5) + String.format("%02d", month + 1) + current.substring(7);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getDate() {
-    SimpleDateFormat sdf = new SimpleDateFormat("d");
+    final SimpleDateFormat sdf = new SimpleDateFormat("d");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
     return Integer.parseInt(sdf.format(this));
   }
 
+  @Override
   @Deprecated
-  public void setDate(int date) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+  public void setDate(final int date) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
-    String current = sdf.format(this);
-    String newVal = current.substring(0, 8) + String.format("%02d", date) + current.substring(10);
+    final String current = sdf.format(this);
+    final String newVal =
+        current.substring(0, 8) + String.format("%02d", date) + current.substring(10);
     this.setTime(parse(newVal));
   }
 
+  @Override
   @Deprecated
   public int getDay() {
-    SimpleDateFormat sdf = new SimpleDateFormat("u");
+    final SimpleDateFormat sdf = new SimpleDateFormat("u");
     sdf.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     sdf.setCalendar(cal);
@@ -185,7 +200,8 @@ public class XGTime extends Time {
     return retval;
   }
 
-  public boolean equals(Object obj) {
+  @Override
+  public boolean equals(final Object obj) {
     if (obj instanceof XGTime) {
       return getTime() == ((java.sql.Date) obj).getTime()
           && getNanos() == ((XGTime) obj).getNanos();
@@ -198,28 +214,31 @@ public class XGTime extends Time {
     return false;
   }
 
+  @Override
   @Deprecated
   public String toLocaleString() {
-    DateFormat format = DateFormat.getDateInstance();
+    final DateFormat format = DateFormat.getDateInstance();
     format.setTimeZone(TimeZone.getDefault());
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getDefault());
     format.setCalendar(cal);
     return format.format(this);
   }
 
+  @Override
   @Deprecated
   public String toGMTString() {
-    SimpleDateFormat sdf = new SimpleDateFormat("d MMM yyyy HH:mm:ss");
+    final SimpleDateFormat sdf = new SimpleDateFormat("d MMM yyyy HH:mm:ss");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    GregorianCalendar cal = new GregorianCalendar();
+    final GregorianCalendar cal = new GregorianCalendar();
     cal.setGregorianChange(new java.util.Date(Long.MIN_VALUE));
     cal.setTimeZone(TimeZone.getTimeZone("UTC"));
     sdf.setCalendar(cal);
     return sdf.format(this) + " GMT";
   }
 
+  @Override
   @Deprecated
   public int getTimezoneOffset() {
     return (int)
@@ -234,8 +253,8 @@ public class XGTime extends Time {
             / (60 * 1000));
   }
 
-  public static Date from(Instant instant) {
-    XGTime retval = new XGTime(instant.toEpochMilli());
+  public static Date from(final Instant instant) {
+    final XGTime retval = new XGTime(instant.toEpochMilli());
     retval.setNanos(instant.getNano());
     return retval;
   }

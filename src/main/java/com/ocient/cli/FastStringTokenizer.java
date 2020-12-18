@@ -14,46 +14,46 @@ public final class FastStringTokenizer {
     this.string = string;
     final char delimiter = delim.charAt(0);
 
-    temp = new String[(string.length() >> 1) + 1];
+    this.temp = new String[(string.length() >> 1) + 1];
     int wordCount = 0;
     int i = 0;
     int j = string.indexOf(delimiter);
 
     while (j >= 0) {
-      temp[wordCount++] = string.substring(i, j);
+      this.temp[wordCount++] = string.substring(i, j);
       i = j + 1;
       j = string.indexOf(delimiter, i);
     }
 
     if (i < string.length()) {
-      temp[wordCount++] = string.substring(i);
+      this.temp[wordCount++] = string.substring(i);
     }
 
-    limit = wordCount;
-    index = 0;
+    this.limit = wordCount;
+    this.index = 0;
   }
 
   public String[] allTokens() {
-    final String[] result = new String[limit];
-    System.arraycopy(temp, 0, result, 0, limit);
+    final String[] result = new String[this.limit];
+    System.arraycopy(this.temp, 0, result, 0, this.limit);
     return result;
   }
 
   @Override
   public FastStringTokenizer clone() {
-    return new FastStringTokenizer(string, delim, false);
+    return new FastStringTokenizer(this.string, this.delim, false);
   }
 
   public int getLimit() {
-    return limit;
+    return this.limit;
   }
 
   public boolean hasMoreTokens() {
-    return index < limit;
+    return this.index < this.limit;
   }
 
   public String nextToken() {
-    return temp[index++];
+    return this.temp[this.index++];
   }
 
   public final void reuse(final String string, final String delim, final boolean bool) {
@@ -61,8 +61,8 @@ public final class FastStringTokenizer {
     this.string = string;
     final char delimiter = delim.charAt(0);
 
-    if (temp.length < (string.length() >> 1) + 1) {
-      temp = new String[(string.length() >> 1) + 1];
+    if (this.temp.length < (string.length() >> 1) + 1) {
+      this.temp = new String[(string.length() >> 1) + 1];
     }
 
     int wordCount = 0;
@@ -70,17 +70,17 @@ public final class FastStringTokenizer {
     int j = string.indexOf(delimiter);
 
     while (j >= 0) {
-      temp[wordCount++] = string.substring(i, j);
+      this.temp[wordCount++] = string.substring(i, j);
       i = j + 1;
       j = string.indexOf(delimiter, i);
     }
 
     if (i < string.length()) {
-      temp[wordCount++] = string.substring(i);
+      this.temp[wordCount++] = string.substring(i);
     }
 
-    limit = wordCount;
-    index = 0;
+    this.limit = wordCount;
+    this.index = 0;
   }
 
   public void setIndex(final int index) {

@@ -45,14 +45,14 @@ public class JDBCDriver implements Driver {
   }
 
   private Connection createConnection(
-      final String hostname, int portNum, final String database, Properties properties)
+      final String hostname, final int portNum, final String database, final Properties properties)
       throws SQLException {
-    Socket sock = null;
-    String user = properties.getProperty("user");
-    String pwd = properties.getProperty("password");
-    String force = properties.getProperty("force");
-    String tlsStr = properties.getProperty("tls", "OFF").toUpperCase();
-    XGConnection.Tls tls = XGConnection.Tls.valueOf(tlsStr);
+    final Socket sock = null;
+    final String user = properties.getProperty("user");
+    final String pwd = properties.getProperty("password");
+    final String force = properties.getProperty("force");
+    final String tlsStr = properties.getProperty("tls", "OFF").toUpperCase();
+    final XGConnection.Tls tls = XGConnection.Tls.valueOf(tlsStr);
     XGConnection conn = null;
 
     try {
@@ -62,7 +62,7 @@ public class JDBCDriver implements Driver {
           String.format("Received %d IP addresses for hostname %s", addrs.length, hostname));
       boolean connected = false;
       Throwable lastError = null;
-      for (InetAddress addr : addrs) {
+      for (final InetAddress addr : addrs) {
         try {
           final String url =
               "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
@@ -107,7 +107,7 @@ public class JDBCDriver implements Driver {
   }
 
   @Override
-  public Connection connect(final String arg0, Properties arg1) throws SQLException {
+  public Connection connect(final String arg0, final Properties arg1) throws SQLException {
     try {
       final String protocol = arg0.substring(0, 14);
       if (!protocol.equals("jdbc:ocient://")) {
@@ -133,12 +133,12 @@ public class JDBCDriver implements Driver {
 
       while (propertyDelim > 0) {
         // Get the property name
-        int equalPos = arg0.indexOf("=", propertyDelim + 1);
+        final int equalPos = arg0.indexOf("=", propertyDelim + 1);
         if (equalPos < 0) {
           throw SQLStates.MALFORMED_URL.clone();
         }
 
-        String key = arg0.substring(propertyDelim + 1, equalPos);
+        final String key = arg0.substring(propertyDelim + 1, equalPos);
 
         // Find the end of this property
         int propertyEnd = arg0.indexOf(";", equalPos + 1);
@@ -146,7 +146,7 @@ public class JDBCDriver implements Driver {
           propertyEnd = arg0.length();
         }
 
-        String value = arg0.substring(propertyDelim + 1 + key.length() + 1, propertyEnd);
+        final String value = arg0.substring(propertyDelim + 1 + key.length() + 1, propertyEnd);
         arg1.setProperty(key, value);
 
         if (propertyEnd == arg0.length()) {
@@ -162,7 +162,7 @@ public class JDBCDriver implements Driver {
 
       configLogger(arg1);
       Exception lastException = null;
-      for (String host : hostList) {
+      for (final String host : hostList) {
         final String[] hostnameAndPort = host.split(":");
         if (hostnameAndPort.length != 2) {
           LOGGER.log(Level.SEVERE, "Host list in URL is malformed");
@@ -178,7 +178,7 @@ public class JDBCDriver implements Driver {
         }
 
         try {
-          Connection conn = createConnection(hostnameAndPort[0], portNum, db, arg1);
+          final Connection conn = createConnection(hostnameAndPort[0], portNum, db, arg1);
           return conn;
         } catch (final Exception e) {
           lastException = e;
@@ -259,8 +259,8 @@ public class JDBCDriver implements Driver {
 
   private void configLogger(final Properties props) {
     synchronized (logMonitor) {
-      String loglevel = props.getProperty("loglevel");
-      String logfile = props.getProperty("logfile");
+      final String loglevel = props.getProperty("loglevel");
+      final String logfile = props.getProperty("logfile");
       if (loglevel == null || logfile == null) {
         LOGGER.setLevel(Level.OFF);
         return;
@@ -285,8 +285,8 @@ public class JDBCDriver implements Driver {
       /* Clean up the old handler */
       LOGGER.setUseParentHandlers(false);
       LOGGER.log(Level.INFO, "Resetting logger");
-      Handler[] handlers = LOGGER.getHandlers();
-      for (Handler handler : handlers) {
+      final Handler[] handlers = LOGGER.getHandlers();
+      for (final Handler handler : handlers) {
         LOGGER.removeHandler(handler);
       }
 

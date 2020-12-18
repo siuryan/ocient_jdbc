@@ -16,8 +16,8 @@ public class ThreadFormatter extends Formatter {
   }
 
   @Override
-  public String format(LogRecord record) {
-    Object[] arguments = new Object[6];
+  public String format(final LogRecord record) {
+    final Object[] arguments = new Object[6];
     arguments[0] = record.getSourceClassName();
     arguments[1] = record.getLevel();
     arguments[2] = record.getThreadID();

@@ -11,50 +11,52 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class XGArray implements java.sql.Array {
-  private byte type;
+  private final byte type;
   private Object[] array;
-  private XGConnection conn;
-  private XGStatement stmt;
+  private final XGConnection conn;
+  private final XGStatement stmt;
 
-  public XGArray(int numElements, byte type, final XGConnection conn, final XGStatement stmt) {
+  public XGArray(
+      final int numElements, final byte type, final XGConnection conn, final XGStatement stmt) {
     this.type = type;
     this.conn = conn;
     this.stmt = stmt;
-    array = new Object[numElements];
+    this.array = new Object[numElements];
   }
 
   @Override
   public void free() throws SQLException {
-    array = new Object[0];
+    this.array = new Object[0];
   }
 
   @Override
   public Object getArray() throws SQLException {
-    return array;
+    return this.array;
   }
 
   @Override
-  public Object getArray(Map<String, Class<?>> map) throws SQLException {
+  public Object getArray(final Map<String, Class<?>> map) throws SQLException {
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
-  public Object getArray(long index, int count) throws SQLException {
+  public Object getArray(final long index, final int count) throws SQLException {
     try {
-      return Arrays.copyOfRange(array, (int) index - 1, (int) index + count - 1);
-    } catch (Exception e) {
+      return Arrays.copyOfRange(this.array, (int) index - 1, (int) index + count - 1);
+    } catch (final Exception e) {
       throw SQLStates.newGenericException(e);
     }
   }
 
   @Override
-  public Object getArray(long index, int count, Map<String, Class<?>> map) throws SQLException {
+  public Object getArray(final long index, final int count, final Map<String, Class<?>> map)
+      throws SQLException {
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public int getBaseType() throws SQLException {
-    switch (type) {
+    switch (this.type) {
       case 1:
         return Types.INTEGER;
       case 2:
@@ -101,7 +103,7 @@ public class XGArray implements java.sql.Array {
 
   @Override
   public String getBaseTypeName() throws SQLException {
-    switch (type) {
+    switch (this.type) {
       case 1:
         return "INTEGER";
       case 2:
@@ -151,26 +153,26 @@ public class XGArray implements java.sql.Array {
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    ArrayList<Object> alo = new ArrayList<Object>();
+    final ArrayList<Object> alo = new ArrayList<Object>();
     int i = 1;
-    for (Object o : array) {
-      ArrayList<Object> row = new ArrayList<Object>();
+    for (final Object o : this.array) {
+      final ArrayList<Object> row = new ArrayList<Object>();
       row.add(i++);
       row.add(o);
       alo.add(row);
     }
 
-    XGResultSet retval = new XGResultSet(conn, alo, stmt);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final XGResultSet retval = new XGResultSet(this.conn, alo, this.stmt);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("index", 0);
     cols2Pos.put("array_value", 1);
     pos2Cols.put(0, "index");
     pos2Cols.put(1, "array_value");
     cols2Types.put("index", "INT");
 
-    switch (type) {
+    switch (this.type) {
       case 1:
         cols2Types.put("array_value", "INT");
         break;
@@ -245,31 +247,31 @@ public class XGArray implements java.sql.Array {
   }
 
   @Override
-  public ResultSet getResultSet(Map<String, Class<?>> map) throws SQLException {
+  public ResultSet getResultSet(final Map<String, Class<?>> map) throws SQLException {
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
-  public ResultSet getResultSet(long index, int count) throws SQLException {
-    ArrayList<Object> alo = new ArrayList<Object>();
+  public ResultSet getResultSet(final long index, final int count) throws SQLException {
+    final ArrayList<Object> alo = new ArrayList<Object>();
     for (int i = (int) index; i < index + count; i++) {
-      ArrayList<Object> row = new ArrayList<Object>();
+      final ArrayList<Object> row = new ArrayList<Object>();
       row.add(i);
-      row.add(array[i]);
+      row.add(this.array[i]);
       alo.add(row);
     }
 
-    XGResultSet retval = new XGResultSet(conn, alo, stmt);
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final XGResultSet retval = new XGResultSet(this.conn, alo, this.stmt);
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("index", 0);
     cols2Pos.put("array_value", 1);
     pos2Cols.put(0, "index");
     pos2Cols.put(1, "array_value");
     cols2Types.put("index", "INT");
 
-    switch (type) {
+    switch (this.type) {
       case 1:
         cols2Types.put("array_value", "INT");
         break;
@@ -344,22 +346,23 @@ public class XGArray implements java.sql.Array {
   }
 
   @Override
-  public ResultSet getResultSet(long index, int count, Map<String, Class<?>> map)
+  public ResultSet getResultSet(final long index, final int count, final Map<String, Class<?>> map)
       throws SQLException {
     throw new SQLFeatureNotSupportedException();
   }
 
-  public void add(Object obj, int pos) {
-    array[pos] = obj;
+  public void add(final Object obj, final int pos) {
+    this.array[pos] = obj;
   }
 
+  @Override
   public String toString() {
     try {
-      StringBuilder str = new StringBuilder();
+      final StringBuilder str = new StringBuilder();
       str.append("[");
 
-      if (array.length > 0) {
-        Object o = array[0];
+      if (this.array.length > 0) {
+        final Object o = this.array[0];
         if (o == null) {
           str.append("NULL");
         } else if (getBaseType() == java.sql.Types.ARRAY) {
@@ -372,9 +375,9 @@ public class XGArray implements java.sql.Array {
         }
       }
 
-      for (int i = 1; i < array.length; i++) {
+      for (int i = 1; i < this.array.length; i++) {
         str.append(", ");
-        Object o = array[i];
+        final Object o = this.array[i];
         if (o == null) {
           str.append("NULL");
         } else if (getBaseType() == java.sql.Types.ARRAY) {
@@ -389,17 +392,17 @@ public class XGArray implements java.sql.Array {
 
       str.append("]");
       return str.toString();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return "Exception occurred accessing Array";
     }
   }
 
   private static final char[] hexArray = "0123456789abcdef".toCharArray();
 
-  private static String bytesToHex(byte[] bytes) {
-    char[] hexChars = new char[bytes.length * 2];
+  private static String bytesToHex(final byte[] bytes) {
+    final char[] hexChars = new char[bytes.length * 2];
     for (int j = 0; j < bytes.length; j++) {
-      int v = bytes[j] & 0xFF;
+      final int v = bytes[j] & 0xFF;
       hexChars[j * 2] = hexArray[v >>> 4];
       hexChars[j * 2 + 1] = hexArray[v & 0x0F];
     }

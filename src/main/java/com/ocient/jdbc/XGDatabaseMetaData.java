@@ -78,12 +78,14 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String attributeNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getAttributes()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
 
     /*
      * TYPE_CAT String => type catalog (may be null) TYPE_SCHEM String => type
@@ -196,9 +198,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final boolean nullable)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getBestRowIdentifier()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * SCOPE short => actual scope of result bestRowTemporary - very temporary,
@@ -214,9 +218,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * pseudo column
      */
 
-    HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    HashMap<String, String> cols2Types = new HashMap<String, String>();
+    final HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final HashMap<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("scope", 0);
     cols2Pos.put("column_name", 1);
     cols2Pos.put("data_type", 2);
@@ -250,12 +254,14 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getCatalogs() throws SQLException {
     LOGGER.log(Level.INFO, "Called getCatalogs()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     pos2Cols.put(0, "table_cat");
     cols2Types.put("table_cat", "CHAR");
@@ -281,9 +287,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getClientInfoProperties() throws SQLException {
     LOGGER.log(Level.INFO, "Called getClientInfoProperties()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * NAME String=> The name of the client info property MAX_LEN int=> The maximum
@@ -293,9 +301,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * database.
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("name", 0);
     cols2Pos.put("max_len", 1);
     cols2Pos.put("default_value", 2);
@@ -320,9 +328,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schema, final String table, final String columnNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumnPrivileges()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
@@ -333,9 +343,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * to grant to others; "NO" if not; null if unknown
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     cols2Pos.put("table_schem", 1);
     cols2Pos.put("table_name", 2);
@@ -374,7 +384,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String columnNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getColumns()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_COLUMNS,
             schemaPattern,
@@ -386,7 +396,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public Connection getConnection() throws SQLException {
     LOGGER.log(Level.INFO, "Called getConnection()");
-    return conn;
+    return this.conn;
   }
 
   @Override
@@ -399,9 +409,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String foreignTable)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getCrossReference()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * PKTABLE_CAT String => parent key table catalog (may be null) PKTABLE_SCHEM
@@ -434,9 +446,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * importedKeyNotDeferrable - see SQL92 for definition
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("pktable_cat", 0);
     cols2Pos.put("pktable_schem", 1);
     cols2Pos.put("pktable_name", 2);
@@ -488,7 +500,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public int getDatabaseMajorVersion() throws SQLException {
     LOGGER.log(Level.INFO, "Called getDatabaseMajorVersion()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataInt(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_MAJOR_VERSION);
   }
@@ -496,7 +508,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public int getDatabaseMinorVersion() throws SQLException {
     LOGGER.log(Level.INFO, "Called getDatabaseMinorVersion()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataInt(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_MINOR_VERSION);
   }
@@ -510,7 +522,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getDatabaseProductVersion() throws SQLException {
     LOGGER.log(Level.INFO, "Called getDatabaseProductVersion()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
   }
@@ -524,13 +536,13 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public int getDriverMajorVersion() {
     LOGGER.log(Level.INFO, "Called getDriverMajorVersion()");
-    return ((XGConnection) conn).getMajorVersion();
+    return ((XGConnection) this.conn).getMajorVersion();
   }
 
   @Override
   public int getDriverMinorVersion() {
     LOGGER.log(Level.INFO, "Called getDriverMinorVersion()");
-    return ((XGConnection) conn).getMinorVersion();
+    return ((XGConnection) this.conn).getMinorVersion();
   }
 
   @Override
@@ -542,16 +554,18 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getDriverVersion() throws SQLException {
     LOGGER.log(Level.INFO, "Called getDriverVersion()");
-    return ((XGConnection) conn).getVersion();
+    return ((XGConnection) this.conn).getVersion();
   }
 
   @Override
   public ResultSet getExportedKeys(final String catalog, final String schema, final String table)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getExportedKeys()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * PKTABLE_CAT String => primary key table catalog (may be null) PKTABLE_SCHEM
@@ -584,9 +598,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * importedKeyNotDeferrable - see SQL92 for definition
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("pktable_cat", 0);
     cols2Pos.put("pktable_schem", 1);
     cols2Pos.put("pktable_name", 2);
@@ -649,9 +663,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String columnNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getFunctionColumns()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * FUNCTION_CAT String => function catalog (may be null) FUNCTION_SCHEM String
@@ -684,9 +700,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * FUNCTION_NAME for example with overload functions
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("function_cat", 0);
     cols2Pos.put("function_schem", 1);
     cols2Pos.put("function_name", 2);
@@ -752,9 +768,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schemaPattern, final String functionNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getFunctions()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * FUNCTION_CAT String => function catalog (may be null) FUNCTION_SCHEM String
@@ -769,9 +787,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * functions
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("function_cat", 0);
     cols2Pos.put("function_schem", 1);
     cols2Pos.put("function_name", 2);
@@ -809,9 +827,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getImportedKeys(final String catalog, final String schema, final String table)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getImportedKeys()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * PKTABLE_CAT String => primary key table catalog being imported (may be null)
@@ -844,9 +864,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * importedKeyNotDeferrable - see SQL92 for definition
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("pktable_cat", 0);
     cols2Pos.put("pktable_schem", 1);
     cols2Pos.put("pktable_name", 2);
@@ -912,7 +932,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       test = true;
       wireSchema = schema;
     }
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_INDEX_INFO,
             wireSchema,
@@ -1056,7 +1076,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getNumericFunctions() throws SQLException {
     LOGGER.log(Level.INFO, "Called getNumericFunctions()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_NUMERIC_FUNCTIONS);
   }
@@ -1065,9 +1085,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getPrimaryKeys(final String catalog, final String schema, final String table)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getPrimaryKeys()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
@@ -1078,9 +1100,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * (may be null)
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     cols2Pos.put("table_schem", 1);
     cols2Pos.put("table_name", 2);
@@ -1113,9 +1135,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String columnNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getProcedureColumns()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * PROCEDURE_CAT String => procedure catalog (may be null) PROCEDURE_SCHEM
@@ -1152,9 +1176,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * this procedure within its schema.
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("procedure_cat", 0);
     cols2Pos.put("procedure_schem", 1);
     cols2Pos.put("procedure_name", 2);
@@ -1229,9 +1253,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schemaPattern, final String procedureNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getProcedures()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * PROCEDURE_CAT String => procedure catalog (may be null) PROCEDURE_SCHEM
@@ -1244,9 +1270,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * name which uniquely identifies this procedure within its schema.
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("procedure_cat", 0);
     cols2Pos.put("procedure_schem", 1);
     cols2Pos.put("procedure_name", 2);
@@ -1288,9 +1314,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String columnNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getPseudoColumns()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
@@ -1308,9 +1336,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * the nullability for the column is unknown
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     cols2Pos.put("table_schem", 1);
     cols2Pos.put("table_name", 2);
@@ -1371,7 +1399,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getSchemas() throws SQLException {
     LOGGER.log(Level.INFO, "Called getSchemas()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SCHEMAS,
             "",
@@ -1384,7 +1412,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getSchemas(final String catalog, final String schemaPattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getSchemas()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SCHEMAS,
             schemaPattern,
@@ -1408,7 +1436,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getSQLKeywords() throws SQLException {
     LOGGER.log(Level.INFO, "Called getSQLKeywords()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SQL_KEYWORDS);
   }
@@ -1422,7 +1450,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getStringFunctions() throws SQLException {
     LOGGER.log(Level.INFO, "Called getStringFunctions()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_STRING_FUNCTIONS);
   }
@@ -1432,9 +1460,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schemaPattern, final String tableNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getSuperTables()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TABLE_CAT String => the type's catalog (may be null) TABLE_SCHEM String =>
@@ -1442,9 +1472,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * String => the direct super type's name
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     cols2Pos.put("table_schem", 1);
     cols2Pos.put("table_name", 2);
@@ -1468,9 +1498,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schemaPattern, final String typeNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getSuperTypes()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TYPE_CAT String => the UDT's catalog (may be null) TYPE_SCHEM String => UDT's
@@ -1480,9 +1512,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * => the direct super type's name
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("type_cat", 0);
     cols2Pos.put("type_schem", 1);
     cols2Pos.put("type_name", 2);
@@ -1511,7 +1543,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getSystemFunctions() throws SQLException {
     LOGGER.log(Level.INFO, "Called getSystemFunctions()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SYSTEM_FUNCTIONS);
   }
@@ -1521,9 +1553,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String catalog, final String schemaPattern, final String tableNamePattern)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getTablePrivileges()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
@@ -1534,9 +1568,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * if not; null if unknown
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("table_cat", 0);
     cols2Pos.put("table_schem", 1);
     cols2Pos.put("table_name", 2);
@@ -1573,7 +1607,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       throws SQLException {
     // we only have one table type
     LOGGER.log(Level.INFO, "Called getTables()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_TABLES,
             schemaPattern,
@@ -1590,7 +1624,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       throws SQLException {
     // we only have one table type
     LOGGER.log(Level.INFO, "Called getSystemTables()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_SYSTEM_TABLES,
             schemaPattern,
@@ -1606,7 +1640,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final String[] types)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getViews()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_VIEWS,
             schemaPattern,
@@ -1618,7 +1652,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getTableTypes() throws SQLException {
     LOGGER.log(Level.INFO, "Called getTableTypes()");
-    ArrayList<Object> rs = new ArrayList<Object>();
+    final ArrayList<Object> rs = new ArrayList<Object>();
     ArrayList<Object> row = new ArrayList<Object>();
     row.add(new String("SYSTEM TABLE"));
     rs.add(row);
@@ -1628,13 +1662,13 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
     row = new ArrayList<Object>();
     row.add(new String("VIEW"));
     rs.add(row);
-    XGResultSet retval =
-        new XGResultSet((XGConnection) conn, rs, (XGStatement) conn.createStatement());
-    HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final XGResultSet retval =
+        new XGResultSet((XGConnection) this.conn, rs, (XGStatement) this.conn.createStatement());
+    final HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
     cols2Pos.put("table_type", 0);
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
     pos2Cols.put(0, "table_type");
-    HashMap<String, String> cols2Types = new HashMap<String, String>();
+    final HashMap<String, String> cols2Types = new HashMap<String, String>();
     cols2Types.put("table_type", "CHAR");
     retval.setCols2Pos(cols2Pos);
     retval.setPos2Cols(pos2Cols);
@@ -1645,7 +1679,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getTimeDateFunctions() throws SQLException {
     LOGGER.log(Level.INFO, "Called getTimeDateFunctions()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataString(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_TIME_DATE_FUNCTIONS);
   }
@@ -1653,7 +1687,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getTypeInfo() throws SQLException {
     LOGGER.log(Level.INFO, "Called getTypeInfo()");
-    return ((XGStatement) conn.createStatement())
+    return ((XGStatement) this.conn.createStatement())
         .fetchSystemMetadataResultSet(
             ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_TYPE_INFO,
             "",
@@ -1670,9 +1704,11 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
       final int[] types)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getUDTs()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * TYPE_CAT String => the type's catalog (may be null) TYPE_SCHEM String =>
@@ -1686,9 +1722,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * USER_DEFINED)
      */
 
-    Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    Map<String, String> cols2Types = new HashMap<String, String>();
+    final Map<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final Map<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("type_cat", 0);
     cols2Pos.put("type_schem", 1);
     cols2Pos.put("type_name", 2);
@@ -1716,22 +1752,24 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
   @Override
   public String getURL() throws SQLException {
     LOGGER.log(Level.INFO, "Called getURL()");
-    return ((XGConnection) conn).getURL();
+    return ((XGConnection) this.conn).getURL();
   }
 
   @Override
   public String getUserName() throws SQLException {
     LOGGER.log(Level.INFO, "Called getUserName()");
-    return ((XGConnection) conn).getUser();
+    return ((XGConnection) this.conn).getUser();
   }
 
   @Override
   public ResultSet getVersionColumns(final String catalog, final String schema, final String table)
       throws SQLException {
     LOGGER.log(Level.INFO, "Called getVersionColumns()");
-    XGResultSet retval =
+    final XGResultSet retval =
         new XGResultSet(
-            (XGConnection) conn, new ArrayList<Object>(), (XGStatement) conn.createStatement());
+            (XGConnection) this.conn,
+            new ArrayList<Object>(),
+            (XGStatement) this.conn.createStatement());
 
     /*
      * SCOPE short => is not used COLUMN_NAME String => column name DATA_TYPE int =>
@@ -1744,9 +1782,9 @@ public class XGDatabaseMetaData implements DatabaseMetaData {
      * versionColumnPseudo - is a pseudo column
      */
 
-    HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
-    TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
-    HashMap<String, String> cols2Types = new HashMap<String, String>();
+    final HashMap<String, Integer> cols2Pos = new HashMap<String, Integer>();
+    final TreeMap<Integer, String> pos2Cols = new TreeMap<Integer, String>();
+    final HashMap<String, String> cols2Types = new HashMap<String, String>();
     cols2Pos.put("scope", 0);
     cols2Pos.put("column_name", 1);
     cols2Pos.put("data_type", 2);

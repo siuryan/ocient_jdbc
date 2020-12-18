@@ -805,7 +805,7 @@ public class SQLStates {
       new SQLStates(
           "The referenced role does not exist", OBJECT_NOT_FOUND_STATE, ROLE_NOT_FOUND_CODE);
 
-  public static SQLException newGenericException(Exception e) {
+  public static SQLException newGenericException(final Exception e) {
     String reason = e.getMessage();
     if (reason == null) {
       reason = "";
@@ -828,11 +828,11 @@ public class SQLStates {
 
   @Override
   public SQLException clone() {
-    return new SQLException(reason, sqlState, sqlCode);
+    return new SQLException(this.reason, this.sqlState, this.sqlCode);
   }
 
-  public SQLException cloneAndSpecify(String newReason) {
-    return new SQLException(newReason, sqlState, sqlCode);
+  public SQLException cloneAndSpecify(final String newReason) {
+    return new SQLException(newReason, this.sqlState, this.sqlCode);
   }
 
   public boolean equals(final SQLException e) {
