@@ -780,7 +780,7 @@ public class CLI {
           while (rs.next()) line.append(rs.getString("VIEW_QUERY_TEXT"));
 
           if (line.length() != 0) {
-            line.setLength(line.length() - 2);
+            line.setLength(line.length());
             System.out.println(line);
           }
         }

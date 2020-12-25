@@ -5,6 +5,13 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 //tag::compact[]
+== 1.68 (2020-12-24)
+
+New Features::
+
+ * Fix describe view truncate in CLI.
+
+//tag::compact[]
 == 1.67 (2020-12-14)
 
 New Features::
