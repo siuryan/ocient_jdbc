@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-//Deprecated jdbc version 1.38, plans are always strings
-import "PlanProtocol.proto";
 import "google/protobuf/wrappers.proto";
 package xg.cmdcomp;
 option java_package = "com.ocient.jdbc.proto";
@@ -212,16 +210,6 @@ message ExecuteExplainForSpark
 	PartitioningType type = 2;
 	sfixed32 partitioningParam = 3;
 	bool force = 4;
-}
-
-//Deprecated jdbc version 1.38 / db 7.0.1
-message ExplainResponse
-{
-	ConfirmationResponse response = 1;
-	xg.db.sqlPlans.PlanMessage plan = 2;
-	bool redirect = 3; //Redirect = true, means we are telling client to send the command elsewhere
-	string redirectHost = 4;
-	fixed32 redirectPort = 5;
 }
 
 message ExplainResponseStringPlan

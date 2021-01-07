@@ -1,7 +1,6 @@
 package com.ocient.jdbc;
 
 import com.google.common.base.Preconditions;
-import com.google.protobuf.util.JsonFormat;
 import com.ocient.jdbc.proto.ClientWireProtocol;
 import com.ocient.jdbc.proto.ClientWireProtocol.CancelQuery;
 import com.ocient.jdbc.proto.ClientWireProtocol.CompletedQueriesRow;
@@ -21,7 +20,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol.Request;
 import com.ocient.jdbc.proto.ClientWireProtocol.SysQueriesRow;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideCompletedQueries;
 import com.ocient.jdbc.proto.ClientWireProtocol.SystemWideQueries;
-import com.ocient.jdbc.proto.PlanProtocol.PlanMessage;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -691,41 +689,9 @@ public class XGStatement implements Statement {
     throw new SQLFeatureNotSupportedException();
   }
 
-  private boolean shouldDeprecatedExplain() {
-    return this.conn.getServerVersion().compareTo("7.0.1") == -1;
-  }
-
-  private String planProtoToString(
-      final PlanMessage plan, final ClientWireProtocol.ExplainFormat format) throws SQLException {
-    if (format == ClientWireProtocol.ExplainFormat.PROTO) {
-      return plan.toString();
-    } else // JSON
-    {
-      try {
-        return JsonFormat.printer().print(plan);
-      } catch (final Exception e) {
-        throw SQLStates.newGenericException(e);
-      }
-    }
-  }
-
-  // Used before version 7.0.1
-  // The explain responses are proto instead of strings
-  private String explainDeprecated(final String sql, final ClientWireProtocol.ExplainFormat format)
-      throws SQLException {
-    final ClientWireProtocol.ExplainResponse.Builder er =
-        (ClientWireProtocol.ExplainResponse.Builder)
-            sendAndReceive(sql, Request.RequestType.EXECUTE_EXPLAIN, 0, false, Optional.empty());
-    return planProtoToString(er.getPlan(), format);
-  }
-
   // used by CLI
   public String explain(final String sql, final ClientWireProtocol.ExplainFormat format)
       throws SQLException {
-
-    if (shouldDeprecatedExplain()) {
-      return explainDeprecated(sql, format);
-    }
 
     final Function<Object, Void> typeSetter =
         (final Object builder) -> {
@@ -742,23 +708,9 @@ public class XGStatement implements Statement {
     return er.getPlan();
   }
 
-  // Used before version 7.0.1
-  // The explain responses are proto instead of strings
-  private String explainPlanDeprecated(
-      final String plan, final ClientWireProtocol.ExplainFormat format) throws SQLException {
-    final ClientWireProtocol.ExplainResponse.Builder er =
-        (ClientWireProtocol.ExplainResponse.Builder)
-            sendAndReceive(plan, Request.RequestType.EXPLAIN_PLAN, 0, false, Optional.empty());
-    return planProtoToString(er.getPlan(), format);
-  }
-
   // used by CLI
   public String explainPlan(final String plan, final ClientWireProtocol.ExplainFormat format)
       throws SQLException {
-
-    if (shouldDeprecatedExplain()) {
-      return explainPlanDeprecated(plan, format);
-    }
 
     final Function<Object, Void> typeSetter =
         (final Object builder) -> {
@@ -1506,10 +1458,7 @@ public class XGStatement implements Statement {
         case EXECUTE_EXPLAIN:
           c = ExecuteExplain.class;
           b1 = ExecuteExplain.newBuilder();
-          br =
-              shouldDeprecatedExplain()
-                  ? ClientWireProtocol.ExplainResponse.newBuilder()
-                  : ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
+          br = ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
           setWrapped = b2.getClass().getMethod("setExecuteExplain", c);
           break;
         case EXECUTE_UPDATE:
@@ -1533,10 +1482,7 @@ public class XGStatement implements Statement {
         case EXPLAIN_PLAN:
           c = ExplainPlan.class;
           b1 = ExplainPlan.newBuilder();
-          br =
-              shouldDeprecatedExplain()
-                  ? ClientWireProtocol.ExplainResponse.newBuilder()
-                  : ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
+          br = ClientWireProtocol.ExplainResponseStringPlan.newBuilder();
           setWrapped = b2.getClass().getMethod("setExplainPlan", c);
           break;
         case LIST_PLAN:
