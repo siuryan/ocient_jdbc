@@ -149,12 +149,14 @@ public class XGResultSet implements ResultSet {
     requestMetaData();
     Thread t = new Thread(new XGResultSetThread());
     this.fetchThreads.add(t);
-    t.start();
-
+    // Add the threads first.
     for (int i = 1; i < numClientThreads; i++) {
       t = new Thread(new SecondaryResultSetThread());
       this.fetchThreads.add(t);
-      t.start();
+    }
+    // Then start them
+    for (final Thread thr : this.fetchThreads) {
+      thr.start();
     }
   }
 
