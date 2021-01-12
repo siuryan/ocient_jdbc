@@ -1559,14 +1559,6 @@ public class XGConnection implements Connection {
             setPSO(this.setPso);
           }
 
-          if (this.setPso == -1) {
-            // We have to turn it off
-            setPSO(false);
-          } else if (this.setPso > 0) {
-            // Set non-default threshold
-            setPSO(this.setPso);
-          }
-
           return;
         } catch (final Exception handshakeException) {
           try {
@@ -1615,14 +1607,6 @@ public class XGConnection implements Connection {
           clientHandshake(this.user, this.pwd, this.database, shouldRequestVersion);
           if (!this.setSchema.equals("")) {
             setSchema(this.setSchema);
-          }
-
-          if (this.setPso == -1) {
-            // We have to turn it off
-            setPSO(false);
-          } else if (this.setPso > 0) {
-            // Set non-default threshold
-            setPSO(this.setPso);
           }
 
           if (this.setPso == -1) {
@@ -1802,14 +1786,6 @@ public class XGConnection implements Connection {
           setPSO(this.setPso);
         }
 
-        if (this.setPso == -1) {
-          // We have to turn it off
-          setPSO(false);
-        } else if (this.setPso > 0) {
-          // Set non-default threshold
-          setPSO(this.setPso);
-        }
-
         return;
       } catch (final Exception e) {
         try {
@@ -1844,14 +1820,6 @@ public class XGConnection implements Connection {
           this.oneShotForce = true;
           if (!this.setSchema.equals("")) {
             setSchema(this.setSchema);
-          }
-
-          if (this.setPso == -1) {
-            // We have to turn it off
-            setPSO(false);
-          } else if (this.setPso > 0) {
-            // Set non-default threshold
-            setPSO(this.setPso);
           }
 
           if (this.setPso == -1) {
