@@ -1565,14 +1565,6 @@ public class XGConnection implements Connection {
             setPSO(this.setPso);
           }
 
-          if (this.setPso == -1) {
-            // We have to turn it off
-            setPSO(false);
-          } else if (this.setPso > 0) {
-            // Set non-default threshold
-            setPSO(this.setPso);
-          }
-
           return;
         } catch (final Exception handshakeException) {
           try {
@@ -1802,8 +1794,11 @@ public class XGConnection implements Connection {
           setPSO(this.setPso);
         }
 
+<<<<<<< HEAD
         resendParameters();
 
+=======
+>>>>>>> 58f55de51db6a3acc9102e7804cda9c45d04e8a1
         return;
       } catch (final Exception e) {
         try {
@@ -1848,8 +1843,11 @@ public class XGConnection implements Connection {
             setPSO(this.setPso);
           }
 
+<<<<<<< HEAD
           resendParameters();
 
+=======
+>>>>>>> 58f55de51db6a3acc9102e7804cda9c45d04e8a1
           return;
         } catch (final Exception e) {
           try {
