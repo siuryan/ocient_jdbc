@@ -2171,7 +2171,11 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "Entered driver's setMaxRows()");
     String ending = cmd.toUpperCase().substring("SET MAXROWS ".length()).trim();
     boolean reset = ending.equals("RESET");
-    Integer maxRows = Integer.parseInt(ending);
+    int maxRows = 0;
+    try {
+      maxRows = Integer.parseInt(ending);
+    } catch (NumberFormatException e) {
+    }
     return this.conn.setMaxRows(maxRows, reset);
   }
 
@@ -2179,7 +2183,11 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "Entered driver's setMaxTime()");
     String ending = cmd.toUpperCase().substring("SET MAXTIME ".length()).trim();
     boolean reset = ending.equals("RESET");
-    Integer maxTime = Integer.parseInt(ending);
+    int maxTime = 0;
+    try {
+      maxTime = Integer.parseInt(ending);
+    } catch (NumberFormatException e) {
+    }
     return this.conn.setMaxTime(maxTime, reset);
   }
 
@@ -2187,7 +2195,11 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "Entered driver's setMaxTempDisk()");
     String ending = cmd.toUpperCase().substring("SET MAXTEMPDISK ".length()).trim();
     boolean reset = ending.equals("RESET");
-    Integer maxTempDisk = Integer.parseInt(ending);
+    int maxTempDisk = 0;
+    try {
+      maxTempDisk = Integer.parseInt(ending);
+    } catch (NumberFormatException e) {
+    }
     return this.conn.setMaxTempDisk(maxTempDisk, reset);
   }
 
@@ -2195,7 +2207,11 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "Entered driver's setConcurrency()");
     String ending = cmd.toUpperCase().substring("SET CONCURRENCY ".length()).trim();
     boolean reset = ending.equals("RESET");
-    Integer concurrency = Integer.parseInt(ending);
+    int concurrency = 0;
+    try {
+      concurrency = Integer.parseInt(ending);
+    } catch (NumberFormatException e) {
+    }
     return this.conn.setConcurrency(concurrency, reset);
   }
 
@@ -2203,7 +2219,11 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.INFO, "Entered driver's setPriority()");
     String ending = cmd.toUpperCase().substring("SET PRIORITY ".length()).trim();
     boolean reset = ending.equals("RESET");
-    Double priority = Double.parseDouble(ending);
+    double priority = 0;
+    try {
+      priority = Integer.parseInt(ending);
+    } catch (NumberFormatException e) {
+    }
     return this.conn.setPriority(priority, reset);
   }
 
