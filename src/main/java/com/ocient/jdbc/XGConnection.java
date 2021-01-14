@@ -9,7 +9,7 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseTyp
 import com.ocient.jdbc.proto.ClientWireProtocol.ForceExternal;
 import com.ocient.jdbc.proto.ClientWireProtocol.GetSchema;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
-import com.ocient.jdbc.proto.ClientWireProtocol.SetPSO;
+import com.ocient.jdbc.proto.ClientWireProtocol.SetParameter;
 import com.ocient.jdbc.proto.ClientWireProtocol.SetSchema;
 import com.ocient.jdbc.proto.ClientWireProtocol.TestConnection;
 import java.io.BufferedInputStream;
@@ -260,6 +260,11 @@ public class XGConnection implements Connection {
   protected String serverVersion = "";
   protected String setSchema = "";
   protected long setPso = 0;
+  public Integer maxRows = null;
+  private Integer maxTime = null;
+  private Integer maxTempDisk = null;
+  private Integer concurrency = null;
+  private Double priority = null;
   protected boolean force = false;
   private volatile long timeoutMillis = 0L; // 0L means no timeout set
 
@@ -1673,6 +1678,8 @@ public class XGConnection implements Connection {
         setPSO(this.setPso);
       }
 
+      resendParameters();
+
       return;
     } catch (final Exception handshakeException) {
       try {
@@ -1786,6 +1793,8 @@ public class XGConnection implements Connection {
           setPSO(this.setPso);
         }
 
+        resendParameters();
+
         return;
       } catch (final Exception e) {
         try {
@@ -1829,6 +1838,8 @@ public class XGConnection implements Connection {
             // Set non-default threshold
             setPSO(this.setPso);
           }
+
+          resendParameters();
 
           return;
         } catch (final Exception e) {
@@ -1952,13 +1963,18 @@ public class XGConnection implements Connection {
 
     // send request
     this.setPso = threshold;
-    final ClientWireProtocol.SetPSO.Builder builder = ClientWireProtocol.SetPSO.newBuilder();
-    builder.setThreshold(threshold);
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+
+    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.PSO.newBuilder();
+    innerBuilder.setThreshold(threshold);
+    builder.setPsoThreshold(innerBuilder.build());
     builder.setReset(false);
-    final SetPSO msg = builder.build();
+    final SetParameter msg = builder.build();
     final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
-    b2.setType(ClientWireProtocol.Request.RequestType.SET_PSO);
-    b2.setSetPso(msg);
+    b2.setType(ClientWireProtocol.Request.RequestType.SET_PARAMETER);
+    b2.setSetParameter(msg);
     final Request wrapper = b2.build();
 
     try {
@@ -1992,13 +2008,17 @@ public class XGConnection implements Connection {
     }
 
     // send request
-    final ClientWireProtocol.SetPSO.Builder builder = ClientWireProtocol.SetPSO.newBuilder();
-    builder.setThreshold(-1);
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.PSO.newBuilder();
+    innerBuilder.setThreshold(-1);
+    builder.setPsoThreshold(innerBuilder.build());
     builder.setReset(on);
-    final SetPSO msg = builder.build();
+    final SetParameter msg = builder.build();
     final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
-    b2.setType(ClientWireProtocol.Request.RequestType.SET_PSO);
-    b2.setSetPso(msg);
+    b2.setType(ClientWireProtocol.Request.RequestType.SET_PARAMETER);
+    b2.setSetParameter(msg);
     final Request wrapper = b2.build();
 
     try {
@@ -2014,6 +2034,112 @@ public class XGConnection implements Connection {
               "Failed sending set pso request to the server with exception %s with message ",
               e.toString(), e.getMessage()));
     }
+  }
+
+  private void resendParameters() {
+    if (maxRows != null) {
+      setMaxRows(maxRows, false);
+    }
+    if (maxTime != null) {
+      setMaxTime(maxTime, false);
+    }
+    if (maxTempDisk != null) {
+      setMaxTempDisk(maxTempDisk, false);
+    }
+    if (concurrency != null) {
+      setConcurrency(concurrency, false);
+    }
+    if (priority != null) {
+      setPriority(priority, false);
+    }
+  }
+
+  public int sendParameterMessage(final ClientWireProtocol.SetParameter param) {
+    final ClientWireProtocol.Request.Builder builder = ClientWireProtocol.Request.newBuilder();
+    builder.setType(ClientWireProtocol.Request.RequestType.SET_PARAMETER);
+    builder.setSetParameter(param);
+    final Request wrapper = builder.build();
+
+    try {
+      this.out.write(intToBytes(wrapper.getSerializedSize()));
+      wrapper.writeTo(this.out);
+      this.out.flush();
+      getStandardResponse();
+    } catch (final Exception e) {
+      // Doesn't matter...
+      LOGGER.log(
+          Level.WARNING,
+          String.format(
+              "Failed sending set parameter request to the server with exception %s with message %s",
+              e, e.getMessage()));
+      return 1;
+    }
+    return 0;
+  }
+
+  public int setMaxRows(Integer maxRows, boolean reset) {
+    this.maxRows = maxRows;
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    builder.setReset(reset);
+    final ClientWireProtocol.SetParameter.RowLimit.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.RowLimit.newBuilder();
+    innerBuilder.setRowLimit(maxRows != null ? maxRows : 0);
+    builder.setRowLimit(innerBuilder.build());
+
+    return sendParameterMessage(builder.build());
+  }
+
+  public int setMaxTime(Integer maxTime, boolean reset) {
+    this.maxTime = maxTime;
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    builder.setReset(reset);
+    final ClientWireProtocol.SetParameter.TimeLimit.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.TimeLimit.newBuilder();
+    innerBuilder.setTimeLimit(maxTime != null ? maxTime : 0);
+    builder.setTimeLimit(innerBuilder.build());
+
+    return sendParameterMessage(builder.build());
+  }
+
+  public int setMaxTempDisk(Integer maxTempDisk, boolean reset) {
+    this.maxTempDisk = maxTempDisk;
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    builder.setReset(reset);
+    final ClientWireProtocol.SetParameter.MaxTempDiskLimit.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.MaxTempDiskLimit.newBuilder();
+    innerBuilder.setTempDiskLimit(maxTempDisk != null ? maxTempDisk : 0);
+    builder.setTempDiskLimit(innerBuilder.build());
+
+    return sendParameterMessage(builder.build());
+  }
+
+  public int setConcurrency(Integer concurrency, boolean reset) {
+    this.concurrency = concurrency;
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    builder.setReset(reset);
+    final ClientWireProtocol.SetParameter.Concurrency.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.Concurrency.newBuilder();
+    innerBuilder.setConcurrency(concurrency != null ? concurrency : 0);
+    builder.setConcurrency(innerBuilder.build());
+
+    return sendParameterMessage(builder.build());
+  }
+
+  public int setPriority(Double priority, boolean reset) {
+    this.priority = priority;
+    final ClientWireProtocol.SetParameter.Builder builder =
+        ClientWireProtocol.SetParameter.newBuilder();
+    builder.setReset(reset);
+    final ClientWireProtocol.SetParameter.Priority.Builder innerBuilder =
+        ClientWireProtocol.SetParameter.Priority.newBuilder();
+    innerBuilder.setPriority(priority != null ? priority : 0.0);
+    builder.setPriority(innerBuilder.build());
+
+    return sendParameterMessage(builder.build());
   }
 
   @Override

@@ -3,6 +3,16 @@
 
 All our jdbc drivers are located {drivers_repo}[here]. 
 Below is the release notes for every driver version that has customer implication.
+//tag::compact[]
+== 1.71 (2020-1-14)
+
+New Features::
+
+ * Add support for session overrides of service class limits
+ * SET MAXROWS {N}
+ * SET MAXTIME {N}
+ * SET PRIORITY {N}
+ * SET CONCURRENCY {N}
 
 //tag::compact[]
 == 1.70 (2020-1-12)
