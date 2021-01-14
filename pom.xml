@@ -3,11 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-<<<<<<< HEAD
   <version>1.71</version>
-=======
-  <version>1.70</version>
->>>>>>> 58f55de51db6a3acc9102e7804cda9c45d04e8a1
   <!--JDBC VERSION NUMBER HERE -->
   <name>${project.groupId}:${project.artifactId}</name>
   <description>JDBC Driver for connecting to an Ocient Database</description>
