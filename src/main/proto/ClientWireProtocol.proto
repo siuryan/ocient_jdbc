@@ -354,6 +354,8 @@ message Request
 		// 28 used above
 		ATTACH_TO_QUERY = 29;
 		// 30 used above
+		SET_PARAMETER = 34;
+
     }
 
     RequestType type = 1;
@@ -393,6 +395,7 @@ message Request
 		// 29 is defined above
 		AttachToQuery attach_to_query = 30;
 		// 31 is defined above
+		SetParameter set_parameter = 35;
     }
 }
 
@@ -521,4 +524,36 @@ message SetPSO
 {
 	int64 threshold = 1; //what we want the new threshhold to be
 	bool reset = 2; //whether we should reset back to the default, overrides whatever threshold is
+}
+
+message SetParameter
+{
+	message PSO {
+		int64 threshold = 1; //what we want the new threshhold to be
+	} 
+	message RowLimit {
+		int64 rowLimit = 1;
+	}
+	message TimeLimit{
+		int64 timeLimit= 1;
+	}
+	message MaxTempDiskLimit{
+		int64 tempDiskLimit = 1;
+	}
+	message Priority {
+		double priority= 1;
+	}
+	message Concurrency {
+		int64 concurrency = 1;
+	}
+
+	bool reset = 1; //whether we should reset back to the default, overrides whatever threshold is
+	oneof Parameter {
+		PSO pso_threshold= 2;
+		RowLimit row_limit= 3;
+		TimeLimit time_limit = 4;
+		MaxTempDiskLimit temp_disk_limit = 5;
+		Priority priority = 6;
+		Concurrency concurrency = 7;
+	}
 }

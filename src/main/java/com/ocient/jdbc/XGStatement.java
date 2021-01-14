@@ -86,7 +86,6 @@ public class XGStatement implements Statement {
   private int updateCount = -1;
   private int fetchSize = defaultFetchSize;
   protected ArrayList<Object> parms = new ArrayList<>();
-  private int maxRows = 0;
   private int numClientThreads = 0;
 
   // not thread safe because individual queries are single threaded
@@ -566,15 +565,6 @@ public class XGStatement implements Statement {
       throw SQLStates.newGenericException(e);
     }
 
-    // Handle maxRows
-    if (this.maxRows != 0) {
-      sql =
-          "WITH THE_USER_QUERY_TO_ADD_A_LIMIT_TO as ("
-              + sql
-              + ") SELECT * FROM THE_USER_QUERY_TO_ADD_A_LIMIT_TO LIMIT "
-              + this.maxRows;
-    }
-
     LOGGER.log(Level.INFO, String.format("Executing query: %s", sql));
     passUpCancel(true);
     sendAndReceive(sql, Request.RequestType.EXECUTE_QUERY, 0, false, Optional.empty());
@@ -659,6 +649,14 @@ public class XGStatement implements Statement {
       return killCancelQuery(sql);
     } else if (sql.toUpperCase().startsWith("SET MAXROWS ")) {
       return setMaxRowsSQL(sql);
+    } else if (sql.toUpperCase().startsWith("SET MAXTIME ")) {
+      return setMaxTimeSQL(sql);
+    } else if (sql.toUpperCase().startsWith("SET MAXTEMPDISK ")) {
+      return setMaxTempDiskSQL(sql);
+    } else if (sql.toUpperCase().startsWith("SET CONCURRENCY ")) {
+      return setConcurrencySQL(sql);
+    } else if (sql.toUpperCase().startsWith("SET PRIORITY ")) {
+      return setPrioritySQL(sql);
     } else if (sql.toUpperCase().startsWith("SET SCHEMA ")) {
       return setSchema(sql);
     }
@@ -1215,7 +1213,7 @@ public class XGStatement implements Statement {
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    return this.maxRows;
+    return this.conn.maxRows;
   }
 
   @Override
@@ -1611,7 +1609,8 @@ public class XGStatement implements Statement {
           setQueryCancelled(false);
         }
         passUpCancel(false);
-        // Something went wrong. Did we kill the server with this query? If we did, then don't
+        // Something went wrong. Did we kill the server with this query? If we did, then
+        // don't
         // resend.
         final boolean safeToReSend = this.conn.isSockConnected();
         reconnect(); // try this at most once--if every node is down, report failure
@@ -1696,7 +1695,8 @@ public class XGStatement implements Statement {
       throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
     }
 
-    this.maxRows = max;
+    this.conn.setMaxRows(max, false);
+    // this.conn.maxRows = max;
   }
 
   private String setParms(final String in) throws SQLException {
@@ -1859,9 +1859,10 @@ public class XGStatement implements Statement {
     LOGGER.log(Level.WARNING, "unwrap() was called, which is not supported");
     throw new SQLFeatureNotSupportedException();
   }
-  /*!
-   * New functions which have been moved from the CLI into the driver.
-   * TODO: move some of these utility functions into another file to clean this up a bit.
+  /*
+   * ! New functions which have been moved from the CLI into the driver. TODO:
+   * move some of these utility functions into another file to clean this up a
+   * bit.
    */
 
   // Generate a regex for an unquoted alphanumeric ([a-zA-Z0-9_]) or quoted free
@@ -2147,9 +2148,9 @@ public class XGStatement implements Statement {
     return this.result;
   }
 
-  /*!
-   * Non result set custom functions.
-   * The int values returned by these functions will indicate the number of modifed rows.
+  /*
+   * ! Non result set custom functions. The int values returned by these functions
+   * will indicate the number of modifed rows.
    */
 
   private int killCancelQuery(final String cmd) throws SQLException {
@@ -2168,9 +2169,42 @@ public class XGStatement implements Statement {
 
   private int setMaxRowsSQL(final String cmd) throws SQLException {
     LOGGER.log(Level.INFO, "Entered driver's setMaxRows()");
-    final int maxRow = Integer.parseInt(cmd.substring("SET MAXROWS ".length()).trim());
-    setMaxRows(maxRow);
-    return 0;
+    String ending = cmd.toUpperCase().substring("SET MAXROWS ".length()).trim();
+    boolean reset = ending.equals("RESET");
+    Integer maxRows = Integer.parseInt(ending);
+    return this.conn.setMaxRows(maxRows, reset);
+  }
+
+  private int setMaxTimeSQL(final String cmd) throws SQLException {
+    LOGGER.log(Level.INFO, "Entered driver's setMaxTime()");
+    String ending = cmd.toUpperCase().substring("SET MAXTIME ".length()).trim();
+    boolean reset = ending.equals("RESET");
+    Integer maxTime = Integer.parseInt(ending);
+    return this.conn.setMaxTime(maxTime, reset);
+  }
+
+  private int setMaxTempDiskSQL(final String cmd) throws SQLException {
+    LOGGER.log(Level.INFO, "Entered driver's setMaxTempDisk()");
+    String ending = cmd.toUpperCase().substring("SET MAXTEMPDISK ".length()).trim();
+    boolean reset = ending.equals("RESET");
+    Integer maxTempDisk = Integer.parseInt(ending);
+    return this.conn.setMaxTempDisk(maxTempDisk, reset);
+  }
+
+  private int setConcurrencySQL(final String cmd) throws SQLException {
+    LOGGER.log(Level.INFO, "Entered driver's setConcurrency()");
+    String ending = cmd.toUpperCase().substring("SET CONCURRENCY ".length()).trim();
+    boolean reset = ending.equals("RESET");
+    Integer concurrency = Integer.parseInt(ending);
+    return this.conn.setConcurrency(concurrency, reset);
+  }
+
+  private int setPrioritySQL(final String cmd) throws SQLException {
+    LOGGER.log(Level.INFO, "Entered driver's setPriority()");
+    String ending = cmd.toUpperCase().substring("SET PRIORITY ".length()).trim();
+    boolean reset = ending.equals("RESET");
+    Double priority = Double.parseDouble(ending);
+    return this.conn.setPriority(priority, reset);
   }
 
   private int setSchema(final String cmd) throws SQLException {
