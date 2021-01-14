@@ -9,7 +9,6 @@ import com.ocient.jdbc.proto.ClientWireProtocol.ConfirmationResponse.ResponseTyp
 import com.ocient.jdbc.proto.ClientWireProtocol.ForceExternal;
 import com.ocient.jdbc.proto.ClientWireProtocol.GetSchema;
 import com.ocient.jdbc.proto.ClientWireProtocol.Request;
-// import com.ocient.jdbc.proto.ClientWireProtocol.SetPSO;
 import com.ocient.jdbc.proto.ClientWireProtocol.SetParameter;
 import com.ocient.jdbc.proto.ClientWireProtocol.SetSchema;
 import com.ocient.jdbc.proto.ClientWireProtocol.TestConnection;
@@ -92,8 +91,7 @@ public class XGConnection implements Connection {
         LOGGER.log(Level.INFO, "Testing connection");
 
         // send request
-        final ClientWireProtocol.TestConnection.Builder builder =
-            ClientWireProtocol.TestConnection.newBuilder();
+        final ClientWireProtocol.TestConnection.Builder builder = ClientWireProtocol.TestConnection.newBuilder();
         final TestConnection msg = builder.build();
         final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
         b2.setType(ClientWireProtocol.Request.RequestType.TEST_CONNECTION);
@@ -106,11 +104,8 @@ public class XGConnection implements Connection {
           XGConnection.this.out.flush();
           getStandardResponse();
         } catch (SQLException | IOException e) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Connection test failed with exception %s with message %s",
-                  e.toString(), e.getMessage()));
+          LOGGER.log(Level.WARNING,
+              String.format("Connection test failed with exception %s with message %s", e.toString(), e.getMessage()));
           if (e instanceof SQLException && !SQLStates.UNEXPECTED_EOF.equals((SQLException) e)) {
             throw e;
           }
@@ -147,8 +142,7 @@ public class XGConnection implements Connection {
       super();
       this.tls = t;
 
-      final TrustManagerFactory tmf =
-          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
       tmf.init((java.security.KeyStore) null);
 
@@ -161,19 +155,14 @@ public class XGConnection implements Connection {
     }
 
     @Override
-    public void checkServerTrusted(
-        final X509Certificate certificates[],
-        final String s,
-        final javax.net.ssl.SSLEngine sslEngine)
-        throws CertificateException {
-      LOGGER.log(
-          Level.INFO, "x509ExtendedTrustManager: checkServerTrusted " + s + "with sslEngine");
+    public void checkServerTrusted(final X509Certificate certificates[], final String s,
+        final javax.net.ssl.SSLEngine sslEngine) throws CertificateException {
+      LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkServerTrusted " + s + "with sslEngine");
       checkServerTrusted(certificates, s);
     }
 
     @Override
-    public void checkServerTrusted(
-        final X509Certificate[] certificates, final String s, final java.net.Socket socket)
+    public void checkServerTrusted(final X509Certificate[] certificates, final String s, final java.net.Socket socket)
         throws CertificateException {
       LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkServerTrusted " + s + "with socket");
       checkServerTrusted(certificates, s);
@@ -185,41 +174,36 @@ public class XGConnection implements Connection {
     }
 
     @Override
-    public void checkServerTrusted(final X509Certificate[] certificates, final String s)
-        throws CertificateException {
+    public void checkServerTrusted(final X509Certificate[] certificates, final String s) throws CertificateException {
       LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkServerTrusted " + s);
       try {
         this.defaultTm.checkServerTrusted(certificates, s);
       } catch (final CertificateException e) {
 
         // Rethrow the exception if we are not using level ON
-        if (this.tls != Tls.UNVERIFIED) throw e;
-        else LOGGER.log(Level.WARNING, "Ignoring certificate exception: " + e.getMessage());
+        if (this.tls != Tls.UNVERIFIED)
+          throw e;
+        else
+          LOGGER.log(Level.WARNING, "Ignoring certificate exception: " + e.getMessage());
       }
     }
 
     @Override
-    public void checkClientTrusted(
-        final X509Certificate certificates[],
-        final String s,
-        final javax.net.ssl.SSLEngine sslEngine)
-        throws CertificateException {
-      LOGGER.log(
-          Level.INFO, "x509ExtendedTrustManager: checkClientTrusted " + s + "with sslEngine");
+    public void checkClientTrusted(final X509Certificate certificates[], final String s,
+        final javax.net.ssl.SSLEngine sslEngine) throws CertificateException {
+      LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkClientTrusted " + s + "with sslEngine");
       checkClientTrusted(certificates, s);
     }
 
     @Override
-    public void checkClientTrusted(
-        final X509Certificate[] certificates, final String s, final java.net.Socket socket)
+    public void checkClientTrusted(final X509Certificate[] certificates, final String s, final java.net.Socket socket)
         throws CertificateException {
       LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkClientTrusted " + s + "with socket");
       checkClientTrusted(certificates, s);
     }
 
     @Override
-    public void checkClientTrusted(final X509Certificate[] certificates, final String s)
-        throws CertificateException {
+    public void checkClientTrusted(final X509Certificate[] certificates, final String s) throws CertificateException {
 
       LOGGER.log(Level.INFO, "x509ExtendedTrustManager: checkClientTrusted " + s);
       try {
@@ -228,8 +212,10 @@ public class XGConnection implements Connection {
         LOGGER.log(Level.WARNING, "checkClientTrusted caught " + e.getMessage());
 
         // Rethrow the exception if we are not using level ON
-        if (this.tls != Tls.UNVERIFIED) throw e;
-        else LOGGER.log(Level.WARNING, "Ignoring certificate exception: " + e.getMessage());
+        if (this.tls != Tls.UNVERIFIED)
+          throw e;
+        else
+          LOGGER.log(Level.WARNING, "Ignoring certificate exception: " + e.getMessage());
       }
     }
 
@@ -237,8 +223,7 @@ public class XGConnection implements Connection {
     public X509Certificate[] getAcceptedIssuers() {
       return this.defaultTm.getAcceptedIssuers();
     }
-  }
-  ;
+  };
 
   protected BufferedInputStream in;
   protected BufferedOutputStream out;
@@ -285,23 +270,12 @@ public class XGConnection implements Connection {
 
   protected Map<String, Class<?>> typeMap;
 
-  public XGConnection(
-      final String user,
-      final String pwd,
-      final String ip,
-      final int portNum,
-      final String url,
-      final String database,
-      final String driverVersion,
-      final String force,
-      final Tls tls)
-      throws Exception {
+  public XGConnection(final String user, final String pwd, final String ip, final int portNum, final String url,
+      final String database, final String driverVersion, final String force, final Tls tls) throws Exception {
     this.originalIp = ip;
     this.originalPort = portNum;
 
-    LOGGER.log(
-        Level.INFO,
-        String.format("Connection constructor is setting IP = %s and PORT = %d", ip, portNum));
+    LOGGER.log(Level.INFO, String.format("Connection constructor is setting IP = %s and PORT = %d", ip, portNum));
 
     if (force.equals("true")) {
       this.force = true;
@@ -319,15 +293,8 @@ public class XGConnection implements Connection {
     this.typeMap = new HashMap<String, Class<?>>();
   }
 
-  public XGConnection(
-      final String user,
-      final String pwd,
-      final int portNum,
-      final String url,
-      final String database,
-      final String driverVersion,
-      final boolean force,
-      final Tls tls) {
+  public XGConnection(final String user, final String pwd, final int portNum, final String url, final String database,
+      final String driverVersion, final boolean force, final Tls tls) {
     this.force = force;
     this.url = url;
     this.user = user;
@@ -352,23 +319,14 @@ public class XGConnection implements Connection {
   }
 
   @SuppressWarnings("unchecked")
-  public XGConnection copy(final boolean shouldRequestVersion, final boolean noRedirect)
-      throws SQLException {
+  public XGConnection copy(final boolean shouldRequestVersion, final boolean noRedirect) throws SQLException {
     boolean doForce = this.force;
     if (noRedirect) {
       doForce = true;
     }
 
-    final XGConnection retval =
-        new XGConnection(
-            this.user,
-            this.pwd,
-            this.portNum,
-            this.url,
-            this.database,
-            this.driverVersion,
-            doForce,
-            this.tls);
+    final XGConnection retval = new XGConnection(this.user, this.pwd, this.portNum, this.url, this.database,
+        this.driverVersion, doForce, this.tls);
     try {
       retval.connected = false;
       retval.setSchema = this.setSchema;
@@ -386,10 +344,8 @@ public class XGConnection implements Connection {
       retval.serverVersion = this.serverVersion;
       retval.reconnect(shouldRequestVersion);
     } catch (final Exception e) {
-      LOGGER.log(
-          Level.SEVERE,
-          String.format(
-              "Copying the connection for a new statement failed with exception %s with message %s",
+      LOGGER.log(Level.SEVERE,
+          String.format("Copying the connection for a new statement failed with exception %s with message %s",
               e.toString(), e.getMessage()));
       try {
         retval.close();
@@ -404,8 +360,7 @@ public class XGConnection implements Connection {
   public void setServerVersion(final String version) {
     // Versions are major.minor.patch-date
     // don't want the date
-    final String cleanVersion =
-        version.indexOf("-") == -1 ? version : version.substring(0, version.indexOf("-"));
+    final String cleanVersion = version.indexOf("-") == -1 ? version : version.substring(0, version.indexOf("-"));
     this.serverVersion = cleanVersion;
   }
 
@@ -460,7 +415,9 @@ public class XGConnection implements Connection {
     return this.timeoutMillis;
   }
 
-  /** Creates a new {@link Timer} or returns the existing one if it already exists */
+  /**
+   * Creates a new {@link Timer} or returns the existing one if it already exists
+   */
   private Timer getTimer() {
     return this.timer.updateAndGet(existing -> existing != null ? existing : new Timer());
   }
@@ -468,7 +425,7 @@ public class XGConnection implements Connection {
   /**
    * Schedules the task to run after the specified delay
    *
-   * @param task the task to run
+   * @param task    the task to run
    * @param timeout delay in milliseconds
    */
   protected void addTimeout(final TimerTask task, final long timeout) {
@@ -478,8 +435,9 @@ public class XGConnection implements Connection {
   /**
    * Purges all canceled tasks from the timer.
    *
-   * <p>Note: You should only call this if you've canceled a timer. This call may create a {@link
-   * Timer} object if one does not already exist
+   * <p>
+   * Note: You should only call this if you've canceled a timer. This call may
+   * create a {@link Timer} object if one does not already exist
    */
   protected void purgeTimeoutTasks() {
     getTimer().purge();
@@ -517,7 +475,7 @@ public class XGConnection implements Connection {
           LOGGER.log(Level.INFO, "TLS Connection " + this.tls.name());
           final SSLContext sc = SSLContext.getInstance("TLS");
 
-          final TrustManager[] tms = new TrustManager[] {new XGTrustManager(this.tls)};
+          final TrustManager[] tms = new TrustManager[] { new XGTrustManager(this.tls) };
 
           sc.init(null, tms, null);
           final SSLSocketFactory sslsocketfactory = sc.getSocketFactory();
@@ -559,14 +517,15 @@ public class XGConnection implements Connection {
       throw e;
     }
   }
-  /*!
-   * Utility for checking if the previously connected ip and port is still available.
+
+  /*
+   * ! Utility for checking if the previously connected ip and port is still
+   * available.
    */
   boolean isSockConnected() {
     try {
       final Socket testSocket = new Socket();
-      testSocket.connect(
-          new InetSocketAddress(this.connectedIp, this.connectedPort), this.networkTimeout);
+      testSocket.connect(new InetSocketAddress(this.connectedIp, this.connectedPort), this.networkTimeout);
       testSocket.close();
       return true;
     } catch (final Exception e) {
@@ -575,14 +534,12 @@ public class XGConnection implements Connection {
     }
   }
 
-  private void clientHandshake(
-      final String userid, final String pwd, final String db, final boolean shouldRequestVersion)
-      throws Exception {
+  private void clientHandshake(final String userid, final String pwd, final String db,
+      final boolean shouldRequestVersion) throws Exception {
     try {
       LOGGER.log(Level.INFO, "Beginning handshake");
       // send first part of handshake - contains userid
-      final ClientWireProtocol.ClientConnection.Builder builder =
-          ClientWireProtocol.ClientConnection.newBuilder();
+      final ClientWireProtocol.ClientConnection.Builder builder = ClientWireProtocol.ClientConnection.newBuilder();
       builder.setUserid(userid);
       builder.setDatabase(this.database);
       builder.setClientid(this.client);
@@ -597,8 +554,8 @@ public class XGConnection implements Connection {
       this.out.flush();
 
       // get response
-      final ClientWireProtocol.ClientConnectionResponse.Builder ccr =
-          ClientWireProtocol.ClientConnectionResponse.newBuilder();
+      final ClientWireProtocol.ClientConnectionResponse.Builder ccr = ClientWireProtocol.ClientConnectionResponse
+          .newBuilder();
       int length = getLength();
       byte[] data = new byte[length];
       readBytes(data);
@@ -615,8 +572,7 @@ public class XGConnection implements Connection {
         String keySpec = ccr.getPubKey();
         keySpec = keySpec.replace("-----BEGIN PUBLIC KEY-----\n", "");
         keySpec = keySpec.replace("-----END PUBLIC KEY-----\n", "");
-        final byte[] keyBytes =
-            Base64.getMimeDecoder().decode(keySpec.getBytes(StandardCharsets.UTF_8));
+        final byte[] keyBytes = Base64.getMimeDecoder().decode(keySpec.getBytes(StandardCharsets.UTF_8));
         final X509EncodedKeySpec x509keySpec = new X509EncodedKeySpec(keyBytes);
         final KeyFactory keyFact = KeyFactory.getInstance("DH");
         final DHPublicKey pubKey = (DHPublicKey) keyFact.generatePublic(x509keySpec);
@@ -647,16 +603,11 @@ public class XGConnection implements Connection {
         macKey = sha.digest(buffer);
 
         final PublicKey clientPub = kp.getPublic();
-        myPubKey =
-            "-----BEGIN PUBLIC KEY-----\n"
-                + Base64.getMimeEncoder().encodeToString(clientPub.getEncoded())
-                + "\n-----END PUBLIC KEY-----\n";
+        myPubKey = "-----BEGIN PUBLIC KEY-----\n" + Base64.getMimeEncoder().encodeToString(clientPub.getEncoded())
+            + "\n-----END PUBLIC KEY-----\n";
       } catch (final Exception e) {
-        LOGGER.log(
-            Level.WARNING,
-            String.format(
-                "Exception %s occurred during handshake with message %s",
-                e.toString(), e.getMessage()));
+        LOGGER.log(Level.WARNING,
+            String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
         throw e;
       }
 
@@ -686,8 +637,7 @@ public class XGConnection implements Connection {
 
       // send handshake part2
       LOGGER.log(Level.INFO, "Beginning handshake part 2");
-      final ClientWireProtocol.ClientConnection2.Builder hand2 =
-          ClientWireProtocol.ClientConnection2.newBuilder();
+      final ClientWireProtocol.ClientConnection2.Builder hand2 = ClientWireProtocol.ClientConnection2.newBuilder();
       hand2.setCipher(ByteString.copyFrom(ciphertext));
       hand2.setPubKey(myPubKey);
       hand2.setHmac(ByteString.copyFrom(calculatedMac));
@@ -709,8 +659,8 @@ public class XGConnection implements Connection {
       this.out.flush();
 
       // getResponse
-      final ClientWireProtocol.ClientConnection2Response.Builder ccr2 =
-          ClientWireProtocol.ClientConnection2Response.newBuilder();
+      final ClientWireProtocol.ClientConnection2Response.Builder ccr2 = ClientWireProtocol.ClientConnection2Response
+          .newBuilder();
       length = getLength();
       data = new byte[length];
       readBytes(data);
@@ -719,8 +669,8 @@ public class XGConnection implements Connection {
       rType = response.getType();
 
       LOGGER.log(Level.INFO, "Handshake response received");
-      final SQLException state =
-          new SQLException(response.getReason(), response.getSqlState(), response.getVendorCode());
+      final SQLException state = new SQLException(response.getReason(), response.getSqlState(),
+          response.getVendorCode());
       // if we had a failed handshake, then something went wrong with verification on
       // the server, just try again(up to 5 times)
       if (SQLStates.FAILED_HANDSHAKE.equals(state) && this.retryCounter++ < 5) {
@@ -782,22 +732,17 @@ public class XGConnection implements Connection {
         final int port = ccr2.getRedirectPort();
         redirect(host, port, shouldRequestVersion);
         // We have a lot of dangerous circular function calls.
-        // If we were redirected, then we already have the server version. We need to return here.
+        // If we were redirected, then we already have the server version. We need to
+        // return here.
         if (getVersion() != "") {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Returning in redirect because we were redirected with address: %s",
-                  this.serverVersion));
+          LOGGER.log(Level.WARNING,
+              String.format("Returning in redirect because we were redirected with address: %s", this.serverVersion));
           return;
         }
       }
     } catch (final Exception e) {
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Exception %s occurred during handshake with message %s",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING,
+          String.format("Exception %s occurred during handshake with message %s", e.toString(), e.getMessage()));
       e.printStackTrace();
 
       try {
@@ -818,18 +763,13 @@ public class XGConnection implements Connection {
     LOGGER.log(Level.INFO, "Attempting to fetch server version");
     try {
       final XGStatement stmt = new XGStatement(this, false);
-      final String version =
-          stmt.fetchSystemMetadataString(
-              ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall
-                  .GET_DATABASE_PRODUCT_VERSION);
+      final String version = stmt.fetchSystemMetadataString(
+          ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
       LOGGER.log(Level.INFO, String.format("Fetched server version: %s", version));
       setServerVersion(version);
     } catch (final Exception e) {
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Exception %s occurred while fetching server version with message %s",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING, String.format("Exception %s occurred while fetching server version with message %s",
+          e.toString(), e.getMessage()));
       try {
         this.sock.close();
       } catch (final Exception f) {
@@ -959,8 +899,7 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public Statement createStatement(final int arg0, final int arg1, final int arg2)
-      throws SQLException {
+  public Statement createStatement(final int arg0, final int arg1, final int arg2) throws SQLException {
     LOGGER.log(Level.INFO, "Called createStatement()");
     if (this.closed) {
       LOGGER.log(Level.WARNING, "createStatement() is throwing CALL_ON_CLOSED_OBJECT");
@@ -1094,11 +1033,8 @@ public class XGConnection implements Connection {
     try {
       return getSchemaFromServer();
     } catch (final Exception e) {
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Exception %s occurred during getSchema() with message %s",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING,
+          String.format("Exception %s occurred during getSchema() with message %s", e.toString(), e.getMessage()));
       if (e instanceof SQLException) {
         throw (SQLException) e;
       } else {
@@ -1130,8 +1066,7 @@ public class XGConnection implements Connection {
     }
 
     // get response
-    final ClientWireProtocol.GetSchemaResponse.Builder gsr =
-        ClientWireProtocol.GetSchemaResponse.newBuilder();
+    final ClientWireProtocol.GetSchemaResponse.Builder gsr = ClientWireProtocol.GetSchemaResponse.newBuilder();
 
     try {
       final int length = getLength();
@@ -1295,15 +1230,14 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public CallableStatement prepareCall(final String arg0, final int arg1, final int arg2)
-      throws SQLException {
+  public CallableStatement prepareCall(final String arg0, final int arg1, final int arg2) throws SQLException {
     LOGGER.log(Level.WARNING, "prepareCall() was called, which is not supported");
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
-  public CallableStatement prepareCall(
-      final String arg0, final int arg1, final int arg2, final int arg3) throws SQLException {
+  public CallableStatement prepareCall(final String arg0, final int arg1, final int arg2, final int arg3)
+      throws SQLException {
     LOGGER.log(Level.WARNING, "prepareCall() was called, which is not supported");
     throw new SQLFeatureNotSupportedException();
   }
@@ -1331,8 +1265,7 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public PreparedStatement prepareStatement(final String arg0, final int arg1, final int arg2)
-      throws SQLException {
+  public PreparedStatement prepareStatement(final String arg0, final int arg1, final int arg2) throws SQLException {
     LOGGER.log(Level.INFO, "Called prepareStatement()");
     if (this.closed) {
       LOGGER.log(Level.WARNING, "prepareStatement() is throwing CALL_ON_CLOSED_OBJECT");
@@ -1348,8 +1281,8 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public PreparedStatement prepareStatement(
-      final String arg0, final int arg1, final int arg2, final int arg3) throws SQLException {
+  public PreparedStatement prepareStatement(final String arg0, final int arg1, final int arg2, final int arg3)
+      throws SQLException {
     LOGGER.log(Level.INFO, "Called prepareStatement()");
     if (this.closed) {
       LOGGER.log(Level.WARNING, "prepareStatement() is throwing CALL_ON_CLOSED_OBJECT");
@@ -1365,21 +1298,18 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public PreparedStatement prepareStatement(final String arg0, final int[] arg1)
-      throws SQLException {
+  public PreparedStatement prepareStatement(final String arg0, final int[] arg1) throws SQLException {
     LOGGER.log(Level.WARNING, "prepareStatement() was called, which is not supported");
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
-  public PreparedStatement prepareStatement(final String arg0, final String[] arg1)
-      throws SQLException {
+  public PreparedStatement prepareStatement(final String arg0, final String[] arg1) throws SQLException {
     LOGGER.log(Level.WARNING, "prepareStatement() was called, which is not supported");
     throw new SQLFeatureNotSupportedException();
   }
 
-  private void processResponseType(final ResponseType rType, final ConfirmationResponse response)
-      throws SQLException {
+  private void processResponseType(final ResponseType rType, final ConfirmationResponse response) throws SQLException {
     if (rType.equals(ResponseType.INVALID)) {
       LOGGER.log(Level.WARNING, "Server returned an invalid response");
       throw SQLStates.INVALID_RESPONSE_TYPE.clone();
@@ -1387,9 +1317,7 @@ public class XGConnection implements Connection {
       final String reason = response.getReason();
       final String sqlState = response.getSqlState();
       final int code = response.getVendorCode();
-      LOGGER.log(
-          Level.WARNING,
-          String.format("Server returned an error response [%s] %s", sqlState, reason));
+      LOGGER.log(Level.WARNING, String.format("Server returned an error response [%s] %s", sqlState, reason));
       throw new SQLException(reason, sqlState, code);
     } else if (rType.equals(ResponseType.RESPONSE_WARN)) {
       final String reason = response.getReason();
@@ -1446,9 +1374,7 @@ public class XGConnection implements Connection {
 
     // We solve this by delaying slightly, which will slow the rate
     // of stack growth enough that we will be ok
-    LOGGER.log(
-        Level.INFO,
-        String.format("Entered reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
+    LOGGER.log(Level.INFO, String.format("Entered reconnect() with shouldRequestVersion: %b", shouldRequestVersion));
     try {
       Thread.sleep(250);
     } catch (final InterruptedException e) {
@@ -1478,11 +1404,8 @@ public class XGConnection implements Connection {
         // reconnect failed so we are no longer connected
         this.connected = false;
 
-        LOGGER.log(
-            Level.WARNING,
-            String.format(
-                "Exception %s occurred in reconnect() with message %s",
-                e.toString(), e.getMessage()));
+        LOGGER.log(Level.WARNING,
+            String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
         if (e instanceof IOException) {
           throw (IOException) e;
         }
@@ -1542,11 +1465,8 @@ public class XGConnection implements Connection {
         try {
           connect(host, port);
         } catch (final Exception e) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Exception %s occurred in reconnect() with message %s",
-                  e.toString(), e.getMessage()));
+          LOGGER.log(Level.WARNING,
+              String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
           continue;
         }
 
@@ -1599,11 +1519,8 @@ public class XGConnection implements Connection {
         try {
           connect(host, port);
         } catch (final Exception e) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Exception %s occurred in reconnect() with message %s",
-                  e.toString(), e.getMessage()));
+          LOGGER.log(Level.WARNING,
+              String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
           index++;
           continue;
         }
@@ -1653,11 +1570,8 @@ public class XGConnection implements Connection {
       // reconnect failed so we are no longer connected
       this.connected = false;
 
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Exception %s occurred in reconnect() with message %s",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING,
+          String.format("Exception %s occurred in reconnect() with message %s", e.toString(), e.getMessage()));
       if (e instanceof IOException) {
         throw (IOException) e;
       }
@@ -1707,9 +1621,7 @@ public class XGConnection implements Connection {
    */
   public void redirect(final String host, final int port, final boolean shouldRequestVersion)
       throws IOException, SQLException {
-    LOGGER.log(
-        Level.INFO,
-        String.format("redirect(). Getting redirected to host: %s and port: %d", host, port));
+    LOGGER.log(Level.INFO, String.format("redirect(). Getting redirected to host: %s and port: %d", host, port));
     this.oneShotForce = true;
 
     // Close current connection
@@ -1735,9 +1647,8 @@ public class XGConnection implements Connection {
       }
 
       if (listIndex < this.secondaryInterfaces.size()) {
-        final StringTokenizer tokens =
-            new StringTokenizer(
-                this.secondaryInterfaces.get(listIndex).get(this.secondaryIndex), ":", false);
+        final StringTokenizer tokens = new StringTokenizer(
+            this.secondaryInterfaces.get(listIndex).get(this.secondaryIndex), ":", false);
         this.ip = tokens.nextToken();
         this.portNum = Integer.parseInt(tokens.nextToken());
       } else {
@@ -1770,11 +1681,8 @@ public class XGConnection implements Connection {
         connect(this.ip, this.portNum);
       } catch (final Exception e) {
 
-        LOGGER.log(
-            Level.WARNING,
-            String.format(
-                "Exception %s occurred in redirect() with message %s",
-                e.toString(), e.getMessage()));
+        LOGGER.log(Level.WARNING,
+            String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
         reconnect();
         return;
       }
@@ -1817,11 +1725,8 @@ public class XGConnection implements Connection {
         try {
           connect(this.ip, this.portNum);
         } catch (final Exception e) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Exception %s occurred in redirect() with message %s",
-                  e.toString(), e.getMessage()));
+          LOGGER.log(Level.WARNING,
+              String.format("Exception %s occurred in redirect() with message %s", e.toString(), e.getMessage()));
           continue;
         }
 
@@ -1877,8 +1782,7 @@ public class XGConnection implements Connection {
 
   private void sendClose() throws Exception {
     // send request
-    final ClientWireProtocol.CloseConnection.Builder builder =
-        ClientWireProtocol.CloseConnection.newBuilder();
+    final ClientWireProtocol.CloseConnection.Builder builder = ClientWireProtocol.CloseConnection.newBuilder();
     final CloseConnection msg = builder.build();
     final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
     b2.setType(ClientWireProtocol.Request.RequestType.CLOSE_CONNECTION);
@@ -1912,10 +1816,8 @@ public class XGConnection implements Connection {
       getStandardResponse();
     } catch (final IOException e) {
       // Doesn't matter...
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Failed sending set schema request to the server with exception %s with message %s",
+      LOGGER.log(Level.WARNING,
+          String.format("Failed sending set schema request to the server with exception %s with message %s",
               e.toString(), e.getMessage()));
     }
 
@@ -1930,8 +1832,7 @@ public class XGConnection implements Connection {
     }
 
     // send request
-    final ClientWireProtocol.ForceExternal.Builder builder =
-        ClientWireProtocol.ForceExternal.newBuilder();
+    final ClientWireProtocol.ForceExternal.Builder builder = ClientWireProtocol.ForceExternal.newBuilder();
     builder.setForce(force);
     final ForceExternal msg = builder.build();
     final ClientWireProtocol.Request.Builder b2 = ClientWireProtocol.Request.newBuilder();
@@ -1946,10 +1847,8 @@ public class XGConnection implements Connection {
       getStandardResponse();
     } catch (final IOException e) {
       // Doesn't matter...
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Failed sending set schema request to the server with exception %s with message %s",
+      LOGGER.log(Level.WARNING,
+          String.format("Failed sending set schema request to the server with exception %s with message %s",
               e.toString(), e.getMessage()));
     }
   }
@@ -1964,11 +1863,9 @@ public class XGConnection implements Connection {
 
     // send request
     this.setPso = threshold;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
 
-    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.PSO.newBuilder();
+    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder = ClientWireProtocol.SetParameter.PSO.newBuilder();
     innerBuilder.setThreshold(threshold);
     builder.setPsoThreshold(innerBuilder.build());
     builder.setReset(false);
@@ -1985,11 +1882,8 @@ public class XGConnection implements Connection {
       getStandardResponse();
     } catch (final IOException e) {
       // Doesn't matter...
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Failed sending set pso request to the server with exception %s with message %s",
-              e, e.getMessage()));
+      LOGGER.log(Level.WARNING, String
+          .format("Failed sending set pso request to the server with exception %s with message %s", e, e.getMessage()));
     }
   }
 
@@ -2009,10 +1903,8 @@ public class XGConnection implements Connection {
     }
 
     // send request
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
-    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.PSO.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.PSO.Builder innerBuilder = ClientWireProtocol.SetParameter.PSO.newBuilder();
     innerBuilder.setThreshold(-1);
     builder.setPsoThreshold(innerBuilder.build());
     builder.setReset(on);
@@ -2029,11 +1921,9 @@ public class XGConnection implements Connection {
       getStandardResponse();
     } catch (final IOException e) {
       // Doesn't matter...
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Failed sending set pso request to the server with exception %s with message ",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING,
+          String.format("Failed sending set pso request to the server with exception %s with message ", e.toString(),
+              e.getMessage()));
     }
   }
 
@@ -2068,11 +1958,8 @@ public class XGConnection implements Connection {
       getStandardResponse();
     } catch (final Exception e) {
       // Doesn't matter...
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Failed sending set parameter request to the server with exception %s with message %s",
-              e, e.getMessage()));
+      LOGGER.log(Level.WARNING, String.format(
+          "Failed sending set parameter request to the server with exception %s with message %s", e, e.getMessage()));
       return 1;
     }
     return 0;
@@ -2080,11 +1967,10 @@ public class XGConnection implements Connection {
 
   public int setMaxRows(Integer maxRows, boolean reset) {
     this.maxRows = maxRows;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
     builder.setReset(reset);
-    final ClientWireProtocol.SetParameter.RowLimit.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.RowLimit.newBuilder();
+    final ClientWireProtocol.SetParameter.RowLimit.Builder innerBuilder = ClientWireProtocol.SetParameter.RowLimit
+        .newBuilder();
     innerBuilder.setRowLimit(maxRows != null ? maxRows : 0);
     builder.setRowLimit(innerBuilder.build());
 
@@ -2093,11 +1979,10 @@ public class XGConnection implements Connection {
 
   public int setMaxTime(Integer maxTime, boolean reset) {
     this.maxTime = maxTime;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
     builder.setReset(reset);
-    final ClientWireProtocol.SetParameter.TimeLimit.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.TimeLimit.newBuilder();
+    final ClientWireProtocol.SetParameter.TimeLimit.Builder innerBuilder = ClientWireProtocol.SetParameter.TimeLimit
+        .newBuilder();
     innerBuilder.setTimeLimit(maxTime != null ? maxTime : 0);
     builder.setTimeLimit(innerBuilder.build());
 
@@ -2106,11 +1991,10 @@ public class XGConnection implements Connection {
 
   public int setMaxTempDisk(Integer maxTempDisk, boolean reset) {
     this.maxTempDisk = maxTempDisk;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
     builder.setReset(reset);
-    final ClientWireProtocol.SetParameter.MaxTempDiskLimit.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.MaxTempDiskLimit.newBuilder();
+    final ClientWireProtocol.SetParameter.MaxTempDiskLimit.Builder innerBuilder = ClientWireProtocol.SetParameter.MaxTempDiskLimit
+        .newBuilder();
     innerBuilder.setTempDiskLimit(maxTempDisk != null ? maxTempDisk : 0);
     builder.setTempDiskLimit(innerBuilder.build());
 
@@ -2119,11 +2003,10 @@ public class XGConnection implements Connection {
 
   public int setConcurrency(Integer concurrency, boolean reset) {
     this.concurrency = concurrency;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
     builder.setReset(reset);
-    final ClientWireProtocol.SetParameter.Concurrency.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.Concurrency.newBuilder();
+    final ClientWireProtocol.SetParameter.Concurrency.Builder innerBuilder = ClientWireProtocol.SetParameter.Concurrency
+        .newBuilder();
     innerBuilder.setConcurrency(concurrency != null ? concurrency : 0);
     builder.setConcurrency(innerBuilder.build());
 
@@ -2132,11 +2015,10 @@ public class XGConnection implements Connection {
 
   public int setPriority(Double priority, boolean reset) {
     this.priority = priority;
-    final ClientWireProtocol.SetParameter.Builder builder =
-        ClientWireProtocol.SetParameter.newBuilder();
+    final ClientWireProtocol.SetParameter.Builder builder = ClientWireProtocol.SetParameter.newBuilder();
     builder.setReset(reset);
-    final ClientWireProtocol.SetParameter.Priority.Builder innerBuilder =
-        ClientWireProtocol.SetParameter.Priority.newBuilder();
+    final ClientWireProtocol.SetParameter.Priority.Builder innerBuilder = ClientWireProtocol.SetParameter.Priority
+        .newBuilder();
     innerBuilder.setPriority(priority != null ? priority : 0.0);
     builder.setPriority(innerBuilder.build());
 
@@ -2173,8 +2055,7 @@ public class XGConnection implements Connection {
   }
 
   @Override
-  public void setNetworkTimeout(final Executor executor, final int milliseconds)
-      throws SQLException {
+  public void setNetworkTimeout(final Executor executor, final int milliseconds) throws SQLException {
     LOGGER.log(Level.WARNING, "Called setNetworkTimeout()");
     if (this.closed) {
       LOGGER.log(Level.WARNING, "setNetworkTimeout() is throwing CALL_ON_CLOSED_OBJECT");
@@ -2216,11 +2097,8 @@ public class XGConnection implements Connection {
     try {
       sendSetSchema(schema);
     } catch (final Exception e) {
-      LOGGER.log(
-          Level.WARNING,
-          String.format(
-              "Exception %s occurred during setSchema() with message %s",
-              e.toString(), e.getMessage()));
+      LOGGER.log(Level.WARNING,
+          String.format("Exception %s occurred during setSchema() with message %s", e.toString(), e.getMessage()));
       if (e instanceof SQLException) {
         throw (SQLException) e;
       } else {
@@ -2238,8 +2116,7 @@ public class XGConnection implements Connection {
     }
 
     if (arg0 != Connection.TRANSACTION_NONE) {
-      LOGGER.log(
-          Level.WARNING, "setTransactionIsolation() is throwing SQLFeatureNotSupportedException");
+      LOGGER.log(Level.WARNING, "setTransactionIsolation() is throwing SQLFeatureNotSupportedException");
       throw new SQLFeatureNotSupportedException();
     }
   }
