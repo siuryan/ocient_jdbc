@@ -110,7 +110,7 @@
           <ignoreLineSeparators>false</ignoreLineSeparators>
           <lineSeparator>\n</lineSeparator>
           <sortDependencies>scope,groupId,artifactId</sortDependencies>
-          <sortPlugins>groupId,artifactId</sortPlugins>
+          <!--Do not sort plugins, the order in the pom file determines run order-->
           <sortProperties>true</sortProperties>
         </configuration>
       </plugin>
@@ -146,6 +146,28 @@
         </configuration>
       </plugin>
       <plugin>
+        <!-- Note this signing should appear before the gpg signing-->  
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jarsigner-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <!--Additional builds settings configured in settings.xml at https://gitlab.com/ocient/ocient_jdbc/-/settings/ci_cd-->
+          <keystore>${keystorePath}</keystore>
+          <alias>${signAlias}</alias>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- Note this signing should appear after the jarsigner signing-->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
         <version>1.6</version>
@@ -173,27 +195,6 @@
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
           </archive>
-        </configuration>
-      </plugin>
-      <!-- Note this signing should appear before the gpg signing-->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jarsigner-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <!--Additional builds settings configured in settings.xml at https://gitlab.com/ocient/ocient_jdbc/-/settings/ci_cd-->
-          <keystore>${keystorePath}</keystore>
-          <alias>${signAlias}</alias>
         </configuration>
       </plugin>
       <plugin>
