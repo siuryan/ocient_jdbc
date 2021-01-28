@@ -384,7 +384,8 @@ public class XGStatement implements Statement {
   @Override
   public void clearBatch() throws SQLException {
     LOGGER.log(Level.WARNING, "clearBatch() was called, which is not supported");
-    throw new SQLFeatureNotSupportedException();
+    //We don't support the batching but it is fine to not throw here as long as we still throw in executeBatch() and addBatch().
+    //throw new SQLFeatureNotSupportedException();
   }
 
   @Override
