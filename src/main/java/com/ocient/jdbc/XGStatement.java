@@ -464,6 +464,7 @@ public class XGStatement implements Statement {
           || sql.toUpperCase().startsWith("PLAN EXECUTE ")
           || sql.toUpperCase().startsWith("PLAN EXPLAIN ")
           || sql.toUpperCase().startsWith("LIST ALL QUERIES")
+          || sql.toUpperCase().startsWith("LIST TABLE PRIVILEGES")
           || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES")
           || sql.toUpperCase().startsWith("EXPORT TABLE ")
           || sql.toUpperCase().startsWith("EXPORT TRANSLATION ")) {
@@ -555,6 +556,8 @@ public class XGStatement implements Statement {
         return explainPlanSQL(sql);
       } else if (startsWithIgnoreCase(sql, "LIST ALL QUERIES")) {
         return listAllQueries();
+      } else if (startsWithIgnoreCase(sql, "LIST TABLE PRIVILEGES")) {
+        return listAllTablePrivileges(sql);
       } else if (startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES")) {
         return listAllCompletedQueries();
       } else if (startsWithIgnoreCase(sql, "EXPORT TABLE ")) {
@@ -1911,6 +1914,16 @@ public class XGStatement implements Statement {
       rs = xgdbmd.getSystemTables("", "%", "%", new String[0]);
     } else {
       rs = dbmd.getTables("", "%", "%", new String[0]);
+    }
+    return rs;
+  }
+
+  private ResultSet listAllTablePrivileges(final String cmd) throws SQLException {
+    LOGGER.log(Level.INFO, "Entered driver's listTables()");
+    ResultSet rs = null;
+    final DatabaseMetaData dbmd = this.conn.getMetaData();
+    if (startsWithIgnoreCase(cmd, "LIST TABLE PRIVILEGES")) {
+      rs = dbmd.getTablePrivileges("", "%", "%");
     }
     return rs;
   }

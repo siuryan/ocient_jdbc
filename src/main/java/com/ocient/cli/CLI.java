@@ -230,6 +230,8 @@ public class CLI {
       update(cmd);
     } else if (startsWithIgnoreCase(cmd, "LIST TABLES")) {
       listTables(cmd, false);
+    } else if (startsWithIgnoreCase(cmd, "LIST TABLE PRIVILEGES")) {
+      listPrivileges(cmd);
     } else if (startsWithIgnoreCase(cmd, "LIST SYSTEM TABLES")) {
       listTables(cmd, true);
     } else if (startsWithIgnoreCase(cmd, "LIST VIEWS")) {
@@ -508,6 +510,48 @@ public class CLI {
             }
           }
         }
+      } else {
+        outputResultSet(rs, meta);
+        outputCSVFile = "";
+      }
+      printWarnings(rs);
+      end = System.currentTimeMillis();
+
+      rs.close();
+
+      printTime(start, end);
+    } catch (final Exception e) {
+      try {
+        rs.close();
+      } catch (final Exception f) {
+      }
+
+      System.out.println("Error: " + e.getMessage());
+    }
+  }
+  /*!
+   * This function lists the table privileges.
+   */
+
+  private static void listPrivileges(final String cmd) {
+    long start = 0;
+    long end = 0;
+    if (!isConnected()) {
+      System.out.println("No database connection exists");
+      return;
+    }
+
+    ResultSet rs = null;
+
+    try {
+
+      start = System.currentTimeMillis();
+      stmt.execute(cmd);
+      rs = stmt.getResultSet();
+      final ResultSetMetaData meta = rs.getMetaData();
+
+      if (outputCSVFile.isEmpty()) {
+        printResultSet(rs, meta);
       } else {
         outputResultSet(rs, meta);
         outputCSVFile = "";
