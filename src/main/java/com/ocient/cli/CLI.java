@@ -364,6 +364,7 @@ public class CLI {
           doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
         }
         // No exception thrown means connection was successful, and connectTo may return
+        conn.createStatement(); //The actual test of the connection won't happen until here
         return;
       } catch (final SQLException e) {
         System.out.println("Failed to connect to " + hosts + "(" + e.getCause().getMessage() + ")");
@@ -406,7 +407,7 @@ public class CLI {
     ResultSet rs = null;
     Statement stmt = null;
     try {
-    	stmt = conn.createStatement();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -434,10 +435,10 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
-    
+
     Statement stmt = null;
     try {
-    	stmt = conn.createStatement();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       stmt.close();
     } catch (final Exception e) {
@@ -1119,7 +1120,7 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
-    
+
     Statement stmt = null;
     try {
       start = System.currentTimeMillis();
@@ -1142,7 +1143,7 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
-    
+
     Statement stmt = null;
     try {
       start = System.currentTimeMillis();
@@ -1179,7 +1180,7 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
-    
+
     Statement stmt = null;
     try {
       start = System.currentTimeMillis();

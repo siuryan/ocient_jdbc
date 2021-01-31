@@ -30,131 +30,130 @@ import java.util.logging.Logger;
 
 public class XGPreparedStatement extends XGStatement implements PreparedStatement {
   private static final Logger LOGGER = Logger.getLogger("com.ocient.jdbc");
-  
+
   private String sql;
-  
-         private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache;
-  
-         public static XGPreparedStatement newXGPreparedStatement(final XGConnection conn, final String sql, final boolean force,
-                         final boolean oneShotForce) throws SQLException {
-                 synchronized(cache)
-                 {
-                         HashSet<XGPreparedStatement> list = cache.get(conn);
-                         if (list != null)
-                         {
-                                 if (list.size() > 0)
-                                 {
-                                         XGPreparedStatement retval = list.iterator().next();
-                                          list.iterator().remove();
-  
-                                         try
-                                         {
-                                                 conn.fetchServerVersion();
-                                         }
-                                         catch(Exception e)
-                                         {}
-  
-                                         retval.force = force;
-                                         retval.oneShotForce = oneShotForce;
-                                         retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
-                                         retval.sql = sql;
-                                         retval.closed = false;
-                                         return retval;
-                                 }
-                         }
-                 }
-  
-                 return new XGPreparedStatement(conn, sql, force, oneShotForce);
-         }
-  
-  public static XGPreparedStatement newXGPreparedStatement(final XGConnection conn, final String sql, final int type, final int concur,
-                         final boolean force, final boolean oneShotForce) throws SQLException {
-                 if (concur != ResultSet.CONCUR_READ_ONLY) {
-                         LOGGER.log(Level.SEVERE, "Unsupported concurrency in Statement constructor");
-                         throw new SQLFeatureNotSupportedException();
-                 }
-  
-                 if (type != ResultSet.TYPE_FORWARD_ONLY) {
-                         LOGGER.log(Level.SEVERE, "Unsupported type in Statement constructor");
-                         throw new SQLFeatureNotSupportedException();
-                 }
-  
-                 synchronized(cache)
-                 {
-                         HashSet<XGPreparedStatement> list = cache.get(conn);
-                         if (list != null)
-                         {
-                                 if (list.size() > 0)
-                                 {
-                                         XGPreparedStatement retval = list.iterator().next();
-                                          list.iterator().remove();
-  
-                                         try
-                                         {
-                                                 conn.fetchServerVersion();
-                                         }
-                                         catch(Exception e)
-                                         {}
-  
-                                         retval.force = force;
-                                         retval.oneShotForce = oneShotForce;
-                                         retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
-                                         retval.sql = sql;
-                                         retval.closed = false;
-                                         return retval;
-                                 }
-                         }
-                 }
-  
-                 return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
-         }
-  
-  public static XGPreparedStatement newXGPreparedStatement(final XGConnection conn, final String sql, final int type, final int concur, final int hold,
-                         final boolean force, final boolean oneShotForce) throws SQLException {
-                 if (concur != ResultSet.CONCUR_READ_ONLY) {
-                         LOGGER.log(Level.SEVERE, "Unsupported concurrency in Statement constructor");
-                         throw new SQLFeatureNotSupportedException();
-                 }
-  
-                 if (type != ResultSet.TYPE_FORWARD_ONLY) {
-                         LOGGER.log(Level.SEVERE, "Unsupported type in Statement constructor");
-                         throw new SQLFeatureNotSupportedException();
-                 }
-  
-                 if (hold != ResultSet.CLOSE_CURSORS_AT_COMMIT) {
-                         LOGGER.log(Level.SEVERE, "Unsupported holdability in Statement constructor");
-                         throw new SQLFeatureNotSupportedException();
-                 }
-  
-                 synchronized(cache)
-                 {
-                         HashSet<XGPreparedStatement> list = cache.get(conn);
-                         if (list != null)
-                         {
-                                 if (list.size() > 0)
-                                 {
-                                         XGPreparedStatement retval = list.iterator().next();
-                                          list.iterator().remove();
-  
-                                         try
-                                         {
-                                                 conn.fetchServerVersion();
-                                         }
-                                         catch(Exception e)
-                                         {}
-  
-                                         retval.force = force;
-                                         retval.oneShotForce = oneShotForce;
-                                         retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
-                                         retval.sql = sql;
-                                         retval.closed = false;
-                                         return retval;
-                                 }
-                         }
-                 }
-  
-                 return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
-         }
+
+  private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache;
+
+  public static XGPreparedStatement newXGPreparedStatement(
+      final XGConnection conn, final String sql, final boolean force, final boolean oneShotForce)
+      throws SQLException {
+    synchronized (cache) {
+      HashSet<XGPreparedStatement> list = cache.get(conn);
+      if (list != null) {
+        if (list.size() > 0) {
+          XGPreparedStatement retval = list.iterator().next();
+          list.iterator().remove();
+
+          try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+
+          retval.force = force;
+          retval.oneShotForce = oneShotForce;
+          retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
+          retval.sql = sql;
+          retval.closed = false;
+          return retval;
+        }
+      }
+    }
+
+    return new XGPreparedStatement(conn, sql, force, oneShotForce);
+  }
+
+  public static XGPreparedStatement newXGPreparedStatement(
+      final XGConnection conn,
+      final String sql,
+      final int type,
+      final int concur,
+      final boolean force,
+      final boolean oneShotForce)
+      throws SQLException {
+    if (concur != ResultSet.CONCUR_READ_ONLY) {
+      LOGGER.log(Level.SEVERE, "Unsupported concurrency in Statement constructor");
+      throw new SQLFeatureNotSupportedException();
+    }
+
+    if (type != ResultSet.TYPE_FORWARD_ONLY) {
+      LOGGER.log(Level.SEVERE, "Unsupported type in Statement constructor");
+      throw new SQLFeatureNotSupportedException();
+    }
+
+    synchronized (cache) {
+      HashSet<XGPreparedStatement> list = cache.get(conn);
+      if (list != null) {
+        if (list.size() > 0) {
+          XGPreparedStatement retval = list.iterator().next();
+          list.iterator().remove();
+
+          try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+
+          retval.force = force;
+          retval.oneShotForce = oneShotForce;
+          retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
+          retval.sql = sql;
+          retval.closed = false;
+          return retval;
+        }
+      }
+    }
+
+    return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
+  }
+
+  public static XGPreparedStatement newXGPreparedStatement(
+      final XGConnection conn,
+      final String sql,
+      final int type,
+      final int concur,
+      final int hold,
+      final boolean force,
+      final boolean oneShotForce)
+      throws SQLException {
+    if (concur != ResultSet.CONCUR_READ_ONLY) {
+      LOGGER.log(Level.SEVERE, "Unsupported concurrency in Statement constructor");
+      throw new SQLFeatureNotSupportedException();
+    }
+
+    if (type != ResultSet.TYPE_FORWARD_ONLY) {
+      LOGGER.log(Level.SEVERE, "Unsupported type in Statement constructor");
+      throw new SQLFeatureNotSupportedException();
+    }
+
+    if (hold != ResultSet.CLOSE_CURSORS_AT_COMMIT) {
+      LOGGER.log(Level.SEVERE, "Unsupported holdability in Statement constructor");
+      throw new SQLFeatureNotSupportedException();
+    }
+
+    synchronized (cache) {
+      HashSet<XGPreparedStatement> list = cache.get(conn);
+      if (list != null) {
+        if (list.size() > 0) {
+          XGPreparedStatement retval = list.iterator().next();
+          list.iterator().remove();
+
+          try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+
+          retval.force = force;
+          retval.oneShotForce = oneShotForce;
+          retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
+          retval.sql = sql;
+          retval.closed = false;
+          return retval;
+        }
+      }
+    }
+
+    return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
+  }
 
   public XGPreparedStatement(
       final XGConnection conn, final String sql, final boolean force, final boolean oneShotForce)
@@ -187,55 +186,47 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
     super(conn, arg1, arg2, arg3, force, oneShotForce);
     this.sql = sql;
   }
-  
+
   class ReturnToCacheTask extends TimerTask {
-     public ReturnToCacheTask(XGPreparedStatement stmt)
-     {
-             this.stmt = stmt;
-     }
-  
-      public void run() {
-    	  //Cache this
-         synchronized(cache)
-         {
-                 HashSet<XGPreparedStatement> list = cache.get(conn);
-                 if (list == null)
-                 {
-                         list = new HashSet<XGPreparedStatement>();
-                         list.add(stmt);
-                         cache.put(conn, list);
-                 }
-                 else
-                 {
-                         list.add(stmt);
-                 }
-         }
-  
-          timer.cancel(); //Terminate the timer thread
+    public ReturnToCacheTask(XGPreparedStatement stmt) {
+      this.stmt = stmt;
+    }
+
+    public void run() {
+      // Cache this
+      synchronized (cache) {
+        HashSet<XGPreparedStatement> list = cache.get(conn);
+        if (list == null) {
+          list = new HashSet<XGPreparedStatement>();
+          list.add(stmt);
+          cache.put(conn, list);
+        } else {
+          list.add(stmt);
+        }
       }
-  
-      private XGPreparedStatement stmt;
+
+      timer.cancel(); // Terminate the timer thread
+    }
+
+    private XGPreparedStatement stmt;
   }
 
   @Override
   public void close() throws SQLException {
     LOGGER.log(Level.INFO, "Called close()");
-    if (!closed)
-   {
-    	if (this.result != null) 
-    	{
-    		result.close();
-    	}
-	
-       dissociateQuery();
-       result = null;
-       closed = true;
-	
-       timer = new Timer();
-	   timer.schedule(new ReturnToCacheTask(this), 30*1000);
+    if (!closed) {
+      if (this.result != null) {
+        result.close();
+      }
+
+      dissociateQuery();
+      result = null;
+      closed = true;
+
+      timer = new Timer();
+      timer.schedule(new ReturnToCacheTask(this), 30 * 1000);
     }
-    
-    
+
     if (this.result != null) {
       this.result.close();
     }

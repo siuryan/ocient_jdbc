@@ -399,31 +399,35 @@ public class XGConnection implements Connection {
 
     return retval;
   }
-  
-  public boolean equals(Object o)
- {
-         if (!(o instanceof XGConnection))
-         {
-                 return false;
-         }
-  
-         XGConnection other = (XGConnection)o;
-         return originalIp.equals(other.originalIp) &&
-                         originalPort == other.originalPort &&
-                         user.equals(other.user) &&
-                         pwd.equals(other.pwd) &&
-                         database.equals(other.database) &&
-                         tls.equals(other.tls) &&
-                         setSchema.equals(other.setSchema) &&
-                         setPso == other.setPso &&
-                         timeoutMillis == other.timeoutMillis;
- }
-  
- public int hashCode()
- {
-         return originalIp.hashCode() + originalPort + user.hashCode() + pwd.hashCode() + database.hashCode() +
-                         tls.hashCode() + setSchema.hashCode() + Long.valueOf(setPso).hashCode() + Long.valueOf(timeoutMillis).hashCode();
- }
+
+  public boolean equals(Object o) {
+    if (!(o instanceof XGConnection)) {
+      return false;
+    }
+
+    XGConnection other = (XGConnection) o;
+    return originalIp.equals(other.originalIp)
+        && originalPort == other.originalPort
+        && user.equals(other.user)
+        && pwd.equals(other.pwd)
+        && database.equals(other.database)
+        && tls.equals(other.tls)
+        && setSchema.equals(other.setSchema)
+        && setPso == other.setPso
+        && timeoutMillis == other.timeoutMillis;
+  }
+
+  public int hashCode() {
+    return originalIp.hashCode()
+        + originalPort
+        + user.hashCode()
+        + pwd.hashCode()
+        + database.hashCode()
+        + tls.hashCode()
+        + setSchema.hashCode()
+        + Long.valueOf(setPso).hashCode()
+        + Long.valueOf(timeoutMillis).hashCode();
+  }
 
   public void setServerVersion(final String version) {
     // Versions are major.minor.patch-date
@@ -1382,9 +1386,11 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, true);
+      return XGPreparedStatement.newXGPreparedStatement(
+          this, arg0, arg1, arg2, arg3, this.force, true);
     } else {
-      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, false);
+      return XGPreparedStatement.newXGPreparedStatement(
+          this, arg0, arg1, arg2, arg3, this.force, false);
     }
   }
 

@@ -270,7 +270,9 @@ public class SQLStates {
           CALL_ON_CLOSED_OBJECT_CODE);
   public static SQLStates COLUMN_NOT_FOUND =
       new SQLStates(
-          "The reference to referenced column is not valid", COLUMN_NOT_FOUND_STATE, COLUMN_NOT_FOUND_CODE);
+          "The reference to referenced column is not valid",
+          COLUMN_NOT_FOUND_STATE,
+          COLUMN_NOT_FOUND_CODE);
   public static SQLStates CORRELATED_SUBQUERY =
       new SQLStates(
           "Correlated subqueries are not supported", COLUMN_NOT_FOUND_STATE, COLUMN_NOT_FOUND_CODE);
