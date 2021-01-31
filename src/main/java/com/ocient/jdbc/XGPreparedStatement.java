@@ -33,7 +33,7 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
   private String sql;
 
-  private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache;
+  private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache = new HashMap<XGConnection, HashSet<XGPreparedStatement>>();
 
   public static XGPreparedStatement newXGPreparedStatement(
       final XGConnection conn, final String sql, final boolean force, final boolean oneShotForce)

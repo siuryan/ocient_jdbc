@@ -129,7 +129,7 @@ public class XGStatement implements Statement {
 
   protected boolean oneShotForce;
 
-  private static HashMap<XGConnection, HashSet<XGStatement>> cache;
+  private static HashMap<XGConnection, HashSet<XGStatement>> cache = new HashMap<XGConnection, HashSet<XGStatement>>();
   Timer timer;
 
   public static XGStatement newXGStatement(
