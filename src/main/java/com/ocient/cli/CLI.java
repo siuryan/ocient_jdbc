@@ -364,7 +364,7 @@ public class CLI {
           doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
         }
         // No exception thrown means connection was successful, and connectTo may return
-        conn.createStatement(); //The actual test of the connection won't happen until here
+        conn.createStatement(); // The actual test of the connection won't happen until here
         return;
       } catch (final SQLException e) {
         System.out.println("Failed to connect to " + hosts + "(" + e.getCause().getMessage() + ")");

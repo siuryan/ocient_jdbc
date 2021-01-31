@@ -130,17 +130,18 @@ public class XGStatement implements Statement {
 
   protected boolean oneShotForce;
 
-  private static HashMap<XGConnection, HashSet<XGStatement>> cache = new HashMap<XGConnection, HashSet<XGStatement>>();
+  private static HashMap<XGConnection, HashSet<XGStatement>> cache =
+      new HashMap<XGConnection, HashSet<XGStatement>>();
   Timer timer;
 
   public static XGStatement newXGStatement(
       final XGConnection conn, final boolean shouldRequestVersion) throws SQLException {
-	  XGStatement retval = null;
+    XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGStatement> it = list.iterator();
+          Iterator<XGStatement> it = list.iterator();
           retval = it.next();
           it.remove();
           retval.force = false;
@@ -150,35 +151,32 @@ public class XGStatement implements Statement {
         }
       }
     }
-    
-    if (retval != null)
-    {
-    	if (shouldRequestVersion) {
-	        try {
-	          conn.fetchServerVersion();
-	        } catch (Exception e) {
-	        }
-	      }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGStatement(conn, shouldRequestVersion);
+
+    if (retval != null) {
+      if (shouldRequestVersion) {
+        try {
+          conn.fetchServerVersion();
+        } catch (Exception e) {
+        }
+      }
+
+      return retval;
+    } else {
+      return new XGStatement(conn, shouldRequestVersion);
     }
   }
 
   public static XGStatement newXGStatement(
       final XGConnection conn, final boolean force, final boolean oneShotForce)
       throws SQLException {
-	  XGStatement retval = null;
+    XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -188,18 +186,15 @@ public class XGStatement implements Statement {
       }
     }
 
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGStatement(conn, force, oneShotForce);
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGStatement(conn, force, oneShotForce);
     }
   }
 
@@ -225,9 +220,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -237,18 +232,15 @@ public class XGStatement implements Statement {
       }
     }
 
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGStatement(conn, type, concur, force, oneShotForce);
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGStatement(conn, type, concur, force, oneShotForce);
     }
   }
 
@@ -280,9 +272,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -290,19 +282,16 @@ public class XGStatement implements Statement {
         }
       }
     }
-    
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGStatement(conn, type, concur, force, oneShotForce);
+
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGStatement(conn, type, concur, force, oneShotForce);
     }
   }
 

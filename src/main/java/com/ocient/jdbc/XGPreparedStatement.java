@@ -34,19 +34,20 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 
   private String sql;
 
-  private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache = new HashMap<XGConnection, HashSet<XGPreparedStatement>>();
+  private static HashMap<XGConnection, HashSet<XGPreparedStatement>> cache =
+      new HashMap<XGConnection, HashSet<XGPreparedStatement>>();
 
   public static XGPreparedStatement newXGPreparedStatement(
       final XGConnection conn, final String sql, final boolean force, final boolean oneShotForce)
       throws SQLException {
-	  XGPreparedStatement retval = null;
+    XGPreparedStatement retval = null;
     synchronized (cache) {
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGPreparedStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGPreparedStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -56,19 +57,16 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
         }
       }
     }
-    
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGPreparedStatement(conn, sql, force, oneShotForce);
+
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGPreparedStatement(conn, sql, force, oneShotForce);
     }
   }
 
@@ -95,9 +93,9 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGPreparedStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGPreparedStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -107,19 +105,16 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
         }
       }
     }
-    
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
+
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
     }
   }
 
@@ -152,9 +147,9 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-        	Iterator<XGPreparedStatement> it = list.iterator();
-            retval = it.next();
-            it.remove();
+          Iterator<XGPreparedStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -164,19 +159,16 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
         }
       }
     }
-    
-    if (retval != null)
-    {
-    	try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
-    	
-    	return retval;
-    }
-    else
-    {
-    	return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
+
+    if (retval != null) {
+      try {
+        conn.fetchServerVersion();
+      } catch (Exception e) {
+      }
+
+      return retval;
+    } else {
+      return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
     }
   }
 
