@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -139,8 +140,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGStatement> it = list.iterator();
+          retval = it.next();
+          it.remove();
           retval.force = false;
           retval.oneShotForce = false;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
@@ -174,8 +176,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -222,8 +225,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -276,8 +280,9 @@ public class XGStatement implements Statement {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;

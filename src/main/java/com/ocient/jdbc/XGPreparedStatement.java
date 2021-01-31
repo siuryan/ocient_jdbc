@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -43,8 +44,9 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGPreparedStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -93,8 +95,9 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGPreparedStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
@@ -149,8 +152,9 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          retval = list.iterator().next();
-          list.iterator().remove();
+        	Iterator<XGPreparedStatement> it = list.iterator();
+            retval = it.next();
+            it.remove();
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
