@@ -48,8 +48,6 @@ public class CLI {
   private static char quote = '\0';
   private static boolean comment = false;
 
-  private static Statement stmt;
-
   public static void main(final String[] args) {
     Terminal terminal;
     LineReader reader;
@@ -338,9 +336,6 @@ public class CLI {
   private static void connectTo(final String cmd) {
     if (isConnected()) {
       try {
-        if (stmt != null && !stmt.isClosed()) {
-          stmt.close();
-        }
         conn.close();
       } catch (final Exception e) {
         System.out.println("Error: " + e.getMessage());
@@ -369,7 +364,6 @@ public class CLI {
           doConnect(getTk(m, "user", null), m.group("pwd"), (m.group("force") != null), url);
         }
         // No exception thrown means connection was successful, and connectTo may return
-        stmt = conn.createStatement();
         return;
       } catch (final SQLException e) {
         System.out.println("Failed to connect to " + hosts + "(" + e.getCause().getMessage() + ")");
@@ -410,7 +404,9 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
     try {
+    	stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -421,10 +417,12 @@ public class CLI {
         outputCSVFile = "";
       }
       rs.close();
+      stmt.close();
     } catch (final Exception e) {
       e.printStackTrace();
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -436,8 +434,12 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
+    
+    Statement stmt = null;
     try {
+    	stmt = conn.createStatement();
       stmt.execute(cmd);
+      stmt.close();
     } catch (final Exception e) {
       System.out.println("Error: " + e.getMessage());
     }
@@ -475,6 +477,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       final DatabaseMetaData dbmd = conn.getMetaData();
@@ -487,6 +490,7 @@ public class CLI {
       }
 
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -516,11 +520,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
 
@@ -536,8 +542,10 @@ public class CLI {
       return;
     }
     ResultSet rs = null;
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -550,6 +558,7 @@ public class CLI {
       printWarnings(stmt);
       end = System.currentTimeMillis();
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
@@ -565,8 +574,10 @@ public class CLI {
       return;
     }
     ResultSet rs = null;
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -579,10 +590,12 @@ public class CLI {
       printWarnings(stmt);
       end = System.currentTimeMillis();
       rs.close();
+      stmt.close();
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -601,6 +614,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       final DatabaseMetaData md = conn.getMetaData();
@@ -613,6 +627,7 @@ public class CLI {
       }
 
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -642,11 +657,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
 
@@ -672,6 +689,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       final Matcher m = describeTableSyntax.matcher(cmd);
@@ -681,6 +699,7 @@ public class CLI {
       }
 
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -730,11 +749,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
 
@@ -760,6 +781,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       final Matcher m = describeViewSyntax.matcher(cmd);
@@ -769,6 +791,7 @@ public class CLI {
       }
 
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -791,11 +814,13 @@ public class CLI {
       printWarnings(rs);
       end = System.currentTimeMillis();
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
 
@@ -821,6 +846,7 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       final Matcher m = listIndexesSyntax.matcher(cmd);
@@ -834,6 +860,7 @@ public class CLI {
       // this behavior is slightly different from the jdbc call itself--
       // the call allows schema to be null, in which case it doesn't filter on it.
       // we assume the current schema for convenience & to limit results to one table
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -883,11 +910,13 @@ public class CLI {
       printWarnings(rs);
       end = System.currentTimeMillis();
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
 
@@ -904,9 +933,11 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       rs = stmt.executeQuery(cmd);
       printWarnings(stmt);
       final ResultSetMetaData meta = rs.getMetaData();
@@ -921,11 +952,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -941,9 +974,11 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
 
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
 
@@ -957,11 +992,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -977,10 +1014,12 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
     final String plan = cmd.substring("PLAN EXECUTE ".length()).trim();
 
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -996,11 +1035,13 @@ public class CLI {
       end = System.currentTimeMillis();
 
       rs.close();
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -1016,8 +1057,10 @@ public class CLI {
     }
 
     ResultSet rs = null;
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -1031,6 +1074,7 @@ public class CLI {
       rs.close();
 
       printWarnings(stmt);
+      stmt.close();
       end = System.currentTimeMillis();
 
       printTime(start, end);
@@ -1047,8 +1091,10 @@ public class CLI {
       return;
     }
 
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       final ArrayList<String> planNames = ((XGStatement) stmt).listPlan();
       if (planNames.size() > 0) {
         System.out.println("    Plan Name    ");
@@ -1057,6 +1103,7 @@ public class CLI {
       }
 
       printWarnings(stmt);
+      stmt.close();
       end = System.currentTimeMillis();
 
       printTime(start, end);
@@ -1072,10 +1119,14 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
+    
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       printWarnings(stmt);
+      stmt.close();
       end = System.currentTimeMillis();
 
       printTime(start, end);
@@ -1091,9 +1142,13 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
+    
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
+      stmt.close();
     } catch (final Exception e) {
       System.out.println("CLI Error: " + e.getMessage());
     }
@@ -1124,10 +1179,14 @@ public class CLI {
       System.out.println("No database connection exists");
       return;
     }
+    
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       printWarnings(stmt);
+      stmt.close();
       end = System.currentTimeMillis();
 
       printTime(start, end);
@@ -1144,8 +1203,10 @@ public class CLI {
       return;
     }
     ResultSet rs = null;
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -1161,9 +1222,11 @@ public class CLI {
 
       printTime(start, end);
       rs.close();
+      stmt.close();
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -1178,8 +1241,10 @@ public class CLI {
       return;
     }
     ResultSet rs = null;
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       stmt.execute(cmd);
       rs = stmt.getResultSet();
       final ResultSetMetaData meta = rs.getMetaData();
@@ -1195,9 +1260,11 @@ public class CLI {
 
       printTime(start, end);
       rs.close();
+      stmt.close();
     } catch (final Exception e) {
       try {
         rs.close();
+        stmt.close();
       } catch (final Exception f) {
       }
       System.out.println("Error: " + e.getMessage());
@@ -1251,13 +1318,16 @@ public class CLI {
       return;
     }
 
+    Statement stmt = null;
     try {
       start = System.currentTimeMillis();
+      stmt = conn.createStatement();
       final long numRows = stmt.executeUpdate(cmd);
       end = System.currentTimeMillis();
 
       System.out.println("Modified " + numRows + (numRows == 1 ? " row" : " rows"));
       printWarnings(stmt);
+      stmt.close();
 
       printTime(start, end);
     } catch (final Exception e) {

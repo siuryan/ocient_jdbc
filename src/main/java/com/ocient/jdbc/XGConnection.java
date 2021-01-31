@@ -399,6 +399,31 @@ public class XGConnection implements Connection {
 
     return retval;
   }
+  
+  public boolean equals(Object o)
+ {
+         if (!(o instanceof XGConnection))
+         {
+                 return false;
+         }
+  
+         XGConnection other = (XGConnection)o;
+         return originalIp.equals(other.originalIp) &&
+                         originalPort == other.originalPort &&
+                         user.equals(other.user) &&
+                         pwd.equals(other.pwd) &&
+                         database.equals(other.database) &&
+                         tls.equals(other.tls) &&
+                         setSchema.equals(other.setSchema) &&
+                         setPso == other.setPso &&
+                         timeoutMillis == other.timeoutMillis;
+ }
+  
+ public int hashCode()
+ {
+         return originalIp.hashCode() + originalPort + user.hashCode() + pwd.hashCode() + database.hashCode() +
+                         tls.hashCode() + setSchema.hashCode() + Long.valueOf(setPso).hashCode() + Long.valueOf(timeoutMillis).hashCode();
+ }
 
   public void setServerVersion(final String version) {
     // Versions are major.minor.patch-date
@@ -813,10 +838,10 @@ public class XGConnection implements Connection {
     LOGGER.log(Level.INFO, "Handshake Fiinished");
   }
 
-  private void fetchServerVersion() throws Exception {
+  void fetchServerVersion() throws Exception {
     LOGGER.log(Level.INFO, "Attempting to fetch server version");
     try {
-      final XGStatement stmt = new XGStatement(this, false);
+      final XGStatement stmt = XGStatement.newXGStatement(this, false);
       final String version =
           stmt.fetchSystemMetadataString(
               ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall
@@ -935,9 +960,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // The statement inherits our one shot
-      return new XGStatement(this, this.force, true);
+      return XGStatement.newXGStatement(this, this.force, true);
     } else {
-      return new XGStatement(this, this.force, false);
+      return XGStatement.newXGStatement(this, this.force, false);
     }
   }
 
@@ -951,9 +976,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return new XGStatement(this, arg0, arg1, this.force, true);
+      return XGStatement.newXGStatement(this, arg0, arg1, this.force, true);
     } else {
-      return new XGStatement(this, arg0, arg1, this.force, false);
+      return XGStatement.newXGStatement(this, arg0, arg1, this.force, false);
     }
   }
 
@@ -968,9 +993,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return new XGStatement(this, arg0, arg1, arg2, this.force, true);
+      return XGStatement.newXGStatement(this, arg0, arg1, arg2, this.force, true);
     } else {
-      return new XGStatement(this, arg0, arg1, arg2, this.force, false);
+      return XGStatement.newXGStatement(this, arg0, arg1, arg2, this.force, false);
     }
   }
 
@@ -1317,9 +1342,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return new XGPreparedStatement(this, arg0, this.force, true);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, this.force, true);
     } else {
-      return new XGPreparedStatement(this, arg0, this.force, false);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, this.force, false);
     }
   }
 
@@ -1340,9 +1365,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return new XGPreparedStatement(this, arg0, arg1, arg2, this.force, true);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, this.force, true);
     } else {
-      return new XGPreparedStatement(this, arg0, arg1, arg2, this.force, false);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, this.force, false);
     }
   }
 
@@ -1357,9 +1382,9 @@ public class XGConnection implements Connection {
 
     if (this.oneShotForce) {
       this.oneShotForce = false; // Statement inherits our one shot
-      return new XGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, true);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, true);
     } else {
-      return new XGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, false);
+      return XGPreparedStatement.newXGPreparedStatement(this, arg0, arg1, arg2, arg3, this.force, false);
     }
   }
 
