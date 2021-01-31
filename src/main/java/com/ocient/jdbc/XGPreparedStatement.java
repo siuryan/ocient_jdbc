@@ -90,7 +90,7 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       throw new SQLFeatureNotSupportedException();
     }
 
-    XGPreparedStatement retval
+    XGPreparedStatement retval = null;
     synchronized (cache) {
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
