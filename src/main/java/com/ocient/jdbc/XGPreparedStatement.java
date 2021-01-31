@@ -38,29 +38,36 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
   public static XGPreparedStatement newXGPreparedStatement(
       final XGConnection conn, final String sql, final boolean force, final boolean oneShotForce)
       throws SQLException {
+	  XGPreparedStatement retval = null;
     synchronized (cache) {
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGPreparedStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.sql = sql;
           retval.closed = false;
-          return retval;
         }
       }
     }
-
-    return new XGPreparedStatement(conn, sql, force, oneShotForce);
+    
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGPreparedStatement(conn, sql, force, oneShotForce);
+    }
   }
 
   public static XGPreparedStatement newXGPreparedStatement(
@@ -81,29 +88,36 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       throw new SQLFeatureNotSupportedException();
     }
 
+    XGPreparedStatement retval
     synchronized (cache) {
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGPreparedStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.sql = sql;
           retval.closed = false;
-          return retval;
         }
       }
     }
-
-    return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
+    
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGPreparedStatement(conn, sql, type, concur, force, oneShotForce);
+    }
   }
 
   public static XGPreparedStatement newXGPreparedStatement(
@@ -130,29 +144,36 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
       throw new SQLFeatureNotSupportedException();
     }
 
+    XGPreparedStatement retval = null;
     synchronized (cache) {
       HashSet<XGPreparedStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGPreparedStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.sql = sql;
           retval.closed = false;
-          return retval;
         }
       }
     }
-
-    return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
+    
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGPreparedStatement(conn, sql, type, concur, hold, force, oneShotForce);
+    }
   }
 
   public XGPreparedStatement(

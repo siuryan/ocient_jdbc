@@ -134,57 +134,70 @@ public class XGStatement implements Statement {
 
   public static XGStatement newXGStatement(
       final XGConnection conn, final boolean shouldRequestVersion) throws SQLException {
+	  XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          if (shouldRequestVersion) {
-            try {
-              conn.fetchServerVersion();
-            } catch (Exception e) {
-            }
-          }
-
           retval.force = false;
           retval.oneShotForce = false;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.closed = false;
-          return retval;
         }
       }
     }
-
-    return new XGStatement(conn, shouldRequestVersion);
+    
+    if (retval != null)
+    {
+    	if (shouldRequestVersion) {
+	        try {
+	          conn.fetchServerVersion();
+	        } catch (Exception e) {
+	        }
+	      }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGStatement(conn, shouldRequestVersion);
+    }
   }
 
   public static XGStatement newXGStatement(
       final XGConnection conn, final boolean force, final boolean oneShotForce)
       throws SQLException {
+	  XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.closed = false;
-          return retval;
         }
       }
     }
 
-    return new XGStatement(conn, force, oneShotForce);
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGStatement(conn, force, oneShotForce);
+    }
   }
 
   public static XGStatement newXGStatement(
@@ -204,28 +217,35 @@ public class XGStatement implements Statement {
       throw new SQLFeatureNotSupportedException();
     }
 
+    XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
           retval.closed = false;
-          return retval;
         }
       }
     }
 
-    return new XGStatement(conn, type, concur, force, oneShotForce);
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGStatement(conn, type, concur, force, oneShotForce);
+    }
   }
 
   public static XGStatement newXGStatement(
@@ -251,27 +271,34 @@ public class XGStatement implements Statement {
       throw new SQLFeatureNotSupportedException();
     }
 
+    XGStatement retval = null;
     synchronized (cache) {
       HashSet<XGStatement> list = cache.get(conn);
       if (list != null) {
         if (list.size() > 0) {
-          XGStatement retval = list.iterator().next();
+          retval = list.iterator().next();
           list.iterator().remove();
-
-          try {
-            conn.fetchServerVersion();
-          } catch (Exception e) {
-          }
 
           retval.force = force;
           retval.oneShotForce = oneShotForce;
           retval.timeoutMillis = conn.getTimeoutMillis(); // inherit the connections timeout
-          return retval;
         }
       }
     }
-
-    return new XGStatement(conn, type, concur, force, oneShotForce);
+    
+    if (retval != null)
+    {
+    	try {
+            conn.fetchServerVersion();
+          } catch (Exception e) {
+          }
+    	
+    	return retval;
+    }
+    else
+    {
+    	return new XGStatement(conn, type, concur, force, oneShotForce);
+    }
   }
 
   // TODO make a builder class for xgstatement to avoid so many constructors
