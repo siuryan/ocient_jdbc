@@ -77,6 +77,9 @@ public class XGStatement implements Statement
 		@Override
 		public void run()
 		{
+			// Reset statement
+			reset();
+
 			// Cache this
 			synchronized (cache)
 			{
@@ -104,6 +107,7 @@ public class XGStatement implements Statement
 	private static HashMap<XGConnection, HashSet<XGStatement>> cache = new HashMap<>();
 
 	private static Pattern listTablesSyntax = Pattern.compile("list\\s+tables(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
+
 	private static Pattern listSystemTablesSyntax = Pattern.compile("list\\s+system\\s+tables(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
 	private static Pattern listViewsSyntax = Pattern.compile("list\\s+views(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
 	private static Pattern listIndexesSyntax = Pattern.compile("list\\s+ind(ic|ex)es\\s+((" + tk("schema") + ")\\.)?(" + tk("table") + ")(?<verbose>\\s+verbose)?", Pattern.CASE_INSENSITIVE);
@@ -374,6 +378,8 @@ public class XGStatement implements Statement
 		return "(?<q0" + name + ">\"?)(?<" + name + ">(\\w+?|(?<=\").+?(?=\")))\\k<q0" + name + ">";
 	}
 
+	protected boolean poolable = true;
+
 	protected boolean closed = false;
 
 	protected final XGConnection conn;
@@ -587,13 +593,15 @@ public class XGStatement implements Statement
 			result = null;
 			closed = true;
 
-			timer = new Timer();
-			timer.schedule(new ReturnToCacheTask(this), 30 * 1000);
-		}
-
-		if (result != null)
-		{
-			result.close();
+			if (poolable)
+			{
+				timer = new Timer();
+				timer.schedule(new ReturnToCacheTask(this), 30 * 1000);
+			}
+			else
+			{
+				conn.close();
+			}
 		}
 	}
 
@@ -1633,7 +1641,7 @@ public class XGStatement implements Statement
 			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
 		}
 
-		return false;
+		return poolable;
 	}
 
 	@Override
@@ -2014,6 +2022,17 @@ public class XGStatement implements Statement
 		conn.redirect(host, port, shouldRequestVersion);
 		oneShotForce = true;
 		conn.clearOneShotForce();
+	}
+
+	void reset()
+	{
+		fetchSize = defaultFetchSize;
+		parms.clear();
+		warnings.clear();
+		force = false;
+		oneShotForce = false;
+		timeoutMillis = conn.getTimeoutMillis();
+		conn.reset();
 	}
 
 	private Object sendAndReceive(String sql, final Request.RequestType requestType, final int val, final boolean isInMb, final Optional<Function<Object, Void>> additionalPropertySetter)
@@ -2570,8 +2589,14 @@ public class XGStatement implements Statement
 	@Override
 	public void setPoolable(final boolean poolable) throws SQLException
 	{
-		LOGGER.log(Level.WARNING, "setPoolable() was called, which is not supported");
-		throw new SQLFeatureNotSupportedException();
+		LOGGER.log(Level.INFO, "Called setPoolable()");
+		if (closed)
+		{
+			LOGGER.log(Level.WARNING, "setPoolable() is throwing CALL_ON_CLOSED_OBJECT");
+			throw SQLStates.CALL_ON_CLOSED_OBJECT.clone();
+		}
+
+		this.poolable = poolable;
 	}
 
 	/*

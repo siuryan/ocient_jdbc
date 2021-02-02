@@ -2244,7 +2244,7 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	public boolean supportsStatementPooling() throws SQLException
 	{
 		LOGGER.log(Level.INFO, "Called supportsStatementPooling()");
-		return false;
+		return true;
 	}
 
 	@Override

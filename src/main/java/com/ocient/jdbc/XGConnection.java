@@ -305,7 +305,10 @@ public class XGConnection implements Connection
 
 	protected Map<String, Class<?>> typeMap;
 
-	public XGConnection(final String user, final String pwd, final int portNum, final String url, final String database, final String driverVersion, final boolean force, final Tls tls)
+	private final Properties properties;
+
+	public XGConnection(final String user, final String pwd, final int portNum, final String url, final String database, final String driverVersion, final boolean force, final Tls tls,
+		final Properties properties)
 	{
 		this.force = force;
 		this.url = url;
@@ -320,10 +323,11 @@ public class XGConnection implements Connection
 		typeMap = new HashMap<>();
 		in = null;
 		out = null;
+		this.properties = properties;
 	}
 
-	public XGConnection(final String user, final String pwd, final String ip, final int portNum, final String url, final String database, final String driverVersion, final String force, final Tls tls)
-		throws Exception
+	public XGConnection(final String user, final String pwd, final String ip, final int portNum, final String url, final String database, final String driverVersion, final String force, final Tls tls,
+		final Properties properties) throws Exception
 	{
 		originalIp = ip;
 		originalPort = portNum;
@@ -345,6 +349,7 @@ public class XGConnection implements Connection
 		retryCounter = 0;
 		this.tls = tls;
 		typeMap = new HashMap<>();
+		this.properties = properties;
 	}
 
 	@Override
@@ -837,7 +842,7 @@ public class XGConnection implements Connection
 			doForce = true;
 		}
 
-		final XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, doForce, tls);
+		final XGConnection retval = new XGConnection(user, pwd, portNum, url, database, driverVersion, doForce, tls, properties);
 		try
 		{
 			retval.connected = false;
@@ -854,6 +859,7 @@ public class XGConnection implements Connection
 			retval.originalPort = originalPort;
 			retval.tls = tls;
 			retval.serverVersion = serverVersion;
+			retval.resetLocalVars();
 			retval.reconnect(shouldRequestVersion);
 		}
 		catch (final Exception e)
@@ -986,8 +992,8 @@ public class XGConnection implements Connection
 		}
 
 		final XGConnection other = (XGConnection) o;
-		return originalIp.equals(other.originalIp) && originalPort == other.originalPort && user.equals(other.user) && pwd.equals(other.pwd) && database.equals(other.database) && tls.equals(other.tls)
-			&& setSchema.equals(other.setSchema) && setPso == other.setPso && timeoutMillis == other.timeoutMillis;
+		return this == o || originalIp.equals(other.originalIp) && originalPort == other.originalPort && user.equals(other.user) && pwd.equals(other.pwd) && database.equals(other.database)
+			&& tls.equals(other.tls) && properties.equals(other.properties);
 	}
 
 	void fetchServerVersion() throws Exception
@@ -1355,8 +1361,7 @@ public class XGConnection implements Connection
 	@Override
 	public int hashCode()
 	{
-		return originalIp.hashCode() + originalPort + user.hashCode() + pwd.hashCode() + database.hashCode() + tls.hashCode() + setSchema.hashCode() + Long.valueOf(setPso).hashCode()
-			+ Long.valueOf(timeoutMillis).hashCode();
+		return originalIp.hashCode() + originalPort + user.hashCode() + pwd.hashCode() + database.hashCode() + tls.hashCode() + properties.hashCode();
 	}
 
 	@Override
@@ -1718,6 +1723,8 @@ public class XGConnection implements Connection
 					setPSO(setPso);
 				}
 
+				resendParameters();
+
 				return;
 			}
 			catch (final Exception handshakeException)
@@ -1791,6 +1798,8 @@ public class XGConnection implements Connection
 						setPSO(setPso);
 					}
 
+					resendParameters();
+
 					return;
 				}
 				catch (final Exception handshakeException)
@@ -1861,6 +1870,7 @@ public class XGConnection implements Connection
 						setPSO(setPso);
 					}
 
+					resendParameters();
 					secondaryIndex = index;
 					return;
 				}
@@ -2170,6 +2180,133 @@ public class XGConnection implements Connection
 		if (priority != null)
 		{
 			setPriority(priority, false);
+		}
+	}
+
+	void reset()
+	{
+		warnings.clear();
+		force = false;
+		oneShotForce = false;
+		typeMap = new HashMap<>();
+
+		resetLocalVars();
+
+		// Now replay those settings to the server
+		try
+		{
+			setSchema(setSchema);
+		}
+		catch (final Exception e)
+		{
+		}
+
+		try
+		{
+			if (setPso == -1)
+			{
+				// We have to turn it off
+				setPSO(false);
+			}
+			else if (setPso > 0)
+			{
+				// Set non-default threshold
+				setPSO(setPso);
+			}
+			else
+			{
+				setPSO(true);
+			}
+		}
+		catch (final Exception e)
+		{
+		}
+
+		resendParameters();
+	}
+
+	void resetLocalVars()
+	{
+		// Reset all the member variables
+		if (properties.containsKey("maxRows") && properties.get("maxRows") != null)
+		{
+			maxRows = Integer.parseInt((String) properties.get("maxRows"));
+		}
+		else
+		{
+			maxRows = null;
+		}
+
+		if (properties.containsKey("maxTempDisk") && properties.get("maxTempDisk") != null)
+		{
+			maxTempDisk = Integer.parseInt((String) properties.get("maxTempDisk"));
+		}
+		else
+		{
+			maxTempDisk = null;
+		}
+
+		if (properties.containsKey("maxTime") && properties.get("maxTime") != null)
+		{
+			maxTime = Integer.parseInt((String) properties.get("maxTime"));
+		}
+		else
+		{
+			maxTime = null;
+		}
+
+		if (properties.containsKey("networkTimeout") && properties.get("networkTimeout") != null)
+		{
+			networkTimeout = Integer.parseInt((String) properties.get("newtworkTimeout"));
+		}
+		else
+		{
+			networkTimeout = 10000;
+		}
+
+		if (properties.containsKey("priority") && properties.get("priority") != null)
+		{
+			priority = Double.parseDouble((String) properties.get("priority"));
+		}
+		else
+		{
+			priority = null;
+		}
+
+		if (properties.containsKey("longQueryThreshold") && properties.get("longQueryThreshold") != null)
+		{
+			setPso = Integer.parseInt((String) properties.get("longQueryThreshold"));
+		}
+		else
+		{
+			setPso = 0;
+		}
+
+		if (properties.containsKey("defaultSchema") && properties.get("defaultSchema") != null)
+		{
+			setSchema = properties.getProperty("defaultSchema");
+		}
+		else
+		{
+			setSchema = "";
+		}
+
+		if (properties.containsKey("concurrency") && properties.get("concurrency") != null)
+		{
+			concurrency = Integer.parseInt((String) properties.get("concurrency"));
+		}
+		else
+		{
+			concurrency = null;
+		}
+
+		if (properties.containsKey("timeoutMillis") && properties.get("timeoutMillis") != null)
+		{
+			timeoutMillis = Long.parseLong((String) properties.get("timeoutMillis"));
+		}
+		else
+		{
+			timeoutMillis = 0;
 		}
 	}
 

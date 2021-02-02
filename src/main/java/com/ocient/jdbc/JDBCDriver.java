@@ -255,7 +255,7 @@ public class JDBCDriver implements Driver
 				try
 				{
 					final String url = "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
-					conn = new XGConnection(user, pwd, addr.getHostAddress(), portNum, url, database, version, force, tls);
+					conn = new XGConnection(user, pwd, addr.getHostAddress(), portNum, url, database, version, force, tls, properties);
 					LOGGER.log(Level.INFO, "About to attempt connection");
 					conn.connect();
 					LOGGER.log(Level.INFO, "Successfully connected");
@@ -314,7 +314,7 @@ public class JDBCDriver implements Driver
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(final String arg0, final Properties arg1) throws SQLException
 	{
-		final DriverPropertyInfo[] retval = new DriverPropertyInfo[4];
+		final DriverPropertyInfo[] retval = new DriverPropertyInfo[13];
 		final DriverPropertyInfo user = new DriverPropertyInfo("user", null);
 		user.description = "The userid to use for the connection";
 		user.required = true;
@@ -339,6 +339,51 @@ public class JDBCDriver implements Driver
 		logfile.description = "Log file";
 		logfile.required = false;
 		retval[3] = logfile;
+
+		final DriverPropertyInfo maxRows = new DriverPropertyInfo("maxRows", null);
+		maxRows.description = "Maximum allowed result set size in number of rows";
+		maxRows.required = false;
+		retval[4] = maxRows;
+
+		final DriverPropertyInfo maxTempDisk = new DriverPropertyInfo("maxTempDisk", null);
+		maxTempDisk.description = "Maximum allowed temp disk usage as a percentage (0 - 100)";
+		maxTempDisk.required = false;
+		retval[5] = maxTempDisk;
+
+		final DriverPropertyInfo maxTime = new DriverPropertyInfo("maxTime", null);
+		maxTime.description = "Maximum allowed runtime of a query in milliseconds before it is cancelled on the server";
+		maxTime.required = false;
+		retval[6] = maxTime;
+
+		final DriverPropertyInfo networkTimeout = new DriverPropertyInfo("networkTimeout", "10000");
+		networkTimeout.description = "Network connection timeout in milliseconds";
+		networkTimeout.required = false;
+		retval[7] = networkTimeout;
+
+		final DriverPropertyInfo priority = new DriverPropertyInfo("priority", "1.0");
+		priority.description = "Default query priority";
+		priority.required = false;
+		retval[8] = priority;
+
+		final DriverPropertyInfo longQueryThreshold = new DriverPropertyInfo("longQueryThreshold", "0");
+		longQueryThreshold.description = "Estimated query runtime in milliseconds before deeper query optimization runs. 0 = use database server default. -1 = never run deeper optimization";
+		longQueryThreshold.required = false;
+		retval[9] = longQueryThreshold;
+
+		final DriverPropertyInfo defaultSchema = new DriverPropertyInfo("defaultSchema", null);
+		defaultSchema.description = "Default schema";
+		defaultSchema.required = false;
+		retval[10] = defaultSchema;
+
+		final DriverPropertyInfo concurrency = new DriverPropertyInfo("concurrency", null);
+		concurrency.description = "Number of concurrent queries allowed before queueing";
+		concurrency.required = false;
+		retval[11] = concurrency;
+
+		final DriverPropertyInfo timeoutMillis = new DriverPropertyInfo("timeoutMillis", "0");
+		timeoutMillis.description = "Number of milliseconds before cancellable operations are timed out and killed by the driver. 0 = no timeout";
+		timeoutMillis.required = false;
+		retval[12] = timeoutMillis;
 
 		return retval;
 	}

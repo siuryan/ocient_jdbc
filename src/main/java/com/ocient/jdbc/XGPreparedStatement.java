@@ -43,6 +43,8 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 		@Override
 		public void run()
 		{
+			reset();
+
 			// Cache this
 			synchronized (cache)
 			{
@@ -277,13 +279,15 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 			result = null;
 			closed = true;
 
-			timer = new Timer();
-			timer.schedule(new ReturnToCacheTask(this), 30 * 1000);
-		}
-
-		if (result != null)
-		{
-			result.close();
+			if (poolable)
+			{
+				timer = new Timer();
+				timer.schedule(new ReturnToCacheTask(this), 30 * 1000);
+			}
+			else
+			{
+				conn.close();
+			}
 		}
 	}
 
@@ -320,6 +324,12 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 	{
 		LOGGER.log(Level.WARNING, "getParameterMetaData() was called, which is not supported");
 		throw new SQLFeatureNotSupportedException();
+	}
+
+	private void reset()
+	{
+		sql = "";
+		super.reset();
 	}
 
 	@Override
