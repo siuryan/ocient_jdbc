@@ -314,7 +314,7 @@ public class JDBCDriver implements Driver
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(final String arg0, final Properties arg1) throws SQLException
 	{
-		final DriverPropertyInfo[] retval = new DriverPropertyInfo[13];
+		final DriverPropertyInfo[] retval = new DriverPropertyInfo[14];
 		final DriverPropertyInfo user = new DriverPropertyInfo("user", null);
 		user.description = "The userid to use for the connection";
 		user.required = true;
@@ -384,6 +384,15 @@ public class JDBCDriver implements Driver
 		timeoutMillis.description = "Number of milliseconds before cancellable operations are timed out and killed by the driver. 0 = no timeout";
 		timeoutMillis.required = false;
 		retval[12] = timeoutMillis;
+
+		final DriverPropertyInfo tls = new DriverPropertyInfo("tls", null);
+		tls.description = "TLS encryption";
+		tls.required = false;
+		tls.choices = new String[3];
+		tls.choices[0] = "OFF";
+		tls.choices[1] = "UNVERIFIED";
+		tls.choices[2] = "ON";
+		retval[13] = tls;
 
 		return retval;
 	}
