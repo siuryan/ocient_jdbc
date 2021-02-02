@@ -693,7 +693,7 @@ public class XGStatement implements Statement
 				|| sql.toUpperCase().startsWith("LIST INDEXES ") || sql.toUpperCase().startsWith("GET SCHEMA") || sql.toUpperCase().startsWith("DESCRIBE VIEW ")
 				|| sql.toUpperCase().startsWith("DESCRIBE TABLE ") || sql.toUpperCase().startsWith("PLAN EXECUTE ") || sql.toUpperCase().startsWith("PLAN EXPLAIN ")
 				|| sql.toUpperCase().startsWith("LIST ALL QUERIES") || startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES") || sql.toUpperCase().startsWith("EXPORT TABLE ")
-				|| sql.toUpperCase().startsWith("EXPORT TRANSLATION "))
+				|| sql.toUpperCase().startsWith("EXPORT TRANSLATION ") || sql.toUpperCase().startsWith("LIST TABLE PRIVILEGES"))
 			{
 				result = (XGResultSet) executeQuery(sql);
 				return true;
@@ -869,6 +869,10 @@ public class XGStatement implements Statement
 			else if (startsWithIgnoreCase(sql, "LIST ALL QUERIES"))
 			{
 				return listAllQueries();
+			}
+			else if (startsWithIgnoreCase(sql, "LIST TABLE PRIVILEGES"))
+			{
+				return listAllTablePrivileges(sql);
 			}
 			else if (startsWithIgnoreCase(sql, "LIST ALL COMPLETED QUERIES"))
 			{
@@ -1880,6 +1884,18 @@ public class XGStatement implements Statement
 		return result;
 	}
 
+	private ResultSet listAllTablePrivileges(final String cmd) throws SQLException
+	{
+		LOGGER.log(Level.INFO, "Entered driver's listTables()");
+		ResultSet rs = null;
+		final DatabaseMetaData dbmd = conn.getMetaData();
+		if (startsWithIgnoreCase(cmd, "LIST TABLE PRIVILEGES"))
+		{
+			rs = dbmd.getTablePrivileges("", "%", "%");
+		}
+		return rs;
+	}
+
 	private ResultSet listIndexes(final String cmd) throws SQLException
 	{
 		LOGGER.log(Level.INFO, "Entered driver's listIndexes()");
@@ -2024,7 +2040,7 @@ public class XGStatement implements Statement
 		conn.clearOneShotForce();
 	}
 
-	void reset()
+	protected void reset()
 	{
 		fetchSize = defaultFetchSize;
 		parms.clear();
@@ -2081,12 +2097,14 @@ public class XGStatement implements Statement
 					b1 = ExecutePlan.newBuilder();
 					br = ClientWireProtocol.ExecuteQueryResponse.newBuilder();
 					setWrapped = b2.getClass().getMethod("setExecutePlan", c);
+					hasQueryId = true;
 					break;
 				case EXECUTE_INLINE_PLAN:
 					c = ExecuteInlinePlan.class;
 					b1 = ExecuteInlinePlan.newBuilder();
 					br = ClientWireProtocol.ExecuteQueryResponse.newBuilder();
 					setWrapped = b2.getClass().getMethod("setExecuteInlinePlan", c);
+					hasQueryId = true;
 					break;
 				case EXPLAIN_PLAN:
 					c = ExplainPlan.class;

@@ -326,7 +326,8 @@ public class XGPreparedStatement extends XGStatement implements PreparedStatemen
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	private void reset()
+	@Override
+	protected void reset()
 	{
 		sql = "";
 		super.reset();

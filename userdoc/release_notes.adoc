@@ -4,6 +4,13 @@
 All our jdbc drivers are located {drivers_repo}[here]. 
 Below is the release notes for every driver version that has customer implication.
 //tag::compact[]
+== 1.75 (2021-2-1)
+
+New Features::
+
+ * Allow changing session variable defaults via connection properties and make session variable overrides local to statement objects.
+
+//tag::compact[]
 == 1.74 (2021-1-31)
 
 New Features::

@@ -317,48 +317,8 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	public ResultSet getColumnPrivileges(final String catalog, final String schema, final String table, final String columnNamePattern) throws SQLException
 	{
 		LOGGER.log(Level.INFO, "Called getColumnPrivileges()");
-		final XGResultSet retval = new XGResultSet((XGConnection) conn, new ArrayList<>(), (XGStatement) conn.createStatement());
-
-		/*
-		 * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
-		 * schema (may be null) TABLE_NAME String => table name COLUMN_NAME String =>
-		 * column name GRANTOR String => grantor of access (may be null) GRANTEE String
-		 * => grantee of access PRIVILEGE String => name of access (SELECT, INSERT,
-		 * UPDATE, REFRENCES, ...) IS_GRANTABLE String => "YES" if grantee is permitted
-		 * to grant to others; "NO" if not; null if unknown
-		 */
-
-		final Map<String, Integer> cols2Pos = new HashMap<>();
-		final TreeMap<Integer, String> pos2Cols = new TreeMap<>();
-		final Map<String, String> cols2Types = new HashMap<>();
-		cols2Pos.put("table_cat", 0);
-		cols2Pos.put("table_schem", 1);
-		cols2Pos.put("table_name", 2);
-		cols2Pos.put("column_name", 3);
-		cols2Pos.put("grantor", 4);
-		cols2Pos.put("grantee", 5);
-		cols2Pos.put("privilege", 6);
-		cols2Pos.put("is_grantable", 7);
-		pos2Cols.put(0, "table_cat");
-		pos2Cols.put(1, "table_schem");
-		pos2Cols.put(2, "table_name");
-		pos2Cols.put(3, "column_name");
-		pos2Cols.put(4, "grantor");
-		pos2Cols.put(5, "grantee");
-		pos2Cols.put(6, "privilege");
-		pos2Cols.put(7, "is_grantable");
-		cols2Types.put("table_cat", "CHAR");
-		cols2Types.put("table_schem", "CHAR");
-		cols2Types.put("table_name", "CHAR");
-		cols2Types.put("column_name", "CHAR");
-		cols2Types.put("grantor", "CHAR");
-		cols2Types.put("grantee", "CHAR");
-		cols2Types.put("privilege", "CHAR");
-		cols2Types.put("is_grantable", "CHAR");
-		retval.setCols2Pos(cols2Pos);
-		retval.setPos2Cols(pos2Cols);
-		retval.setCols2Types(cols2Types);
-		return retval;
+		return ((XGStatement) conn.createStatement()).fetchSystemMetadataResultSet(ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_COLUMN_PRIVILEGES, schema, table, columnNamePattern,
+			true);
 	}
 
 	@Override
@@ -1480,45 +1440,8 @@ public class XGDatabaseMetaData implements DatabaseMetaData
 	public ResultSet getTablePrivileges(final String catalog, final String schemaPattern, final String tableNamePattern) throws SQLException
 	{
 		LOGGER.log(Level.INFO, "Called getTablePrivileges()");
-		final XGResultSet retval = new XGResultSet((XGConnection) conn, new ArrayList<>(), (XGStatement) conn.createStatement());
-
-		/*
-		 * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String => table
-		 * schema (may be null) TABLE_NAME String => table name GRANTOR String =>
-		 * grantor of access (may be null) GRANTEE String => grantee of access PRIVILEGE
-		 * String => name of access (SELECT, INSERT, UPDATE, REFRENCES, ...)
-		 * IS_GRANTABLE String => "YES" if grantee is permitted to grant to others; "NO"
-		 * if not; null if unknown
-		 */
-
-		final Map<String, Integer> cols2Pos = new HashMap<>();
-		final TreeMap<Integer, String> pos2Cols = new TreeMap<>();
-		final Map<String, String> cols2Types = new HashMap<>();
-		cols2Pos.put("table_cat", 0);
-		cols2Pos.put("table_schem", 1);
-		cols2Pos.put("table_name", 2);
-		cols2Pos.put("grantor", 3);
-		cols2Pos.put("grantee", 4);
-		cols2Pos.put("privilege", 5);
-		cols2Pos.put("is_grantable", 6);
-		pos2Cols.put(0, "table_cat");
-		pos2Cols.put(1, "table_schem");
-		pos2Cols.put(2, "table_name");
-		pos2Cols.put(3, "grantor");
-		pos2Cols.put(4, "grantee");
-		pos2Cols.put(5, "privilege");
-		pos2Cols.put(6, "is_grantable");
-		cols2Types.put("table_cat", "CHAR");
-		cols2Types.put("table_schem", "CHAR");
-		cols2Types.put("table_name", "CHAR");
-		cols2Types.put("grantor", "CHAR");
-		cols2Types.put("grantee", "CHAR");
-		cols2Types.put("privilege", "CHAR");
-		cols2Types.put("is_grantable", "CHAR");
-		retval.setCols2Pos(cols2Pos);
-		retval.setPos2Cols(pos2Cols);
-		retval.setCols2Types(cols2Types);
-		return retval;
+		return ((XGStatement) conn.createStatement()).fetchSystemMetadataResultSet(ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_TABLE_PRIVILEGES, schemaPattern, tableNamePattern, "",
+			true);
 	}
 
 	@Override
