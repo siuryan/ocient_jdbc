@@ -5,20 +5,6 @@ All our jdbc drivers are located {drivers_repo}[here].
 Below is the release notes for every driver version that has customer implication.
 
 //tag::compact[]
-== 1.73 (2020-1-30)
-
-New Features::
-
- * getTablePrivilege and getColumnPrivilege
-
-//tag::compact[]
-== 1.72 (2020-1-28)
-
-New Features::
-
- * Fix error message and auto-deploy
-
-//tag::compact[]
 == 1.75 (2021-2-1)
 
 New Features::
