@@ -1,32 +1,39 @@
 package com.ocient.jdbc;
 
-public class StPoint {
-  private final double lon;
-  private final double lat;
+public class StPoint
+{
+	private final double lon;
+	private final double lat;
 
-  public StPoint(final double lon, final double lat) {
-    this.lon = lon;
-    this.lat = lat;
-  }
+	public StPoint(final double lon, final double lat)
+	{
+		this.lon = lon;
+		this.lat = lat;
+	}
 
-  public double getLongitude() {
-    return this.lon;
-  }
+	public double getLatitude()
+	{
+		return lat;
+	}
 
-  public double getLatitude() {
-    return this.lat;
-  }
+	public double getLongitude()
+	{
+		return lon;
+	}
 
-  public double getX() {
-    return this.lon;
-  }
+	public double getX()
+	{
+		return lon;
+	}
 
-  public double getY() {
-    return this.lat;
-  }
+	public double getY()
+	{
+		return lat;
+	}
 
-  @Override
-  public String toString() {
-    return "(" + this.lat + ", " + this.lon + ")";
-  }
+	@Override
+	public String toString()
+	{
+		return "(" + lat + ", " + lon + ")";
+	}
 }
