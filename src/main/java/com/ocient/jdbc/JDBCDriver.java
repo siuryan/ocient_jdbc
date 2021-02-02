@@ -351,7 +351,7 @@ public class JDBCDriver implements Driver
 		retval[5] = maxTempDisk;
 
 		final DriverPropertyInfo maxTime = new DriverPropertyInfo("maxTime", null);
-		maxTime.description = "Maximum allowed runtime of a query in second before it is cancelled on the server";
+		maxTime.description = "Maximum allowed runtime of a query in seconds before it is cancelled on the server";
 		maxTime.required = false;
 		retval[6] = maxTime;
 
