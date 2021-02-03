@@ -280,6 +280,7 @@ public class XGConnection implements Connection
 	protected String driverVersion;
 	protected String serverVersion = "";
 	protected String setSchema = "";
+	protected String defaultSchema = "";
 	protected long setPso = 0;
 	public Integer maxRows = null;
 	private Integer maxTime = null;
@@ -850,6 +851,7 @@ public class XGConnection implements Connection
 		{
 			retval.connected = false;
 			retval.setSchema = setSchema;
+			retval.defaultSchema = defaultSchema;
 			retval.setPso = setPso;
 			retval.timeoutMillis = timeoutMillis;
 			retval.cmdcomps = (ArrayList<String>) cmdcomps.clone();
@@ -2292,7 +2294,7 @@ public class XGConnection implements Connection
 		}
 		else
 		{
-			setSchema = "";
+			setSchema = defaultSchema;
 		}
 
 		if (properties.containsKey("concurrency") && properties.get("concurrency") != null)
