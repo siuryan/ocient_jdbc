@@ -273,6 +273,7 @@ public class JDBCDriver implements Driver
 					{
 						LOGGER.log(Level.INFO, "About to attempt connection");
 						conn.connect();
+						conn.setSchema = conn.getSchema();
 						LOGGER.log(Level.INFO, "Successfully connected");
 						connected = true;
 						synchronized (seenConnections)
