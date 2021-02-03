@@ -859,8 +859,8 @@ public class XGConnection implements Connection
 			retval.originalPort = originalPort;
 			retval.tls = tls;
 			retval.serverVersion = serverVersion;
-			retval.resetLocalVars();
 			retval.reconnect(shouldRequestVersion);
+			retval.resetLocalVars();
 		}
 		catch (final Exception e)
 		{
@@ -1005,6 +1005,7 @@ public class XGConnection implements Connection
 			final String version = stmt.fetchSystemMetadataString(ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
 			LOGGER.log(Level.INFO, String.format("Fetched server version: %s", version));
 			setServerVersion(version);
+			stmt.close();
 		}
 		catch (final Exception e)
 		{

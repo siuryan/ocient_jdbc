@@ -8,6 +8,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -34,6 +35,8 @@ public class JDBCDriver implements Driver
 			e.printStackTrace(System.err);
 		}
 	}
+
+	private static HashSet<Connection> seenConnections = new HashSet<>();
 
 	@Override
 	public boolean acceptsURL(final String arg0) throws SQLException
@@ -255,11 +258,28 @@ public class JDBCDriver implements Driver
 				try
 				{
 					final String url = "jdbc:ocient://" + hostname + ":" + Integer.toString(portNum) + "/" + database;
+					// If we've already seen this connection, don't do the connect
 					conn = new XGConnection(user, pwd, addr.getHostAddress(), portNum, url, database, version, force, tls, properties);
-					LOGGER.log(Level.INFO, "About to attempt connection");
-					conn.connect();
-					LOGGER.log(Level.INFO, "Successfully connected");
-					connected = true;
+					boolean doConnect = false;
+					synchronized (seenConnections)
+					{
+						if (!seenConnections.contains(conn))
+						{
+							doConnect = true;
+						}
+					}
+
+					if (doConnect)
+					{
+						LOGGER.log(Level.INFO, "About to attempt connection");
+						conn.connect();
+						LOGGER.log(Level.INFO, "Successfully connected");
+						connected = true;
+						synchronized (seenConnections)
+						{
+							seenConnections.add(conn);
+						}
+					}
 					break;
 				}
 				catch (final Throwable e)
