@@ -183,7 +183,10 @@ public class XGStatement implements Statement
 			{
 				try
 				{
-					conn.fetchServerVersion();
+					if (conn.serverVersion == "")
+					{
+						conn.fetchServerVersion();
+					}
 				}
 				catch (final Exception e)
 				{
@@ -224,7 +227,10 @@ public class XGStatement implements Statement
 		{
 			try
 			{
-				conn.fetchServerVersion();
+				if (conn.serverVersion == "")
+				{
+					conn.fetchServerVersion();
+				}
 			}
 			catch (final Exception e)
 			{
@@ -276,7 +282,10 @@ public class XGStatement implements Statement
 		{
 			try
 			{
-				conn.fetchServerVersion();
+				if (conn.serverVersion == "")
+				{
+					conn.fetchServerVersion();
+				}
 			}
 			catch (final Exception e)
 			{
@@ -333,7 +342,10 @@ public class XGStatement implements Statement
 		{
 			try
 			{
-				conn.fetchServerVersion();
+				if (conn.serverVersion == "")
+				{
+					conn.fetchServerVersion();
+				}
 			}
 			catch (final Exception e)
 			{

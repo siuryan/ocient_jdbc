@@ -639,7 +639,10 @@ public class XGConnection implements Connection
 
 		if (shouldRequestVersion)
 		{
-			fetchServerVersion();
+			if (serverVersion == "")
+			{
+				fetchServerVersion();
+			}
 		}
 		LOGGER.log(Level.INFO, "Handshake Fiinished");
 	}
