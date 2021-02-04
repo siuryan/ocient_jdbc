@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ocient</groupId>
   <artifactId>ocient-jdbc4</artifactId>
-  <version>1.75</version>
+  <version>1.76</version>
   <!--JDBC VERSION NUMBER HERE -->
   <name>${project.groupId}:${project.artifactId}</name>
   <description>JDBC Driver for connecting to an Ocient Database</description>
@@ -223,6 +223,8 @@
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
           <autoReleaseAfterClose>false</autoReleaseAfterClose>
+          <!--default is 5 minutes, that ends up timing out a lot-->
+          <stagingProgressTimeoutMinutes>10</stagingProgressTimeoutMinutes>
         </configuration>
       </plugin>
       <plugin>

@@ -280,6 +280,7 @@ public class XGConnection implements Connection
 	protected String driverVersion;
 	protected String serverVersion = "";
 	protected String setSchema = "";
+	protected String defaultSchema = "";
 	protected long setPso = 0;
 	public Integer maxRows = null;
 	private Integer maxTime = null;
@@ -639,7 +640,10 @@ public class XGConnection implements Connection
 
 		if (shouldRequestVersion)
 		{
-			fetchServerVersion();
+			if (serverVersion == "")
+			{
+				fetchServerVersion();
+			}
 		}
 		LOGGER.log(Level.INFO, "Handshake Fiinished");
 	}
@@ -847,6 +851,7 @@ public class XGConnection implements Connection
 		{
 			retval.connected = false;
 			retval.setSchema = setSchema;
+			retval.defaultSchema = defaultSchema;
 			retval.setPso = setPso;
 			retval.timeoutMillis = timeoutMillis;
 			retval.cmdcomps = (ArrayList<String>) cmdcomps.clone();
@@ -859,8 +864,8 @@ public class XGConnection implements Connection
 			retval.originalPort = originalPort;
 			retval.tls = tls;
 			retval.serverVersion = serverVersion;
-			retval.resetLocalVars();
 			retval.reconnect(shouldRequestVersion);
+			retval.resetLocalVars();
 		}
 		catch (final Exception e)
 		{
@@ -1005,6 +1010,7 @@ public class XGConnection implements Connection
 			final String version = stmt.fetchSystemMetadataString(ClientWireProtocol.FetchSystemMetadata.SystemMetadataCall.GET_DATABASE_PRODUCT_VERSION);
 			LOGGER.log(Level.INFO, String.format("Fetched server version: %s", version));
 			setServerVersion(version);
+			stmt.close();
 		}
 		catch (final Exception e)
 		{
@@ -2288,7 +2294,7 @@ public class XGConnection implements Connection
 		}
 		else
 		{
-			setSchema = "";
+			setSchema = defaultSchema;
 		}
 
 		if (properties.containsKey("concurrency") && properties.get("concurrency") != null)
