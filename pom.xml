@@ -235,6 +235,8 @@
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
           <autoReleaseAfterClose>false</autoReleaseAfterClose>
+          <!--default is 5 minutes, that ends up timing out a lot-->
+          <stagingProgressTimeoutMinutes>10</stagingProgressTimeoutMinutes>
         </configuration>
       </plugin>
       <plugin>
