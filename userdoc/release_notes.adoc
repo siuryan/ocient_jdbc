@@ -4,7 +4,42 @@
 All our jdbc drivers are located {drivers_repo}[here]. 
 Below is the release notes for every driver version that has customer implication.
 //tag::compact[]
-== 1.71 (2020-1-14)
+== 1.76 (2021-2-2)
+
+New Features::
+
+ * Pooling improvements
+
+//tag::compact[]
+== 1.75 (2021-2-1)
+
+New Features::
+
+ * Allow changing session variable defaults via connection properties and make session variable overrides local to statement objects.
+
+//tag::compact[]
+== 1.74 (2021-1-31)
+
+New Features::
+
+ * Performance optimizations and restructuring 
+
+//tag::compact[]
+== 1.73 (2021-1-30)
+
+New Features::
+
+ * The JDBC driver now does connection and statement pooling that is automatic and transparent to the caller.
+
+//tag::compact[]
+== 1.72 (2021-1-27)
+
+New Features::
+
+ * Add support for clearBatch()
+
+//tag::compact[]
+== 1.71 (2021-1-14)
 
 New Features::
 
@@ -15,14 +50,14 @@ New Features::
  * SET CONCURRENCY {N}
 
 //tag::compact[]
-== 1.70 (2020-1-12)
+== 1.70 (2021-1-12)
 
 New Features::
 
  * Fix race condition between adding fetch threads to array and iterating. Also removed some duplicated code.
 
 //tag::compact[]
-== 1.69 (2020-1-07)
+== 1.69 (2021-1-07)
 
 New Features::
 
