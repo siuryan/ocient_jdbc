@@ -265,10 +265,8 @@ public class JDBCDriver implements Driver
 					{
 						if (!seenConnections.containsKey(conn))
 						{
-							LOGGER.log(Level.INFO, "Timmy debug doReconnect: True");
 							doConnect = true;
 						} else {
-							LOGGER.log(Level.INFO, "Timmy debug doReconnect: False");
 							conn.setServerVersion(seenConnections.get(conn).getServerVersion());
 						}
 					}
