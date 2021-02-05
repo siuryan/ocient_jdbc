@@ -214,6 +214,7 @@ public class SQLStates
 	private static int NO_DROP_MLMODEL_AUTH_CODE = -803;
 	private static int UNABLE_TO_INVERT_SINGULAR_MATRIX_CODE = -804;
 	private static int ML_MODEL_ON_EMPTY_SET_CODE = -805;
+    	private static int UNABLE_TO_DECOMPOSE_SINGULAR_MATRIX_CODE = -806;
 
 	// runtime related issues
 	private static int NO_ROW_DATA_CODE = 900;
@@ -385,6 +386,7 @@ public class SQLStates
 	public static SQLStates MISSING_ORDER_BY = new SQLStates("The requested window function requires an ORDER BY in the OVER() clause", SYNTAX_ERROR_STATE, MISSING_ORDER_BY_CODE);
 	public static SQLStates PLAN_COMPILATION_ERROR = new SQLStates("Plan Compilation Error", PLAN_COMPILATION_ERROR_STATE, PLAN_COMPILATION_ERROR_CODE);
 	public static SQLStates UNABLE_TO_INVERT_SINGULAR_MATRIX = new SQLStates("Unable to invert singular matrix", SYSTEM_ERROR, UNABLE_TO_INVERT_SINGULAR_MATRIX_CODE);
+    	public static SQLStates UNABLE_TO_DECOMPOSE_SINGULAR_MATRIX = new SQLStates("Unable to perform LUP decomposition on this singular matrix", SYSTEM_ERROR, UNABLE_TO_DECOMPOSE_SINGULAR_MATRIX_CODE);
 	public static SQLStates TKT_LIMIT_REACHED = new SQLStates("TKT Operator reached limit", SYSTEM_ERROR, TKT_LIMIT_REACHED_CODE);
 	public static SQLStates OUT_OF_MEMORY = new SQLStates("Out of memory", OUT_OF_MEMORY_STATE, OUT_OF_MEMORY_CODE);
 	public static SQLStates SEGMENT_NOT_AVAILABLE = new SQLStates("Data required for query is not available", STORAGE_OR_DATABASE_RESOURCE_NOT_AVAILABLE_STATE, SEGMENT_NOT_AVAILABLE_CODE);
