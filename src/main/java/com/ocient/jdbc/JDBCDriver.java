@@ -8,7 +8,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -36,7 +36,7 @@ public class JDBCDriver implements Driver
 		}
 	}
 
-	private static HashSet<Connection> seenConnections = new HashSet<>();
+	private static HashMap<XGConnection,XGConnection> seenConnections = new HashMap<XGConnection,XGConnection>();
 
 	@Override
 	public boolean acceptsURL(final String arg0) throws SQLException
@@ -263,9 +263,11 @@ public class JDBCDriver implements Driver
 					boolean doConnect = false;
 					synchronized (seenConnections)
 					{
-						if (!seenConnections.contains(conn))
+						if (!seenConnections.containsKey(conn))
 						{
 							doConnect = true;
+						} else {
+							conn.setServerVersion(seenConnections.get(conn).getServerVersion());
 						}
 					}
 
@@ -279,7 +281,7 @@ public class JDBCDriver implements Driver
 						connected = true;
 						synchronized (seenConnections)
 						{
-							seenConnections.add(conn);
+							seenConnections.put(conn, conn);
 						}
 					}
 					break;
